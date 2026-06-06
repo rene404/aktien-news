@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Market Wire</title>
+    <link>https://example.com/feed</link>
+    <description>Test feed</description>
+    <item>
+      <title>Apple Inc. supplier ramps up production</title>
+      <link>https://example.com/rss/apple-supplier</link>
+      <description>A key Apple supplier increased output ahead of launch.</description>
+      <pubDate>Fri, 29 Sep 2023 10:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>NVDA hits new high on AI demand</title>
+      <link>https://example.com/rss/nvda-high</link>
+      <description>Nvidia shares climbed on continued AI chip demand.</description>
+      <pubDate>Fri, 29 Sep 2023 11:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,36 @@
+[project]
+name = "aktien-news-backend"
+version = "0.1.0"
+description = "Stock news aggregator backend"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30",
+    "alembic>=1.14",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "bcrypt>=4.1",
+    "pyjwt>=2.10",
+    "httpx>=0.28",
+    "feedparser>=6.0.11",
+    "python-multipart>=0.0.20",
+    "email-validator>=2.3.0",
+    "apscheduler>=3.11.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "asgi-lifespan>=2.1",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+
+[tool.uv]
+package = false

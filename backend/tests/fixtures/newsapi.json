@@ -1,0 +1,23 @@
+{
+  "status": "ok",
+  "totalResults": 2,
+  "articles": [
+    {
+      "source": {"id": "reuters", "name": "Reuters"},
+      "author": "Jane Doe",
+      "title": "Microsoft Corporation raises cloud revenue guidance",
+      "description": "Microsoft lifted its outlook on strong Azure growth.",
+      "url": "https://example.com/newsapi/msft-cloud",
+      "publishedAt": "2023-09-29T14:30:00Z",
+      "content": "..."
+    },
+    {
+      "source": {"id": null, "name": "Unknown"},
+      "author": null,
+      "title": null,
+      "description": "No title -> skipped",
+      "url": "https://example.com/newsapi/skip",
+      "publishedAt": "bad-date"
+    }
+  ]
+}

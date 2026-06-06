@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, health
+from app.api import auth, health, news, search, watchlists
 from app.core.config import settings
 
 
@@ -34,3 +34,6 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(auth.router)
+app.include_router(search.router)
+app.include_router(news.router)
+app.include_router(watchlists.router)

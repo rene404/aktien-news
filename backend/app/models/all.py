@@ -114,6 +114,9 @@ class News(Base):
         DateTime(timezone=True), server_default=func.now()
     )
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)  # phase 2
+    summary_status: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default="pending"
+    )
 
     stock_links: Mapped[list["NewsStock"]] = relationship(
         back_populates="news", cascade="all, delete-orphan"
@@ -123,6 +126,10 @@ class News(Base):
         CheckConstraint(
             "source_type in ('finnhub','newsapi','alphavantage','rss')",
             name="ck_news_source_type",
+        ),
+        CheckConstraint(
+            "summary_status in ('pending','done','failed','skipped')",
+            name="ck_news_summary_status",
         ),
         Index("ix_news_published_at", "published_at"),
     )

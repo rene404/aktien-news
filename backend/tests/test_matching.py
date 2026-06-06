@@ -78,6 +78,29 @@ async def test_unrelated_text_no_match(session: AsyncSession):
     assert await _link_status(session, news.id, "MSFT") is None
 
 
+async def test_common_word_ticker_does_not_auto_link(session: AsyncSession):
+    """An uppercase ticker that is also a common word ('ON') must not auto-link
+    from an all-caps headline — it goes to the review queue instead."""
+    await load_symbols(
+        session,
+        [{"symbol": "ON", "description": "ON Semiconductor Corp", "type": "Common Stock"}],
+    )
+    news = await _make_news(session, "MARKETS RALLY ON STRONG JOBS REPORT")
+    await match_and_store(session, news)
+    assert await _link_status(session, news.id, "ON") == "pending"
+
+
+async def test_common_word_ticker_still_links_on_cashtag(session: AsyncSession):
+    """A $cashtag is an explicit signal and overrides the common-word demotion."""
+    await load_symbols(
+        session,
+        [{"symbol": "ON", "description": "ON Semiconductor Corp", "type": "Common Stock"}],
+    )
+    news = await _make_news(session, "$ON jumps after earnings beat")
+    await match_and_store(session, news)
+    assert await _link_status(session, news.id, "ON") == "linked"
+
+
 async def test_rematch_is_idempotent(session: AsyncSession):
     await _seed_symbols(session)
     news = await _make_news(session, "Apple Inc. announces a new iPhone")

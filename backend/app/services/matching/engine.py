@@ -30,6 +30,21 @@ CASHTAG = 0.95
 SYMBOL_TOKEN = 0.90
 FULL_NAME = 0.90
 CORE_NAME = 0.55
+AMBIGUOUS_SYMBOL = 0.55  # uppercase ticker that is also a common English word
+
+# Tickers that collide with everyday uppercase words. A bare uppercase match on
+# these is too weak to auto-link (e.g. "ALL EYES ON ..." headlines), so they go
+# to the review queue unless a stronger signal ($cashtag / full name) fires.
+COMMON_WORD_TICKERS: frozenset[str] = frozenset(
+    {
+        "all", "key", "on", "it", "go", "so", "or", "an", "at", "be", "by",
+        "do", "he", "if", "in", "is", "me", "my", "no", "of", "to", "up", "us",
+        "we", "are", "for", "now", "see", "out", "own", "big", "new", "old",
+        "one", "two", "car", "fun", "low", "ceo", "cup", "tv", "gps", "love",
+        "play", "fast", "open", "well", "real", "good", "best", "free", "live",
+        "tech", "data", "post", "main", "next", "edge", "wood", "fund", "cash",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -81,10 +96,16 @@ def match_text(
         # cashtag — case-insensitive against raw text
         if re.search(rf"\${re.escape(c.symbol)}\b", raw, re.IGNORECASE):
             best, alias = CASHTAG, f"${c.symbol}"
-        # uppercase ticker as a standalone word (case-sensitive)
+        # uppercase ticker as a standalone word (case-sensitive). Tickers that
+        # are also common words are demoted to the review queue, not auto-linked.
         if len(c.symbol) >= 2 and re.search(rf"\b{re.escape(c.symbol)}\b", raw):
-            if SYMBOL_TOKEN > best:
-                best, alias = SYMBOL_TOKEN, c.symbol
+            conf = (
+                AMBIGUOUS_SYMBOL
+                if c.symbol.lower() in COMMON_WORD_TICKERS
+                else SYMBOL_TOKEN
+            )
+            if conf > best:
+                best, alias = conf, c.symbol
         # full company name (only meaningful when a suffix exists)
         if c.full_norm != c.core_norm and contains_phrase(norm, c.full_norm):
             if FULL_NAME > best:

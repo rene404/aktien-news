@@ -42,3 +42,11 @@ async def test_search_no_match_empty(client: AsyncClient, session: AsyncSession)
     await _seed(session)
     resp = await client.get("/search", params={"q": "zzzznotreal"})
     assert resp.json()["results"] == []
+
+
+async def test_search_wildcard_is_escaped(client: AsyncClient, session: AsyncSession):
+    """A bare '%' must not match every stock (LIKE wildcard injection)."""
+    await _seed(session)
+    resp = await client.get("/search", params={"q": "%"})
+    assert resp.status_code == 200
+    assert resp.json()["results"] == []

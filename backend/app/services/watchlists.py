@@ -32,8 +32,8 @@ async def get_or_create_default(
 
 
 async def list_with_stocks(session: AsyncSession, user_id: uuid.UUID) -> list[dict]:
-    await get_or_create_default(session, user_id)
-    await session.commit()
+    # Read-only: the default watchlist is created at registration, so a GET has
+    # no side effects.
     watchlists = (
         await session.scalars(
             select(Watchlist).where(Watchlist.user_id == user_id).order_by(

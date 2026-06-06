@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import ClassVar
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -7,6 +8,12 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
+
+    # Deployment environment: "development" | "production"
+    environment: str = "development"
+
+    # CORS — comma-separated list of allowed browser origins
+    cors_origins: str = "http://localhost:5173"
 
     # Database
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5433/aktien_news"
@@ -36,6 +43,20 @@ class Settings(BaseSettings):
     # Matching thresholds
     match_high_threshold: float = 0.85
     match_min_threshold: float = 0.40
+
+    DEFAULT_JWT_SECRET: ClassVar[str] = "change-me-in-production"
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    def check_production_secrets(self) -> None:
+        """Fail fast if booting in production with insecure defaults."""
+        if self.environment == "production" and self.jwt_secret == self.DEFAULT_JWT_SECRET:
+            raise RuntimeError(
+                "JWT_SECRET is still the default value in production. "
+                "Set a strong JWT_SECRET before deploying."
+            )
 
 
 @lru_cache

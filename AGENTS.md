@@ -89,9 +89,11 @@ npm run lint     # eslint
   (trigram alias search). Created in the migration and in test setup.
 - **Every migration needs both `upgrade` and `downgrade`,** and the downgrade
   must be a safe reverse. Test up/down/up before merging.
-- **Known gap:** the test suite builds its schema with `Base.metadata.create_all`,
-  NOT `alembic upgrade head` — so model/migration drift is not caught by CI.
-  When you change a model, regenerate the migration and eyeball the diff.
+- The main suite builds its schema with `Base.metadata.create_all`, but
+  `tests/test_migration_drift.py` runs the real migrations against a throwaway
+  database and asserts the resulting tables/columns match `Base.metadata` (and
+  that the migration round-trips). **When you change a model, regenerate the
+  migration** — that test fails if the migration drifts from the models.
 
 ## Auth model
 

@@ -10,7 +10,9 @@ read it first. It is the single source of truth for how to work in this repo.
   `/verify`, etc.) rather than jumping straight to code.
 - Before declaring backend work done: `cd backend && uv run pytest -q`
   (requires the `aktien_news_test` database — see @AGENTS.md → Commands).
-- Before declaring frontend work done: `cd frontend && npm run lint && npm run build`.
+- Before declaring frontend work done: `cd frontend && npm run lint && npm run test && npm run build`.
+- CI (`.github/workflows/ci.yml`) runs the backend pytest suite and the frontend
+  lint/test/build on every PR — keep it green.
 - Phase 2 will add Claude API integration (article summaries). When that work
   starts, use the latest Claude models — default to `claude-opus-4-8` /
   `claude-sonnet-4-6`; verify model IDs and pricing against current docs rather

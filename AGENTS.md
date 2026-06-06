@@ -80,6 +80,7 @@ npm install
 npm run dev      # :5173, proxies API to :8000
 npm run build    # tsc -b && vite build
 npm run lint     # eslint
+npm run test     # vitest run (jsdom). npm run test:watch for watch mode
 ```
 
 ## Database & migrations
@@ -123,9 +124,23 @@ Confidence per stock, highest wins:
 `pending`; else dropped. `persist_matches` is idempotent and admin-safe: it
 never resurrects a `rejected` link and only upgrades `pending → linked`.
 
+## CI
+
+`.github/workflows/ci.yml` runs on every push to `main` and every PR:
+- **backend** job: spins up a Postgres 16 service, `uv sync`, creates the test
+  DB, runs `pytest`. Override the DB via `TEST_DATABASE_URL` (env var beats
+  `.env`).
+- **frontend** job: `npm ci`, then `lint`, `test`, `build`.
+
+Keep both green — `npm run lint` is a hard gate, so frontend work must lint
+clean (no new eslint errors).
+
 ## Testing conventions
 
-- pytest + pytest-asyncio (`asyncio_mode = "auto"` — no `@pytest.mark.asyncio`).
+- Backend: pytest + pytest-asyncio (`asyncio_mode = "auto"` — no `@pytest.mark.asyncio`).
+- Frontend: Vitest + React Testing Library (jsdom). Test files are `*.test.ts(x)`
+  beside the code; they're excluded from the production `tsc` build. Shared
+  setup (jest-dom matchers, cleanup) is in `src/test/setup.ts`.
 - **Tests never call live external APIs.** Use fixtures in `tests/fixtures/`.
 - App boots without API keys; key-dependent ingestion jobs are skipped, not
   errors. Keep this true.

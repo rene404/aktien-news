@@ -1,0 +1,7 @@
+[
+  {"symbol": "AAPL", "description": "Apple Inc.", "displaySymbol": "AAPL", "type": "Common Stock"},
+  {"symbol": "MSFT", "description": "Microsoft Corporation", "displaySymbol": "MSFT", "type": "Common Stock"},
+  {"symbol": "TSLA", "description": "Tesla Inc", "displaySymbol": "TSLA", "type": "Common Stock"},
+  {"symbol": "SPY", "description": "SPDR S&P 500 ETF Trust", "displaySymbol": "SPY", "type": "ETP"},
+  {"symbol": "", "description": "Broken Row No Symbol", "displaySymbol": "", "type": "Common Stock"}
+]

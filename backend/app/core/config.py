@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # Symbol universe scope
     exchanges: str = "US"  # Finnhub US covers NASDAQ + NYSE
 
+    # Background ingestion scheduler
+    enable_scheduler: bool = True
+
     # Matching thresholds
     match_high_threshold: float = 0.85
     match_min_threshold: float = 0.40

@@ -1,0 +1,22 @@
+[
+  {
+    "category": "company",
+    "datetime": 1696000000,
+    "headline": "Apple Inc. unveils new iPhone lineup",
+    "id": 111,
+    "related": "AAPL",
+    "source": "Reuters",
+    "summary": "Apple announced its latest iPhone models today.",
+    "url": "https://example.com/finnhub/apple-iphone"
+  },
+  {
+    "category": "company",
+    "datetime": 0,
+    "headline": "",
+    "id": 222,
+    "related": "MSFT",
+    "source": "CNBC",
+    "summary": "Row with no headline should be skipped.",
+    "url": "https://example.com/finnhub/skip"
+  }
+]

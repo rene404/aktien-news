@@ -17,6 +17,7 @@ dependencies = [
     "feedparser>=6.0.11",
     "python-multipart>=0.0.20",
     "email-validator>=2.3.0",
+    "apscheduler>=3.11.2",
 ]
 
 [dependency-groups]

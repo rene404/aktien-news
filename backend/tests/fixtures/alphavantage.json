@@ -1,0 +1,18 @@
+{
+  "items": "2",
+  "feed": [
+    {
+      "title": "Tesla Inc deliveries beat expectations",
+      "url": "https://example.com/av/tsla-deliveries",
+      "time_published": "20230929T013000",
+      "summary": "Tesla reported record quarterly deliveries.",
+      "source": "Benzinga"
+    },
+    {
+      "title": "",
+      "url": "https://example.com/av/skip",
+      "time_published": "20230929T020000",
+      "summary": "Empty title -> skipped"
+    }
+  ]
+}

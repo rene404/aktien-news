@@ -37,6 +37,13 @@ class Settings(BaseSettings):
     # Symbol universe scope
     exchanges: str = "US"  # Finnhub US covers NASDAQ + NYSE
 
+    # AI summaries via OpenRouter (provider-neutral; switch models via config)
+    openrouter_api_key: str = ""
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    summarize_model: str = ""  # required, e.g. "anthropic/claude-haiku-4.5"
+    summarize_enabled: bool = True
+    summarize_batch_size: int = 20
+
     # Background ingestion scheduler
     enable_scheduler: bool = True
 
@@ -49,6 +56,16 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def summarize_configured(self) -> bool:
+        """True only when summarization can actually run: enabled + key + model.
+        When False, the summarize job logs-and-skips (app still boots)."""
+        return bool(
+            self.summarize_enabled
+            and self.openrouter_api_key
+            and self.summarize_model
+        )
 
     def check_production_secrets(self) -> None:
         """Fail fast if booting in production with insecure defaults."""

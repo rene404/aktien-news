@@ -11,6 +11,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.core.config import settings
 from app.core.db import SessionLocal
+from app.services.ai.client import summarize_article
+from app.services.ai.summarize import summarize_pending
 from app.services.ingest.runner import run_finnhub, run_rss_feeds
 from app.services.symbol_loader import refresh_symbols
 
@@ -51,9 +53,21 @@ async def job_finnhub_news() -> None:
                 logger.warning("finnhub news failed for %s: %s", symbol, exc)
 
 
+async def job_summarize() -> None:
+    if not settings.summarize_configured:
+        logger.info("skip summarize: OPENROUTER_API_KEY/SUMMARIZE_MODEL not set")
+        return
+    async with SessionLocal() as session:
+        result = await summarize_pending(
+            session, summarize_article, settings.summarize_batch_size
+        )
+        logger.info("summarize: %s", result)
+
+
 def build_scheduler() -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler(timezone="UTC")
     scheduler.add_job(job_refresh_symbols, "interval", hours=24, id="symbol_refresh")
     scheduler.add_job(job_rss, "interval", minutes=15, id="rss_ingest")
     scheduler.add_job(job_finnhub_news, "interval", minutes=30, id="finnhub_news")
+    scheduler.add_job(job_summarize, "interval", minutes=10, id="summarize")
     return scheduler

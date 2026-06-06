@@ -59,6 +59,18 @@ async def test_news_detail(client: AsyncClient, session: AsyncSession):
     body = resp.json()
     assert body["title"] == "Apple linked story"
     assert any(s["symbol"] == "AAPL" for s in body["stocks"])
+    assert body["summary"] is None  # not yet summarized
+
+
+async def test_news_detail_includes_summary(client: AsyncClient, session: AsyncSession):
+    aapl, linked, _ = await _seed_with_news(session)
+    linked.summary = "A concise AI summary."
+    linked.summary_status = "done"
+    await session.commit()
+
+    resp = await client.get(f"/news/{linked.id}")
+    assert resp.status_code == 200
+    assert resp.json()["summary"] == "A concise AI summary."
 
 
 async def test_news_detail_unknown_404(client: AsyncClient, session: AsyncSession):

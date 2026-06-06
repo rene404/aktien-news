@@ -39,5 +39,6 @@ async def news_detail(
         "description": news.description,
         "source_type": news.source_type,
         "published_at": news.published_at,
+        "summary": news.summary,
         "stocks": stocks,
     }

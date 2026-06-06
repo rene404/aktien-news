@@ -31,4 +31,5 @@ class NewsDetail(BaseModel):
     description: str | None
     source_type: str
     published_at: datetime | None
+    summary: str | None
     stocks: list[NewsStockRef]

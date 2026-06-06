@@ -17,6 +17,7 @@ from app.core.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    settings.check_production_secrets()
     scheduler = None
     if settings.enable_scheduler:
         from app.workers.scheduler import build_scheduler
@@ -34,7 +35,7 @@ app = FastAPI(title="Aktien News API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

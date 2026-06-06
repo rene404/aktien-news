@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import News
@@ -11,7 +12,9 @@ async def upsert_article(
     """Insert an article keyed by URL. Returns (news, created).
 
     Dedupe is by URL: re-ingesting the same URL returns the existing row and
-    does not create a duplicate.
+    does not create a duplicate. The insert runs in a savepoint so a concurrent
+    inserter winning the race (unique violation on News.url) is handled by
+    returning the now-existing row rather than aborting the whole batch.
     """
     if not raw.url or not raw.title:
         raise ValueError("article requires url and title")
@@ -28,6 +31,13 @@ async def upsert_article(
         source_id=raw.source_id,
         published_at=raw.published_at,
     )
-    session.add(news)
-    await session.flush()
+    try:
+        async with session.begin_nested():
+            session.add(news)
+            await session.flush()
+    except IntegrityError:
+        existing = await session.scalar(select(News).where(News.url == raw.url))
+        if existing is None:
+            raise
+        return existing, False
     return news, True

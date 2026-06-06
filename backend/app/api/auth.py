@@ -1,3 +1,5 @@
+import uuid
+
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,6 +22,7 @@ from app.schemas.auth import (
     UserOut,
 )
 from app.services import users
+from app.services import watchlists
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -29,6 +32,7 @@ async def register(body: RegisterRequest, session: AsyncSession = Depends(get_se
     if await users.get_by_email(session, body.email):
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
     user = await users.create_user(session, body.email, body.password)
+    await watchlists.get_or_create_default(session, user.id)
     await session.commit()
     return user
 
@@ -46,15 +50,25 @@ async def login(body: LoginRequest, session: AsyncSession = Depends(get_session)
 
 
 @router.post("/refresh", response_model=AccessTokenResponse)
-async def refresh(body: RefreshRequest):
+async def refresh(body: RefreshRequest, session: AsyncSession = Depends(get_session)):
     try:
         payload = decode_token(body.refresh_token)
     except jwt.InvalidTokenError:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid refresh token")
     if payload.get("type") != "refresh":
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not a refresh token")
+    try:
+        user_id = uuid.UUID(payload["sub"])
+    except (KeyError, ValueError):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid refresh token")
+    # Re-read the user so a revoked/demoted/deleted account can't keep minting
+    # access tokens off a still-valid refresh token. Role comes from the DB,
+    # never from the (potentially stale) token claim.
+    user = await users.get_by_id(session, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
     return AccessTokenResponse(
-        access_token=create_access_token(payload["sub"], payload["role"])
+        access_token=create_access_token(str(user.id), user.role)
     )
 
 

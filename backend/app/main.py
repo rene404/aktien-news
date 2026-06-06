@@ -3,7 +3,15 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, health, news, search, watchlists
+from app.api import (
+    admin_feeds,
+    admin_review,
+    auth,
+    health,
+    news,
+    search,
+    watchlists,
+)
 from app.core.config import settings
 
 
@@ -37,3 +45,5 @@ app.include_router(auth.router)
 app.include_router(search.router)
 app.include_router(news.router)
 app.include_router(watchlists.router)
+app.include_router(admin_feeds.router)
+app.include_router(admin_review.router)

@@ -71,8 +71,15 @@ docker compose up -d --build                      # db + api (:8090) [+ worker, 
 docker compose --profile test run --rm backend-test                       # go test ./...
 docker compose --profile test run --rm backend-test go test ./internal/httpapi/
 docker compose --profile test run --rm backend-test sh -c "go vet ./... && go test ./..."
+docker compose --profile tools run --rm sqlc      # regenerate internal/store/db
+docker compose --profile tools run --rm sqlc diff # CI: generated code must be current
 docker compose --profile test down -v             # clean up incl. volumes
 ```
+
+- Schema changes: add a new goose file in `internal/store/migrations/`
+  (with `-- +goose Down`), then regenerate sqlc. Never edit an applied migration.
+- `go mod tidy` fails behind the corporate firewall on goose's test-only
+  dependency (`modernc.org/sqlite`); use `go mod tidy -e` locally.
 
 Host ports: Postgres 5433, API `${API_PORT:-8090}` (8080 is taken on the dev box).
 

@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: sqlc generated code is up to date
+        run: docker compose --profile tools run --rm sqlc diff
       - name: go vet + go test (in the same container as locally)
         run: docker compose --profile test run --rm backend-test sh -c "go vet ./... && go test ./..."
       - name: build api image

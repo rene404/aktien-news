@@ -48,6 +48,15 @@ services:
         condition: service_healthy
     command: ["go", "test", "./..."]
 
+  # Regenerates internal/store/db from migrations + queries.
+  sqlc:
+    profiles: ["tools"]
+    image: sqlc/sqlc:1.31.1
+    working_dir: /src/internal/store
+    volumes:
+      - ./backend:/src
+    command: ["generate"]
+
 volumes:
   pgdata:
   gomod:

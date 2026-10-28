@@ -8,7 +8,7 @@ Go und Node sind lokal nicht installiert; die ganze Toolchain läuft in Docker.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/httpapi/` · `docker compose up -d --build api && curl -s localhost:8090/healthz`
   Done: Test grün, curl liefert `{"status":"ok"}`.
 
-- [ ] **2. Schema-Migration + Store + Roundtrip-Test**
+- [x] **2. Schema-Migration + Store + Roundtrip-Test**
   Files: `backend/internal/store/migrations/00001_init.sql`, `backend/internal/store/migrate.go`, `backend/internal/store/sqlc.yaml`, `backend/internal/store/queries/articles.sql`, `backend/internal/store/queries/catalog.sql`, `backend/internal/store/db/` (sqlc), `backend/internal/store/migrate_test.go`, `backend/internal/store/testdb/testdb.go`
   Command: `docker compose --profile test run --rm backend-test go test ./internal/store/`
   Done: up → down → up grün, Insert/Select-Smoke-Test grün, doppeltes `(source_id, external_id)` wird abgelehnt.

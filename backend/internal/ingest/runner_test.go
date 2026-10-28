@@ -1,0 +1,224 @@
+package ingest_test
+
+import (
+	"context"
+	"errors"
+	"os"
+	"testing"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/rene404/aktien-news/backend/internal/catalog"
+	"github.com/rene404/aktien-news/backend/internal/ingest"
+	"github.com/rene404/aktien-news/backend/internal/ingest/finanznachrichten"
+	"github.com/rene404/aktien-news/backend/internal/store/testdb"
+	"github.com/rene404/aktien-news/backend/seed"
+)
+
+const (
+	urlAdhoc = "https://www.finanznachrichten.de/rss-aktien-adhoc/"
+	urlDAX   = "https://www.finanznachrichten.de/rss-germany-40-nachrichten-1"
+	urlATX   = "https://www.finanznachrichten.de/rss-austria-20-nachrichten-37"
+	urlUSA   = "https://www.finanznachrichten.de/rss-nachrichten-aktien-usa"
+)
+
+type fakeFetcher struct {
+	bodies map[string][]byte
+	errs   map[string]error
+	calls  map[string]int
+}
+
+func (f *fakeFetcher) Fetch(_ context.Context, url string) ([]byte, error) {
+	f.calls[url]++
+	if err := f.errs[url]; err != nil {
+		return nil, err
+	}
+	if b, ok := f.bodies[url]; ok {
+		return b, nil
+	}
+	return nil, errors.New("unexpected url " + url)
+}
+
+func readFixture(t *testing.T, name string) []byte {
+	t.Helper()
+	b, err := os.ReadFile("finanznachrichten/testdata/" + name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
+type clock struct{ now time.Time }
+
+func (c *clock) Now() time.Time { return c.now }
+
+func newRunner(t *testing.T) (*ingest.Runner, *pgxpool.Pool, *fakeFetcher, *clock) {
+	t.Helper()
+	ctx := context.Background()
+	pool := testdb.New(t)
+	if err := catalog.Seed(ctx, pool, seed.FS); err != nil {
+		t.Fatal(err)
+	}
+	f := &fakeFetcher{
+		bodies: map[string][]byte{
+			urlAdhoc: readFixture(t, "adhoc.xml"),
+			urlATX:   readFixture(t, "empty.xml"),
+			urlUSA:   readFixture(t, "broken.xml"),
+		},
+		errs:  map[string]error{urlDAX: errors.New("connection reset")},
+		calls: map[string]int{},
+	}
+	c := &clock{now: time.Date(2026, 10, 28, 12, 0, 0, 0, time.UTC)}
+	r := &ingest.Runner{
+		Pool:    pool,
+		Fetcher: f,
+		Parsers: map[string]ingest.Parser{"finanznachrichten": finanznachrichten.Parse},
+		Now:     c.Now,
+	}
+	return r, pool, f, c
+}
+
+type runRow struct {
+	key     string
+	status  string
+	fetched int
+	new     int
+	err     *string
+}
+
+func runs(t *testing.T, pool *pgxpool.Pool) map[string][]runRow {
+	t.Helper()
+	rows, err := pool.Query(context.Background(), `
+		SELECT s.key, r.status::text, r.fetched, r.new, r.error
+		FROM ingest_runs r JOIN sources s ON s.id = r.source_id ORDER BY r.id`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	out := map[string][]runRow{}
+	for rows.Next() {
+		var r runRow
+		if err := rows.Scan(&r.key, &r.status, &r.fetched, &r.new, &r.err); err != nil {
+			t.Fatal(err)
+		}
+		out[r.key] = append(out[r.key], r)
+	}
+	return out
+}
+
+func count(t *testing.T, pool *pgxpool.Pool, sql string) int {
+	t.Helper()
+	var n int
+	if err := pool.QueryRow(context.Background(), sql).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	return n
+}
+
+func TestRunDueIsolatesFailingSources(t *testing.T) {
+	r, pool, _, _ := newRunner(t)
+	if err := r.RunDue(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	got := runs(t, pool)
+	check := func(key, status string, fetched, new int) {
+		t.Helper()
+		if len(got[key]) != 1 {
+			t.Fatalf("%s: %d runs, want 1", key, len(got[key]))
+		}
+		r := got[key][0]
+		if r.status != status || r.fetched != fetched || r.new != new {
+			t.Errorf("%s: %+v, want status=%s fetched=%d new=%d", key, r, status, fetched, new)
+		}
+		if (status == "failed") != (r.err != nil) {
+			t.Errorf("%s: error = %v for status %s", key, r.err, status)
+		}
+	}
+	check("fn_adhoc", "ok", 10, 10)
+	check("fn_dax", "failed", 0, 0) // fetch error
+	check("fn_atx", "ok", 0, 0)     // empty feed
+	check("fn_usa", "failed", 0, 0) // parse error
+
+	if n := count(t, pool, "SELECT count(*) FROM articles"); n != 10 {
+		t.Errorf("%d articles, want 10", n)
+	}
+	// The Mercedes-Benz ad-hoc item is linked via its issuer.
+	n := count(t, pool, `
+		SELECT count(*) FROM article_entities e
+		JOIN listings l ON l.company_id = e.company_id
+		WHERE l.isin = 'DE0007100000' AND e.status = 'linked' AND e.method = 'issuer'`)
+	if n != 1 {
+		t.Errorf("mercedes links = %d, want 1", n)
+	}
+}
+
+func TestRunDueRespectsFetchInterval(t *testing.T) {
+	r, pool, f, c := newRunner(t)
+	ctx := context.Background()
+	if err := r.RunDue(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	c.now = c.now.Add(9 * time.Minute) // fetch_interval is 10 min, also after failures
+	if err := r.RunDue(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if f.calls[urlAdhoc] != 1 || f.calls[urlDAX] != 1 {
+		t.Fatalf("refetched too early: %v", f.calls)
+	}
+
+	c.now = c.now.Add(2 * time.Minute)
+	if err := r.RunDue(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if f.calls[urlAdhoc] != 2 {
+		t.Fatalf("adhoc calls = %d, want 2", f.calls[urlAdhoc])
+	}
+	adhoc := runs(t, pool)["fn_adhoc"]
+	if len(adhoc) != 2 || adhoc[1].status != "ok" || adhoc[1].fetched != 10 || adhoc[1].new != 0 {
+		t.Fatalf("second adhoc run = %+v, want ok fetched=10 new=0", adhoc)
+	}
+	if n := count(t, pool, "SELECT count(*) FROM articles"); n != 10 {
+		t.Errorf("%d articles after refetch, want 10", n)
+	}
+}
+
+func TestRunDueSkipsDisabledAndUnknownParser(t *testing.T) {
+	r, pool, f, _ := newRunner(t)
+	ctx := context.Background()
+	if _, err := pool.Exec(ctx, `UPDATE sources SET enabled = false WHERE key = 'fn_dax'`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE sources SET parser = 'nope' WHERE key = 'fn_atx'`); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.RunDue(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	got := runs(t, pool)
+	if len(got["fn_dax"]) != 0 || f.calls[urlDAX] != 0 {
+		t.Errorf("disabled source ran: %+v", got["fn_dax"])
+	}
+	if len(got["fn_atx"]) != 1 || got["fn_atx"][0].status != "skipped" || f.calls[urlATX] != 0 {
+		t.Errorf("unknown parser: runs=%+v calls=%d, want one skipped run and no fetch", got["fn_atx"], f.calls[urlATX])
+	}
+}
+
+func TestRunDueRecoversFromParserPanic(t *testing.T) {
+	r, pool, _, _ := newRunner(t)
+	r.Parsers["finanznachrichten"] = func([]byte) ([]ingest.RawArticle, error) { panic("boom") }
+	if err := r.RunDue(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	for key, rs := range runs(t, pool) {
+		if key == "fn_dax" {
+			continue // fails at fetch, before the parser
+		}
+		if len(rs) != 1 || rs[0].status != "failed" {
+			t.Errorf("%s: %+v, want one failed run", key, rs)
+		}
+	}
+}

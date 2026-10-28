@@ -1,14 +1,14 @@
 -- name: UpsertSource :one
-INSERT INTO sources (key, name, kind, market, url, weight, fetch_interval, text_policy, terms_url)
+INSERT INTO sources (key, name, kind, market, url, parser, weight, fetch_interval, text_policy, terms_url)
 VALUES (
-    @key, @name, @kind, @market, @url,
+    @key, @name, @kind, @market, @url, @parser,
     COALESCE(sqlc.narg('weight')::numeric, 0.50),
     COALESCE(sqlc.narg('fetch_interval')::interval, '10 minutes'),
     COALESCE(sqlc.narg('text_policy')::text_policy, 'none'),
     sqlc.narg('terms_url')
 )
 ON CONFLICT (key) DO UPDATE
-SET name = EXCLUDED.name, kind = EXCLUDED.kind, market = EXCLUDED.market, url = EXCLUDED.url,
+SET name = EXCLUDED.name, kind = EXCLUDED.kind, market = EXCLUDED.market, url = EXCLUDED.url, parser = EXCLUDED.parser,
     weight = EXCLUDED.weight, fetch_interval = EXCLUDED.fetch_interval,
     text_policy = EXCLUDED.text_policy, terms_url = EXCLUDED.terms_url
 RETURNING *;

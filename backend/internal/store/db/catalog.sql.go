@@ -61,7 +61,7 @@ func (q *Queries) CompanyByTicker(ctx context.Context, arg CompanyByTickerParams
 }
 
 const getSourceByKey = `-- name: GetSourceByKey :one
-SELECT id, key, name, kind, market, url, weight, enabled, fetch_interval, text_policy, tdm_reserved, tdm_checked_at, terms_url, notes, created_at FROM sources WHERE key = $1
+SELECT id, key, name, kind, market, url, weight, enabled, fetch_interval, text_policy, tdm_reserved, tdm_checked_at, terms_url, notes, created_at, parser FROM sources WHERE key = $1
 `
 
 func (q *Queries) GetSourceByKey(ctx context.Context, key string) (Source, error) {
@@ -83,6 +83,7 @@ func (q *Queries) GetSourceByKey(ctx context.Context, key string) (Source, error
 		&i.TermsUrl,
 		&i.Notes,
 		&i.CreatedAt,
+		&i.Parser,
 	)
 	return i, err
 }
@@ -190,19 +191,19 @@ func (q *Queries) UpsertListing(ctx context.Context, arg UpsertListingParams) (i
 }
 
 const upsertSource = `-- name: UpsertSource :one
-INSERT INTO sources (key, name, kind, market, url, weight, fetch_interval, text_policy, terms_url)
+INSERT INTO sources (key, name, kind, market, url, parser, weight, fetch_interval, text_policy, terms_url)
 VALUES (
-    $1, $2, $3, $4, $5,
-    COALESCE($6::numeric, 0.50),
-    COALESCE($7::interval, '10 minutes'),
-    COALESCE($8::text_policy, 'none'),
-    $9
+    $1, $2, $3, $4, $5, $6,
+    COALESCE($7::numeric, 0.50),
+    COALESCE($8::interval, '10 minutes'),
+    COALESCE($9::text_policy, 'none'),
+    $10
 )
 ON CONFLICT (key) DO UPDATE
-SET name = EXCLUDED.name, kind = EXCLUDED.kind, market = EXCLUDED.market, url = EXCLUDED.url,
+SET name = EXCLUDED.name, kind = EXCLUDED.kind, market = EXCLUDED.market, url = EXCLUDED.url, parser = EXCLUDED.parser,
     weight = EXCLUDED.weight, fetch_interval = EXCLUDED.fetch_interval,
     text_policy = EXCLUDED.text_policy, terms_url = EXCLUDED.terms_url
-RETURNING id, key, name, kind, market, url, weight, enabled, fetch_interval, text_policy, tdm_reserved, tdm_checked_at, terms_url, notes, created_at
+RETURNING id, key, name, kind, market, url, weight, enabled, fetch_interval, text_policy, tdm_reserved, tdm_checked_at, terms_url, notes, created_at, parser
 `
 
 type UpsertSourceParams struct {
@@ -211,6 +212,7 @@ type UpsertSourceParams struct {
 	Kind          SourceKind
 	Market        string
 	Url           string
+	Parser        string
 	Weight        pgtype.Numeric
 	FetchInterval pgtype.Interval
 	TextPolicy    *TextPolicy
@@ -224,6 +226,7 @@ func (q *Queries) UpsertSource(ctx context.Context, arg UpsertSourceParams) (Sou
 		arg.Kind,
 		arg.Market,
 		arg.Url,
+		arg.Parser,
 		arg.Weight,
 		arg.FetchInterval,
 		arg.TextPolicy,
@@ -246,6 +249,7 @@ func (q *Queries) UpsertSource(ctx context.Context, arg UpsertSourceParams) (Sou
 		&i.TermsUrl,
 		&i.Notes,
 		&i.CreatedAt,
+		&i.Parser,
 	)
 	return i, err
 }

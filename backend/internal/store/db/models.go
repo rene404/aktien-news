@@ -415,4 +415,5 @@ type Source struct {
 	TermsUrl      *string
 	Notes         *string
 	CreatedAt     time.Time
+	Parser        string
 }

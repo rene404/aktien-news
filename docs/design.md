@@ -171,6 +171,11 @@ cluster_id → clusters, issuer_hint null (vom Feed geliefertes Emittentenfeld)`
 status (linked|pending|rejected), decided_at, decided_by (engine|admin)`
 — „aktueller Status“ = jüngste Zeile pro `(article_id, company_id)` mit `decided_at <= as_of`.
 
+**article_links** (Projektion, nur lesen)
+`article_id, company_id (pk), status, decided_at, entity_id`
+— jüngste Zeile aus `article_entities`, gepflegt per `AFTER INSERT`-Trigger in derselben Transaktion.
+Für „Status jetzt“ (öffentliche Liste); `as_of`-Abfragen lesen weiter `article_entities`.
+
 **classifications** (append-only)
 `id, article_id, company_id, event_type, sentiment numeric(-1..1), confidence numeric(0..1),
 novelty numeric(0..1), model, prompt_version, classified_at`

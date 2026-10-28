@@ -7,7 +7,58 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const companyByISIN = `-- name: CompanyByISIN :one
+SELECT DISTINCT c.id, c.name, c.legal_name, c.lei, c.cik, c.country, c.created_at, c.slug FROM companies c
+JOIN listings l ON l.company_id = c.id
+WHERE l.isin = $1
+`
+
+func (q *Queries) CompanyByISIN(ctx context.Context, isin *string) (Company, error) {
+	row := q.db.QueryRow(ctx, companyByISIN, isin)
+	var i Company
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.LegalName,
+		&i.Lei,
+		&i.Cik,
+		&i.Country,
+		&i.CreatedAt,
+		&i.Slug,
+	)
+	return i, err
+}
+
+const companyByTicker = `-- name: CompanyByTicker :one
+SELECT c.id, c.name, c.legal_name, c.lei, c.cik, c.country, c.created_at, c.slug FROM companies c
+JOIN listings l ON l.company_id = c.id
+WHERE l.mic = $1 AND l.ticker = $2
+`
+
+type CompanyByTickerParams struct {
+	Mic    string
+	Ticker string
+}
+
+func (q *Queries) CompanyByTicker(ctx context.Context, arg CompanyByTickerParams) (Company, error) {
+	row := q.db.QueryRow(ctx, companyByTicker, arg.Mic, arg.Ticker)
+	var i Company
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.LegalName,
+		&i.Lei,
+		&i.Cik,
+		&i.Country,
+		&i.CreatedAt,
+		&i.Slug,
+	)
+	return i, err
+}
 
 const getSourceByKey = `-- name: GetSourceByKey :one
 SELECT id, key, name, kind, market, url, weight, enabled, fetch_interval, text_policy, tdm_reserved, tdm_checked_at, terms_url, notes, created_at FROM sources WHERE key = $1
@@ -36,20 +87,134 @@ func (q *Queries) GetSourceByKey(ctx context.Context, key string) (Source, error
 	return i, err
 }
 
-const upsertSource = `-- name: UpsertSource :one
-INSERT INTO sources (key, name, kind, market, url)
+const upsertAlias = `-- name: UpsertAlias :exec
+INSERT INTO company_aliases (company_id, alias, kind)
+SELECT c.id, $1, $2 FROM companies c WHERE c.slug = $3
+ON CONFLICT (company_id, alias) DO UPDATE SET kind = EXCLUDED.kind
+`
+
+type UpsertAliasParams struct {
+	Alias       string
+	Kind        string
+	CompanySlug string
+}
+
+func (q *Queries) UpsertAlias(ctx context.Context, arg UpsertAliasParams) error {
+	_, err := q.db.Exec(ctx, upsertAlias, arg.Alias, arg.Kind, arg.CompanySlug)
+	return err
+}
+
+const upsertCompany = `-- name: UpsertCompany :one
+INSERT INTO companies (slug, name, legal_name, country, lei, cik)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (slug) DO UPDATE
+SET name = EXCLUDED.name, legal_name = EXCLUDED.legal_name, country = EXCLUDED.country,
+    lei = EXCLUDED.lei, cik = EXCLUDED.cik
+RETURNING id
+`
+
+type UpsertCompanyParams struct {
+	Slug      string
+	Name      string
+	LegalName *string
+	Country   string
+	Lei       *string
+	Cik       *string
+}
+
+func (q *Queries) UpsertCompany(ctx context.Context, arg UpsertCompanyParams) (int64, error) {
+	row := q.db.QueryRow(ctx, upsertCompany,
+		arg.Slug,
+		arg.Name,
+		arg.LegalName,
+		arg.Country,
+		arg.Lei,
+		arg.Cik,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const upsertIndexMembership = `-- name: UpsertIndexMembership :exec
+INSERT INTO index_memberships (listing_id, index_key, valid_from)
+SELECT l.id, $1, $2
+FROM listings l WHERE l.mic = $3 AND l.ticker = $4
+ON CONFLICT (listing_id, index_key, valid_from) DO NOTHING
+`
+
+type UpsertIndexMembershipParams struct {
+	IndexKey  string
+	ValidFrom pgtype.Date
+	Mic       string
+	Ticker    string
+}
+
+func (q *Queries) UpsertIndexMembership(ctx context.Context, arg UpsertIndexMembershipParams) error {
+	_, err := q.db.Exec(ctx, upsertIndexMembership,
+		arg.IndexKey,
+		arg.ValidFrom,
+		arg.Mic,
+		arg.Ticker,
+	)
+	return err
+}
+
+const upsertListing = `-- name: UpsertListing :one
+INSERT INTO listings (company_id, isin, ticker, mic, currency)
 VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (mic, ticker) DO UPDATE
+SET company_id = EXCLUDED.company_id, isin = EXCLUDED.isin, currency = EXCLUDED.currency, active = true
+RETURNING id
+`
+
+type UpsertListingParams struct {
+	CompanyID int64
+	Isin      *string
+	Ticker    string
+	Mic       string
+	Currency  *string
+}
+
+func (q *Queries) UpsertListing(ctx context.Context, arg UpsertListingParams) (int64, error) {
+	row := q.db.QueryRow(ctx, upsertListing,
+		arg.CompanyID,
+		arg.Isin,
+		arg.Ticker,
+		arg.Mic,
+		arg.Currency,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const upsertSource = `-- name: UpsertSource :one
+INSERT INTO sources (key, name, kind, market, url, weight, fetch_interval, text_policy, terms_url)
+VALUES (
+    $1, $2, $3, $4, $5,
+    COALESCE($6::numeric, 0.50),
+    COALESCE($7::interval, '10 minutes'),
+    COALESCE($8::text_policy, 'none'),
+    $9
+)
 ON CONFLICT (key) DO UPDATE
-SET name = EXCLUDED.name, kind = EXCLUDED.kind, market = EXCLUDED.market, url = EXCLUDED.url
+SET name = EXCLUDED.name, kind = EXCLUDED.kind, market = EXCLUDED.market, url = EXCLUDED.url,
+    weight = EXCLUDED.weight, fetch_interval = EXCLUDED.fetch_interval,
+    text_policy = EXCLUDED.text_policy, terms_url = EXCLUDED.terms_url
 RETURNING id, key, name, kind, market, url, weight, enabled, fetch_interval, text_policy, tdm_reserved, tdm_checked_at, terms_url, notes, created_at
 `
 
 type UpsertSourceParams struct {
-	Key    string
-	Name   string
-	Kind   SourceKind
-	Market string
-	Url    string
+	Key           string
+	Name          string
+	Kind          SourceKind
+	Market        string
+	Url           string
+	Weight        pgtype.Numeric
+	FetchInterval pgtype.Interval
+	TextPolicy    *TextPolicy
+	TermsUrl      *string
 }
 
 func (q *Queries) UpsertSource(ctx context.Context, arg UpsertSourceParams) (Source, error) {
@@ -59,6 +224,10 @@ func (q *Queries) UpsertSource(ctx context.Context, arg UpsertSourceParams) (Sou
 		arg.Kind,
 		arg.Market,
 		arg.Url,
+		arg.Weight,
+		arg.FetchInterval,
+		arg.TextPolicy,
+		arg.TermsUrl,
 	)
 	var i Source
 	err := row.Scan(

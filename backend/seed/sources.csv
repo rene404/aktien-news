@@ -1,0 +1,5 @@
+key,name,kind,market,url,weight,fetch_interval_minutes,text_policy,terms_url
+fn_adhoc,FinanzNachrichten.de Ad hoc-Mitteilungen,adhoc,MULTI,https://www.finanznachrichten.de/rss-aktien-adhoc/,1.00,10,none,https://www.finanznachrichten.de/service/rss.htm
+fn_dax,FinanzNachrichten.de DAX,news_api,DE,https://www.finanznachrichten.de/rss-germany-40-nachrichten-1,0.60,10,none,https://www.finanznachrichten.de/service/rss.htm
+fn_atx,FinanzNachrichten.de Österreich 20 (ATX),news_api,AT,https://www.finanznachrichten.de/rss-austria-20-nachrichten-37,0.60,10,none,https://www.finanznachrichten.de/service/rss.htm
+fn_usa,FinanzNachrichten.de Aktien USA,news_api,US,https://www.finanznachrichten.de/rss-nachrichten-aktien-usa,0.60,10,none,https://www.finanznachrichten.de/service/rss.htm

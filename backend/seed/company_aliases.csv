@@ -1,0 +1,215 @@
+company_slug,alias,kind
+erste-group,Erste,core_name
+erste-group,Erste Group Bank AG,issuer_name
+omv,OMV,core_name
+omv,OMV Aktiengesellschaft,issuer_name
+omv,OMV AG,issuer_name
+raiffeisen-bank-international,Raiffeisen Bank International,core_name
+raiffeisen-bank-international,RBI,brand
+raiffeisen-bank-international,Raiffeisen Bank International AG,issuer_name
+bawag-group,BAWAG,core_name
+bawag-group,BAWAG P.S.K.,former_name
+bawag-group,BAWAG Group AG,issuer_name
+strabag,Strabag,core_name
+strabag,STRABAG SE,issuer_name
+verbund,Verbund,core_name
+verbund,VERBUND AG,issuer_name
+vienna-insurance-group,Vienna Insurance,core_name
+vienna-insurance-group,VIG,brand
+vienna-insurance-group,Wiener Städtische,former_name
+vienna-insurance-group,VIENNA INSURANCE GROUP AG Wiener Versicherung Gruppe,issuer_name
+vienna-insurance-group,Vienna Insurance Group AG,issuer_name
+andritz,Andritz,core_name
+andritz,ANDRITZ AG,issuer_name
+ats,AT&S,brand
+ats,Austria Technologie & Systemtechnik,core_name
+ats,AT & S Austria Technologie & Systemtechnik Aktiengesellschaft,issuer_name
+ats,AT&S Austria Technologie & Systemtechnik AG,issuer_name
+voestalpine,voestalpine,core_name
+voestalpine,voestalpine AG,issuer_name
+uniqa,UNIQA,core_name
+uniqa,UNIQA Insurance Group AG,issuer_name
+evn,EVN,core_name
+evn,EVN AG,issuer_name
+oesterreichische-post,Österreichische Post,core_name
+oesterreichische-post,Österreichische Post AG,issuer_name
+oesterreichische-post,Österreichische Post Aktiengesellschaft,issuer_name
+ca-immo,CA Immo,core_name
+ca-immo,CA Immobilien Anlagen AG,issuer_name
+ca-immo,CA Immobilien Anlagen Aktiengesellschaft,issuer_name
+do-co,DO & CO,core_name
+do-co,DO & CO Restaurants & Catering AG,former_name
+do-co,DO & CO Aktiengesellschaft,issuer_name
+do-co,DO & CO AG,issuer_name
+wienerberger,Wienerberger,core_name
+wienerberger,Wienerberger AG,issuer_name
+mayr-melnhof,Mayr-Melnhof,core_name
+mayr-melnhof,Mayr-Melnhof Karton AG,issuer_name
+porr,PORR,core_name
+porr,Allgemeine Baugesellschaft - A. Porr Aktiengesellschaft,former_name
+porr,PORR AG,issuer_name
+palfinger,Palfinger,core_name
+palfinger,PALFINGER AG,issuer_name
+lenzing,Lenzing,core_name
+lenzing,Lenzing AG,issuer_name
+lenzing,Lenzing Aktiengesellschaft,issuer_name
+adidas,adidas,core_name
+adidas,adidas AG,issuer_name
+airbus,Airbus,core_name
+airbus,EADS,former_name
+airbus,Airbus Group,former_name
+airbus,Airbus SE,issuer_name
+allianz,Allianz,core_name
+allianz,Allianz SE,issuer_name
+basf,BASF,core_name
+basf,BASF SE,issuer_name
+bayer,Bayer,core_name
+bayer,Bayer AG,issuer_name
+bayer,Bayer Aktiengesellschaft,issuer_name
+beiersdorf,Beiersdorf,core_name
+beiersdorf,Nivea,brand
+beiersdorf,Beiersdorf AG,issuer_name
+beiersdorf,Beiersdorf Aktiengesellschaft,issuer_name
+bmw,BMW,core_name
+bmw,BMW Group,brand
+bmw,Bayerische Motoren Werke AG,issuer_name
+bmw,Bayerische Motoren Werke Aktiengesellschaft,issuer_name
+brenntag,Brenntag,core_name
+brenntag,Brenntag SE,issuer_name
+commerzbank,Commerzbank,core_name
+commerzbank,Commerzbank AG,issuer_name
+commerzbank,Commerzbank Aktiengesellschaft,issuer_name
+continental,Conti,brand
+continental,Continental AG,issuer_name
+continental,Continental Aktiengesellschaft,issuer_name
+daimler-truck,Daimler Truck,core_name
+daimler-truck,Daimler Truck Holding AG,issuer_name
+deutsche-bank,Deutsche Bank,core_name
+deutsche-bank,Deutsche Bank AG,issuer_name
+deutsche-bank,Deutsche Bank Aktiengesellschaft,issuer_name
+deutsche-boerse,Deutsche Börse,core_name
+deutsche-boerse,Deutsche Börse Group,brand
+deutsche-boerse,Deutsche Börse AG,issuer_name
+deutsche-telekom,Deutsche Telekom,core_name
+deutsche-telekom,Deutsche Telekom AG,issuer_name
+dhl,DHL,core_name
+dhl,DHL Group,brand
+dhl,Deutsche Post AG,former_name
+dhl,Deutsche Post DHL Group,former_name
+dhl,DHL AG,issuer_name
+eon,E.ON,core_name
+eon,E.ON SE,issuer_name
+fresenius,Fresenius,core_name
+fresenius,Fresenius SE & Co. KGaA,issuer_name
+fresenius-medical-care,Fresenius Medical Care,core_name
+fresenius-medical-care,FMC,brand
+fresenius-medical-care,Fresenius Medical Care AG & Co. KGaA,former_name
+fresenius-medical-care,Fresenius Medical Care AG,issuer_name
+gea,GEA,core_name
+gea,GEA Group AG,issuer_name
+gea,GEA Group Aktiengesellschaft,issuer_name
+hannover-rueck,Hannover Rück,core_name
+hannover-rueck,Hannover Re,brand
+hannover-rueck,Hannover Rück SE,issuer_name
+heidelberg-materials,Heidelberg Materials,core_name
+heidelberg-materials,HeidelbergCement,former_name
+heidelberg-materials,Heidelberg Materials AG,issuer_name
+henkel,Henkel,core_name
+henkel,Henkel AG & Co. KGaA,issuer_name
+hochtief,Hochtief,core_name
+hochtief,HOCHTIEF Aktiengesellschaft,issuer_name
+hochtief,HOCHTIEF AG,issuer_name
+infineon,Infineon,core_name
+infineon,Infineon Technologies AG,issuer_name
+mercedes-benz-group,Mercedes-Benz,core_name
+mercedes-benz-group,Daimler AG,former_name
+mercedes-benz-group,DaimlerChrysler AG,former_name
+mercedes-benz-group,Mercedes-Benz Group AG,issuer_name
+merck-kgaa,Merck KGaA,core_name
+mtu-aero-engines,MTU Aero Engines,core_name
+mtu-aero-engines,MTU Aero Engines AG,issuer_name
+munich-re,Munich Re,core_name
+munich-re,Münchener Rück,brand
+munich-re,Münchener Rückversicherungs-Gesellschaft AG,issuer_name
+munich-re,Münchener Rückversicherungs-Gesellschaft Aktiengesellschaft in München,issuer_name
+qiagen,Qiagen,core_name
+qiagen,QIAGEN N.V.,issuer_name
+rheinmetall,Rheinmetall,core_name
+rheinmetall,Rheinmetall AG,issuer_name
+rwe,RWE,core_name
+rwe,RWE AG,issuer_name
+rwe,RWE Aktiengesellschaft,issuer_name
+sap,SAP,core_name
+sap,SAP SE,issuer_name
+scout24,Scout24,core_name
+scout24,ImmoScout24,brand
+scout24,Scout24 SE,issuer_name
+siemens,Siemens,core_name
+siemens,Siemens AG,issuer_name
+siemens,Siemens Aktiengesellschaft,issuer_name
+siemens-energy,Siemens Energy,core_name
+siemens-energy,Siemens Energy AG,issuer_name
+siemens-healthineers,Healthineers,core_name
+siemens-healthineers,Siemens Healthineers AG,issuer_name
+symrise,Symrise,core_name
+symrise,Symrise AG,issuer_name
+volkswagen,Volkswagen,core_name
+volkswagen,Volkswagen Group,brand
+volkswagen,Volkswagen AG,issuer_name
+volkswagen,Volkswagen Aktiengesellschaft,issuer_name
+vonovia,Vonovia,core_name
+vonovia,Deutsche Annington Immobilien SE,former_name
+vonovia,Vonovia SE,issuer_name
+zalando,Zalando,core_name
+zalando,Zalando SE,issuer_name
+apple,Apple Inc.,issuer_name
+microsoft,Microsoft,core_name
+microsoft,Microsoft Corporation,issuer_name
+microsoft,Microsoft Corp.,issuer_name
+nvidia,NVIDIA,core_name
+nvidia,NVIDIA Corporation,issuer_name
+nvidia,NVIDIA Corp.,issuer_name
+amazon,Amazon.com,brand
+amazon,Amazon Web Services,brand
+amazon,"Amazon.com, Inc.",issuer_name
+alphabet,Google,brand
+alphabet,Google Inc.,former_name
+alphabet,Alphabet Inc.,issuer_name
+meta-platforms,Meta Platforms,core_name
+meta-platforms,Facebook,former_name
+meta-platforms,"Facebook, Inc.",former_name
+meta-platforms,"Meta Platforms, Inc.",issuer_name
+tesla,Tesla,core_name
+tesla,Tesla Motors,former_name
+tesla,"Tesla, Inc.",issuer_name
+berkshire-hathaway,Berkshire Hathaway,core_name
+berkshire-hathaway,Berkshire Hathaway Inc.,issuer_name
+jpmorgan-chase,JPMorgan,core_name
+jpmorgan-chase,J.P. Morgan,brand
+jpmorgan-chase,JPMorgan Chase & Co.,issuer_name
+visa,Visa Inc.,issuer_name
+exxon-mobil,ExxonMobil,core_name
+exxon-mobil,Exxon Mobil,core_name
+exxon-mobil,Exxon,brand
+exxon-mobil,Exxon Mobil Corporation,former_name
+exxon-mobil,ExxonMobil Holdings Corporation,issuer_name
+exxon-mobil,ExxonMobil Holdings Corp.,issuer_name
+johnson-johnson,Johnson & Johnson,core_name
+johnson-johnson,J&J,brand
+walmart,Walmart,core_name
+walmart,"Wal-Mart Stores, Inc.",former_name
+walmart,Walmart Inc.,issuer_name
+procter-gamble,Procter & Gamble,core_name
+procter-gamble,P&G,brand
+procter-gamble,The Procter & Gamble Company,issuer_name
+coca-cola,Coca-Cola,core_name
+coca-cola,The Coca-Cola Company,issuer_name
+pfizer,Pfizer,core_name
+pfizer,Pfizer Inc.,issuer_name
+intel,Intel,core_name
+intel,Intel Corporation,issuer_name
+boeing,Boeing,core_name
+boeing,The Boeing Company,issuer_name
+netflix,Netflix,core_name
+netflix,"Netflix, Inc.",issuer_name
+oracle,Oracle Corporation,issuer_name

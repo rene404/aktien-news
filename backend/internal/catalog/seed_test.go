@@ -10,6 +10,7 @@ import (
 
 	"github.com/rene404/aktien-news/backend/internal/catalog"
 	"github.com/rene404/aktien-news/backend/internal/store/testdb"
+	"github.com/rene404/aktien-news/backend/seed"
 )
 
 func countRows(t *testing.T, pool *pgxpool.Pool) map[string]int {
@@ -115,7 +116,7 @@ func TestValidISIN(t *testing.T) {
 func TestCommittedSeedFilesLoad(t *testing.T) {
 	ctx := context.Background()
 	pool := testdb.New(t)
-	if err := catalog.Seed(ctx, pool, os.DirFS("../../seed")); err != nil {
+	if err := catalog.Seed(ctx, pool, seed.FS); err != nil {
 		t.Fatalf("seed/: %v", err)
 	}
 }

@@ -71,6 +71,7 @@ docker compose up -d --build                      # db + api (:8090) [+ worker, 
 docker compose --profile test run --rm backend-test                       # go test ./...
 docker compose --profile test run --rm backend-test go test ./internal/httpapi/
 docker compose --profile test run --rm backend-test sh -c "go vet ./... && go test ./..."
+docker compose --profile tools run --rm --build seed   # migrate + load backend/seed/*.csv (idempotent)
 docker compose --profile tools run --rm sqlc      # regenerate internal/store/db
 docker compose --profile tools run --rm sqlc diff # CI: generated code must be current
 docker compose --profile test down -v             # clean up incl. volumes

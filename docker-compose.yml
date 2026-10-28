@@ -31,6 +31,19 @@ services:
       db:
         condition: service_healthy
 
+  # One-shot: migrate + load master data. `docker compose run --rm seed`
+  seed:
+    profiles: ["tools"]
+    build:
+      context: ./backend
+      args:
+        CMD: seed
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/aktien_news?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+
   # Toolchain-Container: Go ist lokal nicht installiert.
   backend-test:
     profiles: ["test"]

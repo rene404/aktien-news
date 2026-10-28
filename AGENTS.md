@@ -61,6 +61,7 @@ docs/             # design, research, plans
 ## Data invariants
 
 - `classifications` and `article_entities` are append-only (no UPDATE).
+  `article_links` is their trigger-maintained "current state" projection — never write it directly.
 - `articles.ingested_at` is set by the DB on insert and never changes.
 - The matcher never resurrects a `rejected` link; it only upgrades `pending → linked`.
 - A feed-supplied ISIN is only issuer-grade for `adhoc`/`filing` sources. In news

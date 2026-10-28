@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: go vet + go test (in the same container as locally)
+        run: docker compose --profile test run --rm backend-test sh -c "go vet ./... && go test ./..."
+      - name: build api image
+        run: docker compose build api
+      - name: tear down
+        if: always()
+        run: docker compose --profile test down -v

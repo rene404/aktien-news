@@ -39,6 +39,8 @@ docs/             # design, research, plans
 
 ## Layering rules
 
+- Architecture style and patterns: `docs/design.md` §3.1–3.3 (modular monolith,
+  functional core / imperative shell, append-only temporal data).
 - Handlers and MCP tools are thin: parse → call `service` → shape response.
 - DB access only through `internal/store`. No SQL in handlers.
 - Public DTOs (`httpapi/dto.go`) are separate from store types.

@@ -349,6 +349,7 @@ type Company struct {
 	Cik       *string
 	Country   string
 	CreatedAt time.Time
+	Slug      string
 }
 
 type CompanyAlias struct {
@@ -414,4 +415,5 @@ type Source struct {
 	TermsUrl      *string
 	Notes         *string
 	CreatedAt     time.Time
+	Parser        string
 }

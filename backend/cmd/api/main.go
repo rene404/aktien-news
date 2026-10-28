@@ -11,16 +11,26 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/rene404/aktien-news/backend/internal/config"
 	"github.com/rene404/aktien-news/backend/internal/httpapi"
+	"github.com/rene404/aktien-news/backend/internal/service"
 )
 
 func main() {
 	cfg := config.Load()
 
+	pool, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
+	if err != nil {
+		slog.Error("database config", "err", err)
+		os.Exit(1)
+	}
+	defer pool.Close()
+
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           httpapi.NewRouter(),
+		Handler:           httpapi.NewRouter(service.New(pool)),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

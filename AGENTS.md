@@ -39,6 +39,8 @@ docs/             # design, research, plans
 
 ## Layering rules
 
+- Architecture style and patterns: `docs/design.md` §3.1–3.3 (modular monolith,
+  functional core / imperative shell, append-only temporal data).
 - Handlers and MCP tools are thin: parse → call `service` → shape response.
 - DB access only through `internal/store`. No SQL in handlers.
 - Public DTOs (`httpapi/dto.go`) are separate from store types.
@@ -61,16 +63,22 @@ docs/             # design, research, plans
 - `classifications` and `article_entities` are append-only (no UPDATE).
 - `articles.ingested_at` is set by the DB on insert and never changes.
 - The matcher never resurrects a `rejected` link; it only upgrades `pending → linked`.
+- A feed-supplied ISIN is only issuer-grade for `adhoc`/`filing` sources. In news
+  feeds (e.g. FN index feeds) it is a loose tag: linked only when the title
+  also names the company, otherwise pending (design §5).
 - One failing source never aborts another; failures log at WARNING and land in `ingest_runs`.
 - The stack boots without API keys; key-dependent sources are `skipped`.
 
 ## Commands (repo root)
 
 ```bash
-docker compose up -d --build                      # db + api (:8090) [+ worker, web later]
+docker compose up -d --build                      # db + api (:8090) + worker + web (:3000)
+docker compose logs -f worker                     # ingest runs (one line per source)
 docker compose --profile test run --rm backend-test                       # go test ./...
 docker compose --profile test run --rm backend-test go test ./internal/httpapi/
 docker compose --profile test run --rm backend-test sh -c "go vet ./... && go test ./..."
+docker compose --profile test run --rm web-test      # npm ci + lint + test + build
+docker compose --profile tools run --rm --build seed   # migrate + load backend/seed/*.csv (idempotent)
 docker compose --profile tools run --rm sqlc      # regenerate internal/store/db
 docker compose --profile tools run --rm sqlc diff # CI: generated code must be current
 docker compose --profile test down -v             # clean up incl. volumes
@@ -81,7 +89,7 @@ docker compose --profile test down -v             # clean up incl. volumes
 - `go mod tidy` fails behind the corporate firewall on goose's test-only
   dependency (`modernc.org/sqlite`); use `go mod tidy -e` locally.
 
-Host ports: Postgres 5433, API `${API_PORT:-8090}` (8080 is taken on the dev box).
+Host ports: Postgres 5433, API `${API_PORT:-8090}` (8080 is taken on the dev box), web `${WEB_PORT:-3000}`.
 
 ## Testing
 
@@ -93,9 +101,18 @@ Host ports: Postgres 5433, API `${API_PORT:-8090}` (8080 is taken on the dev box
 
 ## Workflow
 
-- Don't commit or push unless asked.
+- **Gitflow.** `develop` is the main working branch; `main` only receives
+  releases (`release/*`) and `hotfix/*`. Never commit directly to `main` or `develop`.
+  - Branch off `develop`: `feature/<topic>` (e.g. `feature/phase1-seed`),
+    `fix/<topic>`, `chore/<topic>`.
+  - Small commits: one TDD cycle (red → green → refactor) per commit.
+  - Merge back with `git merge --no-ff` into `develop`, one feature branch per
+    plan task; delete the branch after merging.
+- Don't push unless asked.
 - Before declaring backend work done: `go vet` + `go test` via `backend-test`.
 - Before declaring frontend work done: lint + test + build via `web-test`.
-- CI (`.github/workflows/ci.yml`) runs the same container commands — keep it green.
+- CI (`.github/workflows/ci.yml`) is switched off (manual `workflow_dispatch` only,
+  workflow disabled on GitHub). Run the `backend-test` / `web-test` containers
+  locally before merging instead.
 - LLM calls go through OpenRouter (Phase 3); verify model IDs/pricing against
   current docs, not memory.

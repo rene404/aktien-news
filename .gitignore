@@ -19,3 +19,5 @@ node_modules/
 .vscode/
 .DS_Store
 Thumbs.db
+/frontend/next-env.d.ts
+/frontend/*.tsbuildinfo

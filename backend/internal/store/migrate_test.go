@@ -145,7 +145,7 @@ func TestAppendOnlyTablesRejectUpdates(t *testing.T) {
 		t.Fatal(err)
 	}
 	var companyID int64
-	if err := pool.QueryRow(ctx, `INSERT INTO companies (name, country) VALUES ('Beispiel AG', 'DE') RETURNING id`).Scan(&companyID); err != nil {
+	if err := pool.QueryRow(ctx, `INSERT INTO companies (slug, name, country) VALUES ('beispiel', 'Beispiel AG', 'DE') RETURNING id`).Scan(&companyID); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := pool.Exec(ctx, `
@@ -174,7 +174,7 @@ func TestSentimentRangeIsChecked(t *testing.T) {
 		t.Fatal(err)
 	}
 	var companyID int64
-	if err := pool.QueryRow(ctx, `INSERT INTO companies (name, country) VALUES ('Beispiel AG', 'DE') RETURNING id`).Scan(&companyID); err != nil {
+	if err := pool.QueryRow(ctx, `INSERT INTO companies (slug, name, country) VALUES ('beispiel', 'Beispiel AG', 'DE') RETURNING id`).Scan(&companyID); err != nil {
 		t.Fatal(err)
 	}
 

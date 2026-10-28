@@ -314,6 +314,14 @@ type ArticleEntity struct {
 	DecidedBy  string
 }
 
+type ArticleLink struct {
+	ArticleID int64
+	CompanyID int64
+	Status    LinkStatus
+	DecidedAt time.Time
+	EntityID  int64
+}
+
 type ArticleText struct {
 	ArticleID  int64
 	Body       string

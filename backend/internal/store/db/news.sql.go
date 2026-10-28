@@ -72,12 +72,8 @@ func (q *Queries) ListEnabledSources(ctx context.Context) ([]ListEnabledSourcesR
 }
 
 const listNews = `-- name: ListNews :many
-WITH current_links AS (
-    SELECT DISTINCT ON (e.article_id, e.company_id) e.article_id, e.company_id, e.status
-    FROM article_entities e
-    ORDER BY e.article_id, e.company_id, e.decided_at DESC, e.id DESC
-), linked AS (
-    SELECT article_id, company_id FROM current_links WHERE status = 'linked'
+WITH linked AS (
+    SELECT article_id, company_id FROM article_links WHERE status = 'linked'
 )
 SELECT a.id, a.title, a.url, a.published_at,
        s.key AS source_key, s.name AS source_name,
@@ -130,7 +126,7 @@ type ListNewsRow struct {
 }
 
 // Public feed: articles with at least one company whose CURRENT link state
-// (newest row in the append-only article_entities) is 'linked'.
+// (article_links, the projection of the append-only article_entities) is 'linked'.
 // Keyset pagination over (published_at, id), newest first.
 func (q *Queries) ListNews(ctx context.Context, arg ListNewsParams) ([]ListNewsRow, error) {
 	rows, err := q.db.Query(ctx, listNews,

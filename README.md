@@ -13,14 +13,19 @@ Voraussetzung: Docker (mit Compose). Go und Node werden nicht lokal benötigt.
 
 ```bash
 cp .env.example .env      # optional
-docker compose up -d --build
-curl localhost:8090/healthz
+docker compose --profile tools run --rm --build seed   # Schema + Stammdaten
+docker compose up -d --build                          # db, api, worker, web
 ```
+
+- Webseite: http://localhost:3000
+- API: http://localhost:8090/api/v1/news
+- Ingest-Log: `docker compose logs -f worker`
 
 Tests:
 
 ```bash
-docker compose --profile test run --rm backend-test
+docker compose --profile test run --rm backend-test   # Go
+docker compose --profile test run --rm web-test       # Frontend: lint, test, build
 ```
 
 ## API (öffentlich, ohne Auth)

@@ -19,3 +19,15 @@ jobs:
       - name: tear down
         if: always()
         run: docker compose --profile test down -v
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: lint + test + build (in the same container as locally)
+        run: docker compose --profile test run --rm web-test
+      - name: build web image
+        run: docker compose build web
+      - name: tear down
+        if: always()
+        run: docker compose --profile test down -v

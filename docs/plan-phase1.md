@@ -33,7 +33,7 @@ Go und Node sind lokal nicht installiert; die ganze Toolchain läuft in Docker.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/ingest/` · `docker compose up -d --build worker && docker compose logs worker --tail 20`
   Done: Ein Lauf `ok` und ein Lauf `failed` sind protokolliert; ein zweiter Lauf erzeugt 0 neue Artikel; ein Live-Lauf ist im Log sichtbar.
 
-- [ ] **7. Öffentliche REST-API**
+- [x] **7. Öffentliche REST-API**
   Files: `backend/internal/service/news.go`, `backend/internal/service/news_test.go`, `backend/internal/httpapi/news.go`, `backend/internal/httpapi/news_test.go`, `backend/internal/httpapi/dto.go`, `backend/internal/httpapi/dto_test.go`, `backend/internal/store/queries/news.sql`
   Command: `docker compose --profile test run --rm backend-test go test ./internal/service/ ./internal/httpapi/`
   Done: Filter, Pagination und 400 sind getestet; pending-Links sind unsichtbar; der Rechts-Invarianten-Test (keine Felder für Text, Sentiment oder Event-Typ) ist grün.

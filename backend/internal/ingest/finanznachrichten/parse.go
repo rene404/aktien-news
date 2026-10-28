@@ -75,8 +75,8 @@ func parseDate(s string) (time.Time, bool) {
 }
 
 // Distribution prefixes of mandatory/corporate announcements, e.g.
-// "EQS-Adhoc: Lenzing AG: …", "EQS-News: …", "Adhoc: Rieter AG: …".
-var issuerTitle = regexp.MustCompile(`^(?:EQS-[^:\s]+|Adhoc|euro adhoc[^:]*):\s*([^:]+?):\s`)
+// "EQS-Adhoc: Lenzing AG: …", "PTA-DD: BAWAG Group AG: …", "Adhoc: Rieter AG: …".
+var issuerTitle = regexp.MustCompile(`^(?:(?:EQS|PTA)-[^:\s]+|Adhoc|euro adhoc[^:]*):\s*([^:]+?):\s`)
 
 // IssuerHint returns the issuer named in an announcement title, or "".
 func IssuerHint(title string) string {

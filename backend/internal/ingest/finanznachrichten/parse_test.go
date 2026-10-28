@@ -88,6 +88,9 @@ func TestIssuerHint(t *testing.T) {
 		"DAX schließt freundlich":                                    "",
 		"Analyse: Kursziel für SAP angehoben":                        "", // no second colon segment
 		"EQS-Adhoc: IVU Traffic Technologies AG: Ad-hoc | IVU: Text": "IVU Traffic Technologies AG",
+		"PTA-DD: BAWAG Group AG: Mitteilung über Eigengeschäfte":     "BAWAG Group AG",
+		"PTA-Adhoc: VAS AG: Veröffentlichung des Prüfberichts":       "VAS AG",
+		"PTA-News: Example SE: Hauptversammlung":                     "Example SE",
 	}
 	for title, want := range cases {
 		if got := finanznachrichten.IssuerHint(title); got != want {

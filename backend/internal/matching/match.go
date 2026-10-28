@@ -3,7 +3,9 @@
 // Signals (highest per company wins):
 //
 //	issuer     1.00  issuer named by the feed/title equals a known name
-//	isin       0.98  ISIN supplied by the feed or found in the title
+//	isin       0.98  issuer ISIN (ad-hoc/filing feed) or ISIN in the title
+//	isin       0.90  ISIN tagged by a news feed, company also named in the title
+//	isin       0.60  ISIN tagged by a news feed, not corroborated → review
 //	cashtag    0.95  $TICKER
 //	ticker     0.90  known ticker as an uppercase whole word, not stoplisted
 //	full_name  0.90  name incl. legal form (legal name, issuer/former names)
@@ -46,7 +48,10 @@ type CompanyEntry struct {
 type Input struct {
 	Title      string
 	IssuerHint string
-	IssuerISIN string
+	IssuerISIN string // ISIN supplied by the feed
+	// ISINIsIssuer marks IssuerISIN as the issuer of the item (ad-hoc and
+	// filing feeds). In news feeds the ISIN is only a loose tag.
+	ISINIsIssuer bool
 }
 
 type Match struct {
@@ -149,9 +154,6 @@ func (ix *Index) Match(in Input) []Match {
 		}
 	}
 
-	if in.IssuerISIN != "" {
-		consider(ix.isin[in.IssuerISIN], 0.98, "isin")
-	}
 	for _, isin := range isinRe.FindAllString(in.Title, -1) {
 		consider(ix.isin[isin], 0.98, "isin")
 	}
@@ -167,6 +169,20 @@ func (ix *Index) Match(in Input) []Match {
 
 	for _, m := range ix.nameMatches(Fold(in.Title)) {
 		consider(m.companyID, m.conf, m.method)
+	}
+
+	// Feed ISIN last: a news-feed tag only counts as strong evidence when the
+	// title itself already points at the same company.
+	if id := ix.isin[in.IssuerISIN]; in.IssuerISIN != "" && id > 0 {
+		_, named := best[id]
+		switch {
+		case in.ISINIsIssuer:
+			consider(id, 0.98, "isin")
+		case named:
+			consider(id, 0.90, "isin")
+		default:
+			consider(id, 0.60, "isin")
+		}
 	}
 
 	out := make([]Match, 0, len(best))

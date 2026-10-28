@@ -141,7 +141,12 @@ func (r *Runner) store(ctx context.Context, src db.Source, a RawArticle, index *
 			return err
 		}
 		inserted = true
-		matches := index.Match(matching.Input{Title: a.Title, IssuerHint: a.IssuerHint, IssuerISIN: a.IssuerISIN})
+		matches := index.Match(matching.Input{
+			Title:        a.Title,
+			IssuerHint:   a.IssuerHint,
+			IssuerISIN:   a.IssuerISIN,
+			ISINIsIssuer: src.Kind == db.SourceKindAdhoc || src.Kind == db.SourceKindFiling,
+		})
 		return matching.Persist(ctx, tx, art.ID, matches)
 	})
 	return inserted, err

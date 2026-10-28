@@ -63,6 +63,9 @@ docs/             # design, research, plans
 - `classifications` and `article_entities` are append-only (no UPDATE).
 - `articles.ingested_at` is set by the DB on insert and never changes.
 - The matcher never resurrects a `rejected` link; it only upgrades `pending → linked`.
+- A feed-supplied ISIN is only issuer-grade for `adhoc`/`filing` sources. In news
+  feeds (e.g. FN index feeds) it is a loose tag: linked only when the title
+  also names the company, otherwise pending (design §5).
 - One failing source never aborts another; failures log at WARNING and land in `ingest_runs`.
 - The stack boots without API keys; key-dependent sources are `skipped`.
 

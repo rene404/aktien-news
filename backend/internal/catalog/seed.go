@@ -61,13 +61,16 @@ func load(dir fs.FS) (*seedData, error) {
 		errs = append(errs, fmt.Errorf("%s:%d: %s", file, line, fmt.Sprintf(format, args...)))
 	}
 
-	err := readCSV(dir, "sources.csv", []string{"key", "name", "kind", "market", "url", "weight", "fetch_interval_minutes", "text_policy", "terms_url"},
+	err := readCSV(dir, "sources.csv", []string{"key", "name", "kind", "market", "url", "parser", "weight", "fetch_interval_minutes", "text_policy", "terms_url"},
 		func(line int, r map[string]string) {
 			if !slices.Contains(knownKinds, r["kind"]) {
 				addErr("sources.csv", line, "unknown kind %q", r["kind"])
 			}
 			if !slices.Contains(knownMarkets, r["market"]) {
 				addErr("sources.csv", line, "unknown market %q", r["market"])
+			}
+			if r["parser"] == "" {
+				addErr("sources.csv", line, "parser is required")
 			}
 			if !slices.Contains(knownPolicies, r["text_policy"]) {
 				addErr("sources.csv", line, "unknown text_policy %q", r["text_policy"])
@@ -84,7 +87,7 @@ func load(dir fs.FS) (*seedData, error) {
 			}
 			policy := db.TextPolicy(r["text_policy"])
 			d.sources = append(d.sources, db.UpsertSourceParams{
-				Key: r["key"], Name: r["name"], Kind: db.SourceKind(r["kind"]), Market: r["market"], Url: r["url"],
+				Key: r["key"], Name: r["name"], Kind: db.SourceKind(r["kind"]), Market: r["market"], Url: r["url"], Parser: r["parser"],
 				Weight:        weight,
 				FetchInterval: pgtype.Interval{Microseconds: int64(minutes) * int64(time.Minute/time.Microsecond), Valid: true},
 				TextPolicy:    &policy,

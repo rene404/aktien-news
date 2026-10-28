@@ -1,2 +1,2 @@
-key,name,kind,market,url,weight,fetch_interval_minutes,text_policy,terms_url
-fn_adhoc,FinanzNachrichten Ad-hoc,adhoc,MULTI,https://www.finanznachrichten.de/rss-aktien-adhoc/,1.00,10,none,https://www.finanznachrichten.de/service/rss.htm
+key,name,kind,market,url,parser,weight,fetch_interval_minutes,text_policy,terms_url
+fn_adhoc,FinanzNachrichten Ad-hoc,adhoc,MULTI,https://www.finanznachrichten.de/rss-aktien-adhoc/,finanznachrichten,1.00,10,none,https://www.finanznachrichten.de/service/rss.htm

@@ -18,7 +18,7 @@ Go und Node sind lokal nicht installiert; die ganze Toolchain läuft in Docker.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/catalog/`
   Done: Seed ist idempotent; Lookups per ISIN und per `(mic, ticker)` sind korrekt.
 
-- [ ] **4. FinanzNachrichten-Parser + exaktes Dedupe**
+- [x] **4. FinanzNachrichten-Parser + exaktes Dedupe**
   Files: `backend/internal/ingest/raw.go`, `backend/internal/ingest/finanznachrichten/parse.go`, `backend/internal/ingest/finanznachrichten/parse_test.go`, `backend/internal/ingest/finanznachrichten/testdata/adhoc.xml`, `backend/internal/ingest/finanznachrichten/testdata/empty.xml`, `backend/internal/ingest/finanznachrichten/testdata/broken.xml`, `backend/internal/dedupe/normalize.go`, `backend/internal/dedupe/normalize_test.go`
   Command: `docker compose --profile test run --rm backend-test go test ./internal/ingest/... ./internal/dedupe/`
   Done: ISIN wird gelesen; ein leerer Feed ergibt 0 Artikel ohne Fehler, ein kaputter Feed einen Fehler; `RawArticle` hat kein Feld für einen Textauszug; `utm_*`-Varianten werden gleich normalisiert.

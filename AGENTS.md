@@ -69,7 +69,8 @@ docs/             # design, research, plans
 ## Commands (repo root)
 
 ```bash
-docker compose up -d --build                      # db + api (:8090) [+ worker, web later]
+docker compose up -d --build                      # db + api (:8090) + worker [+ web later]
+docker compose logs -f worker                     # ingest runs (one line per source)
 docker compose --profile test run --rm backend-test                       # go test ./...
 docker compose --profile test run --rm backend-test go test ./internal/httpapi/
 docker compose --profile test run --rm backend-test sh -c "go vet ./... && go test ./..."

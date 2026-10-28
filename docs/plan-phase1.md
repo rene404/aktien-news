@@ -28,7 +28,7 @@ Go und Node sind lokal nicht installiert; die ganze Toolchain läuft in Docker.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/matching/`
   Done: Table-Tests grün (Stoppliste, Umlaute, Rechtsformen); keine Duplikate; `rejected` bleibt `rejected`.
 
-- [ ] **6. Worker: Fetch-Runner mit Isolation pro Quelle + `ingest_runs`**
+- [x] **6. Worker: Fetch-Runner mit Isolation pro Quelle + `ingest_runs`**
   Files: `backend/internal/ingest/fetch/http.go`, `backend/internal/ingest/runner.go`, `backend/internal/ingest/runner_test.go`, `backend/cmd/worker/main.go`, `docker-compose.yml`
   Command: `docker compose --profile test run --rm backend-test go test ./internal/ingest/` · `docker compose up -d --build worker && docker compose logs worker --tail 20`
   Done: Ein Lauf `ok` und ein Lauf `failed` sind protokolliert; ein zweiter Lauf erzeugt 0 neue Artikel; ein Live-Lauf ist im Log sichtbar.

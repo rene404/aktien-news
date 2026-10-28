@@ -203,7 +203,9 @@ Migrationen: goose, jede mit `up` und `down`. Die CI testet up → down → up g
    | Signal | Confidence |
    |---|---|
    | Emittentenfeld (`issuer_hint`: OTS `author`, Emittenten-IR-Feed, SEC-CIK) → Firma | 1.00 |
-   | ISIN-Feld (FinanzNachrichten `fn:isin`) oder ISIN im Text | 0.98 |
+   | ISIN des Emittenten (Feed-ISIN einer Ad-hoc-/Filing-Quelle) oder ISIN im Titel | 0.98 |
+   | ISIN-Tag eines Nachrichten-Feeds, Firma zusätzlich im Titel genannt | 0.90 |
+   | ISIN-Tag eines Nachrichten-Feeds ohne Bestätigung im Titel (z. B. Marktberichte) | 0.60 → pending |
    | `$TICKER`-Cashtag | 0.95 |
    | Ticker als ganzes Wort in Großbuchstaben (≥ 2 Zeichen, nicht auf Stoppliste) | 0.90 |
    | Voller Firmenname inkl. Rechtsform (AG, SE, N.V., Inc., plc …) | 0.90 |

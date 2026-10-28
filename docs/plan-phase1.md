@@ -38,7 +38,7 @@ Go und Node sind lokal nicht installiert; die ganze Toolchain läuft in Docker.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/service/ ./internal/httpapi/`
   Done: Filter, Pagination und 400 sind getestet; pending-Links sind unsichtbar; der Rechts-Invarianten-Test (keine Felder für Text, Sentiment oder Event-Typ) ist grün.
 
-- [ ] **8. Next.js-Webseite**
+- [x] **8. Next.js-Webseite**
   Files: `frontend/package.json`, `frontend/Dockerfile`, `frontend/next.config.ts`, `frontend/app/layout.tsx`, `frontend/app/page.tsx`, `frontend/app/aktie/[ticker]/page.tsx`, `frontend/components/NewsList.tsx`, `frontend/components/NewsList.test.tsx`, `frontend/components/Filters.tsx`, `frontend/components/Filters.test.tsx`, `frontend/components/Disclaimer.tsx`, `frontend/lib/api.ts`, `frontend/vitest.config.ts`, `docker-compose.yml`, `.github/workflows/ci.yml`
   Command: `docker compose --profile test run --rm web-test sh -c "npm ci && npm run lint && npm run test && npm run build"` · `docker compose up -d --build && curl -s localhost:3000 | grep -c "<a "`
   Done: lint, test und build grün; das SSR-HTML enthält Links mit `target="_blank"` und keinen Textauszug.

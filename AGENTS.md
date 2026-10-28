@@ -72,11 +72,12 @@ docs/             # design, research, plans
 ## Commands (repo root)
 
 ```bash
-docker compose up -d --build                      # db + api (:8090) + worker [+ web later]
+docker compose up -d --build                      # db + api (:8090) + worker + web (:3000)
 docker compose logs -f worker                     # ingest runs (one line per source)
 docker compose --profile test run --rm backend-test                       # go test ./...
 docker compose --profile test run --rm backend-test go test ./internal/httpapi/
 docker compose --profile test run --rm backend-test sh -c "go vet ./... && go test ./..."
+docker compose --profile test run --rm web-test      # npm ci + lint + test + build
 docker compose --profile tools run --rm --build seed   # migrate + load backend/seed/*.csv (idempotent)
 docker compose --profile tools run --rm sqlc      # regenerate internal/store/db
 docker compose --profile tools run --rm sqlc diff # CI: generated code must be current
@@ -88,7 +89,7 @@ docker compose --profile test down -v             # clean up incl. volumes
 - `go mod tidy` fails behind the corporate firewall on goose's test-only
   dependency (`modernc.org/sqlite`); use `go mod tidy -e` locally.
 
-Host ports: Postgres 5433, API `${API_PORT:-8090}` (8080 is taken on the dev box).
+Host ports: Postgres 5433, API `${API_PORT:-8090}` (8080 is taken on the dev box), web `${WEB_PORT:-3000}`.
 
 ## Testing
 

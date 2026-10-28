@@ -93,7 +93,14 @@ Host ports: Postgres 5433, API `${API_PORT:-8090}` (8080 is taken on the dev box
 
 ## Workflow
 
-- Don't commit or push unless asked.
+- **Gitflow.** `develop` is the main working branch; `main` only receives
+  releases (`release/*`) and `hotfix/*`. Never commit directly to `main` or `develop`.
+  - Branch off `develop`: `feature/<topic>` (e.g. `feature/phase1-seed`),
+    `fix/<topic>`, `chore/<topic>`.
+  - Small commits: one TDD cycle (red → green → refactor) per commit.
+  - Merge back with `git merge --no-ff` into `develop`, one feature branch per
+    plan task; delete the branch after merging.
+- Don't push unless asked.
 - Before declaring backend work done: `go vet` + `go test` via `backend-test`.
 - Before declaring frontend work done: lint + test + build via `web-test`.
 - CI (`.github/workflows/ci.yml`) runs the same container commands — keep it green.

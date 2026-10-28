@@ -111,6 +111,8 @@ Host ports: Postgres 5433, API `${API_PORT:-8090}` (8080 is taken on the dev box
 - Don't push unless asked.
 - Before declaring backend work done: `go vet` + `go test` via `backend-test`.
 - Before declaring frontend work done: lint + test + build via `web-test`.
-- CI (`.github/workflows/ci.yml`) runs the same container commands — keep it green.
+- CI (`.github/workflows/ci.yml`) is switched off (manual `workflow_dispatch` only,
+  workflow disabled on GitHub). Run the `backend-test` / `web-test` containers
+  locally before merging instead.
 - LLM calls go through OpenRouter (Phase 3); verify model IDs/pricing against
   current docs, not memory.

@@ -1,9 +1,10 @@
 name: CI
 
+# Automatic runs are switched off (decision 2026-10-28); the workflow is also
+# disabled on GitHub (`gh workflow disable CI`). Re-enable with
+# `gh workflow enable CI` and restore the push/pull_request triggers.
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   backend:

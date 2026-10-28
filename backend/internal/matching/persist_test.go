@@ -157,6 +157,26 @@ func TestPersistNeverResurrectsRejected(t *testing.T) {
 	}
 }
 
+// Persist must join a caller's transaction (as a savepoint), so the ingest
+// runner can insert an article and its links atomically.
+func TestPersistJoinsOuterTransaction(t *testing.T) {
+	f := setup(t)
+	ctx := context.Background()
+	tx, err := f.pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := matching.Persist(ctx, tx, f.articleID, []matching.Match{{CompanyID: f.erste, Confidence: 1.0, Method: "issuer"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Rollback(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if n := rowCount(t, f); n != 0 {
+		t.Fatalf("%d rows after outer rollback, want 0", n)
+	}
+}
+
 func TestPersistDropsBelowMinThreshold(t *testing.T) {
 	f := setup(t)
 	if err := matching.Persist(context.Background(), f.pool, f.articleID, []matching.Match{{CompanyID: f.post, Confidence: 0.2, Method: "core_name"}}); err != nil {

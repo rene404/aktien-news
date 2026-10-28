@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/rene404/aktien-news/backend/internal/store"
 	"github.com/rene404/aktien-news/backend/internal/store/db"
 )
 
@@ -72,9 +72,10 @@ func CurrentLinks(ctx context.Context, conn db.DBTX, articleID int64) ([]Link, e
 //   - rejected (by an admin)   → never touched again
 //   - linked                   → never downgraded
 //
-// Calls for the same article are serialised with an advisory lock.
-func Persist(ctx context.Context, pool *pgxpool.Pool, articleID int64, matches []Match) error {
-	return pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
+// Calls for the same article are serialised with an advisory lock. Given a
+// pgx.Tx it runs as a savepoint inside the caller's transaction.
+func Persist(ctx context.Context, conn store.TxBeginner, articleID int64, matches []Match) error {
+	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
 		q := db.New(tx)
 		if err := q.LockArticle(ctx, articleID); err != nil {
 			return fmt.Errorf("lock article %d: %w", articleID, err)

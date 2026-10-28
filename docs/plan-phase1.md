@@ -13,7 +13,7 @@ Go und Node sind lokal nicht installiert; die ganze Toolchain läuft in Docker.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/store/`
   Done: up → down → up grün, Insert/Select-Smoke-Test grün, doppeltes `(source_id, external_id)` wird abgelehnt.
 
-- [ ] **3. Stammdaten-Seed**
+- [x] **3. Stammdaten-Seed**
   Files: `backend/seed/companies.csv`, `backend/seed/listings.csv`, `backend/seed/index_memberships.csv`, `backend/seed/sources.csv`, `backend/internal/catalog/seed.go`, `backend/internal/catalog/seed_test.go`, `backend/cmd/seed/main.go`
   Command: `docker compose --profile test run --rm backend-test go test ./internal/catalog/`
   Done: Seed ist idempotent; Lookups per ISIN und per `(mic, ticker)` sind korrekt.

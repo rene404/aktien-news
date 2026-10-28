@@ -349,6 +349,7 @@ type Company struct {
 	Cik       *string
 	Country   string
 	CreatedAt time.Time
+	Slug      string
 }
 
 type CompanyAlias struct {

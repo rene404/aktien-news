@@ -78,6 +78,52 @@ frontend/              Next.js App Router
 
 Layering wie bisher: Handler und MCP-Tools sind dünn, Logik liegt in `service/`, DB-Zugriff nur über `store/`.
 
+### 3.1 Architekturstil
+
+**Modularer Monolith:** ein Go-Modul, eine Datenbank, mehrere Binaries
+(`cmd/api`, `cmd/worker`, `cmd/seed`). Bewusst ohne Microservices und ohne Message Queue.
+
+- **Schichten:** Handler/MCP-Tool → `service` → `store`. Handler übersetzen nur
+  zwischen Transport und Service, SQL steht ausschließlich in `store`.
+- **Pakete nach Fachthema** (`catalog`, `ingest`, `dedupe`, `matching`, `classify`).
+  Nach Technik geschnitten sind nur die Ränder (`httpapi`, `mcpserver`, `store`).
+- **Funktionaler Kern, Seiteneffekte außen:** Parser (`Parse([]byte)`) und
+  Matcher (`Index.Match`) sind reine Funktionen. Netzwerk und Datenbank
+  liegen in dünnen Schichten außen (`ingest/fetch`, `matching.Persist`,
+  `matching.LoadIndex`). Der Kern wird mit Fixtures getestet, ohne Mocks.
+- **Trennung von Lesen und Schreiben über Prozesse:** Nur der Worker schreibt
+  Nachrichtendaten, `cmd/seed` die Stammdaten. API und MCP lesen nur. Es gibt
+  keine getrennten Lese- und Schreibmodelle (kein volles CQRS).
+
+### 3.2 Eingesetzte Patterns
+
+| Pattern | Wo | Wozu |
+|---|---|---|
+| Adapter | ein Parser pro Quelle → gemeinsames `ingest.RawArticle` | neue Quellen ohne Änderung der Pipeline |
+| Pipes & Filters | fetch → parse → dedupe → match → classify | Stufen einzeln testbar, Fehler pro Quelle isoliert |
+| Strategy | `Fetcher`, `Classifier` (Fake im Test, OpenRouter produktiv) | Implementierung austauschbar |
+| Table Data Gateway | sqlc-generierte `db.Queries` | typsicheres SQL ohne ORM |
+| Unit of Work | `pgx.BeginFunc` (Seed, Persist) | alles oder nichts |
+| Append-only / Temporal Data | `article_entities`, `classifications`, `as_of`-Abfragen | Backtests ohne Look-ahead-Bias; leichter als Event Sourcing |
+| Idempotente Operationen | Upserts, `ON CONFLICT DO NOTHING` | Läufe beliebig oft wiederholbar |
+| Invarianten in der Datenbank | Trigger (append-only, unveränderliches `ingested_at`), Check-Constraints | Regeln gelten auch für SQL von Hand |
+| Pessimistisches Locking | Advisory-Lock pro Artikel in `matching.Persist` | keine Duplikate bei parallelen Läufen |
+| Constructor Injection | `catalog.New(conn)`; Funktionen nehmen `db.DBTX` | ohne DI-Framework; Pool und Transaktion sind austauschbar |
+| 12-Factor-Konfiguration | Umgebungsvariablen mit lokalen Defaults | bootet ohne API-Keys |
+
+### 3.3 Bewusst nicht eingesetzt
+
+| Verworfen | Grund |
+|---|---|
+| Microservices, Message Queue | mehr Betrieb ohne Nutzen bei diesem Volumen |
+| ORM (GORM o. ä.) | Point-in-time-Abfragen brauchen kontrolliertes SQL |
+| Vollständiges Hexagonal bzw. Clean Architecture (Interface pro Repository) | Tests laufen gegen echtes Postgres statt gegen Mocks; Interfaces nur, wo es mehrere Implementierungen gibt |
+| DDD mit Aggregates und Domain Events | die Fachlichkeit ist überwiegend Datenverarbeitung, keine komplexe Geschäftslogik |
+
+Regel für neuen Code: Funktionen mit DB-Zugriff nehmen `db.DBTX` (Pool oder
+Transaktion), keinen konkreten `*pgxpool.Pool`. Ausnahme ist eine Funktion,
+die ihre Transaktion selbst öffnet; sie nimmt einen `TxBeginner`.
+
 ## 4. Datenmodell
 
 Alle Zeitstempel sind `timestamptz` (UTC).

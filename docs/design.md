@@ -334,7 +334,7 @@ Dafür gibt es ein manuelles Eval-Set (ca. 100 gelabelte DE/EN-Meldungen) als ei
 | # | Thema | Stand |
 |---|---|---|
 | 1 | LLM-Provider | **OpenRouter** (OpenAI-kompatible API). Das Modell ist konfigurierbar (`CLASSIFY_MODEL`). Ein Budget gibt es noch nicht; der Kostendeckel kommt als Config-Wert (`CLASSIFY_MONTHLY_BUDGET_USD`), und der Worker stoppt die Klassifikation beim Erreichen. |
-| 2 | US-Universum | **offen**, Ziel „so viel wie möglich“. Das Design skaliert über Seed-Daten; ein Kostenhebel ist Klassifikation nur für verlinkte Cluster-Repräsentanten. |
+| 2 | US-Universum | **entschieden (Phase 2):** alle NYSE-/Nasdaq-Titel aus SEC `company_tickers_exchange.json`, gestuft. Nicht kuratierte Firmen (`curated = false`) werden nur über starke Signale verlinkt (Emittent/CIK, ISIN, Cashtag, voller Name mit Rechtsform); die Seed-Firmen behalten alle Signale. Die öffentliche Liste zeigt einen Eintrag pro Cluster. |
 | 3 | mcp-hub-Anbindung | **Streamable HTTP** (Annahme bestätigt), Präfix noch offen. |
 | 4 | Quellenzugang | **recherchiert**, siehe `docs/research-sources.md`. MVP mit 0 $/Monat für Daten: FinanzNachrichten, OTS-RSS, SEC EDGAR, BW/PRN-RSS, Emittenten-IR. Wiener Börse ausgeschlossen. Die Klassifikation läuft überwiegend nur auf Titeln (OTS-TDM-Vorbehalt). Lizenzanfragen an APA-Comm, OeKB und Alpha Vantage gehen parallel. |
 | 5 | Stammdaten | **bestätigt:** Seed aus öffentlichen Listen (Wiener Börse, Deutsche Börse, SEC `company_tickers.json`) und OpenFIGI für ISIN↔Ticker. |

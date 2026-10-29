@@ -36,7 +36,7 @@ func TestSeedIsIdempotent(t *testing.T) {
 		t.Fatalf("first seed: %v", err)
 	}
 	first := countRows(t, pool)
-	want := map[string]int{"sources": 2, "companies": 3, "listings": 3, "index_memberships": 3, "company_aliases": 2}
+	want := map[string]int{"sources": 1, "companies": 3, "listings": 3, "index_memberships": 3, "company_aliases": 2}
 	for table, n := range want {
 		if first[table] != n {
 			t.Errorf("%s: %d rows, want %d", table, first[table], n)
@@ -83,7 +83,7 @@ func TestLookups(t *testing.T) {
 func TestSeedLinksIRSourceToIssuer(t *testing.T) {
 	ctx := context.Background()
 	pool := testdb.New(t)
-	if err := catalog.Seed(ctx, pool, os.DirFS("testdata/valid")); err != nil {
+	if err := catalog.Seed(ctx, pool, os.DirFS("testdata/ir_source")); err != nil {
 		t.Fatal(err)
 	}
 	rows, err := pool.Query(ctx, `

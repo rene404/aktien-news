@@ -1,0 +1,3 @@
+key,name,kind,market,url,parser,weight,fetch_interval_minutes,text_policy,terms_url,issuer_slug
+fn_adhoc,FinanzNachrichten Ad-hoc,adhoc,MULTI,https://www.finanznachrichten.de/rss-aktien-adhoc/,finanznachrichten,1.00,10,none,https://www.finanznachrichten.de/service/rss.htm,
+post_ir,Österreichische Post IR,ir,AT,https://example.com/post/rss,pressrss,0.95,60,none,,oesterreichische-post

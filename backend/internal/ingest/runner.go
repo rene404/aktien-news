@@ -174,10 +174,11 @@ func (r *Runner) store(ctx context.Context, src db.Source, a RawArticle, index *
 		}
 		inserted = true
 		matches := index.Match(matching.Input{
-			Title:        a.Title,
-			IssuerHint:   a.IssuerHint,
-			IssuerISIN:   a.IssuerISIN,
-			ISINIsIssuer: src.Kind == db.SourceKindAdhoc || src.Kind == db.SourceKindFiling,
+			Title:           a.Title,
+			IssuerHint:      a.IssuerHint,
+			IssuerISIN:      a.IssuerISIN,
+			ISINIsIssuer:    src.Kind == db.SourceKindAdhoc || src.Kind == db.SourceKindFiling,
+			IssuerCompanyID: deref(src.IssuerCompanyID),
 		})
 		return matching.Persist(ctx, tx, art.ID, matches)
 	})
@@ -206,4 +207,11 @@ func optional(s string) *string {
 		return nil
 	}
 	return &s
+}
+
+func deref(p *int64) int64 {
+	if p == nil {
+		return 0
+	}
+	return *p
 }

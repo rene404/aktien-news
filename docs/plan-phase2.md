@@ -26,7 +26,7 @@ Jede Aufgabe läuft auf einem eigenen `feature/phase2-*`-Branch per TDD. Für al
   Command: `docker compose --profile test run --rm backend-test go test ./internal/ingest/pressrss/` · `docker compose up -d --build worker && docker compose logs worker --tail 30`
   Done: Fixture-Tests mit echten Feeds sind grün, ebenso die Fälle leer, kaputt und ohne Aussender. `RawArticle` bleibt ohne Textfeld. Der Live-Lauf zeigt `ok` für alle drei Quellen, und eine Lenzing-Meldung von OTS ist über `issuer` verlinkt.
 
-- [ ] **3. IR-Feeds: Quelle = Emittent**
+- [x] **3. IR-Feeds: Quelle = Emittent**
   Files: `backend/internal/store/migrations/00005_source_issuer.sql`, `backend/internal/store/queries/catalog.sql`, `backend/internal/catalog/seed.go`, `backend/internal/catalog/seed_test.go`, `backend/seed/sources.csv`, `backend/internal/ingest/runner.go`, `backend/internal/ingest/runner_test.go`
   What: Die neue Spalte `sources.issuer_company_id` wird im Seed über eine Spalte `issuer_slug` gesetzt. Ist sie belegt, verlinkt der Runner jeden Artikel der Quelle mit `issuer` (1.0). Erster Feed ist voestalpine.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/store/ ./internal/catalog/ ./internal/ingest/`

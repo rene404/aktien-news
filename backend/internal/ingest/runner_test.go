@@ -580,6 +580,30 @@ func TestRunDueKeepsFollowUpsAndOldStoriesApart(t *testing.T) {
 	}
 }
 
+// A cluster spans at most ClusterWindow from its first article; a run of
+// look-alike titles a few days apart must not chain into one cluster.
+func TestRunDueDoesNotChainClusters(t *testing.T) {
+	r, pool, f, c := newRunner(t)
+	const title = "Wiener Börse: Kurs der Woche"
+	f.bodies[urlOTSF] = rssFeed(
+		feedItem{title, "https://www.ots.at/a/day0", c.now.Add(-120 * time.Hour)},
+		feedItem{title, "https://www.ots.at/a/day2", c.now.Add(-60 * time.Hour)},
+		feedItem{title, "https://www.ots.at/a/day5", c.now},
+	)
+	if err := r.RunDue(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	first, _ := clusterOf(t, pool, "https://www.ots.at/a/day0")
+	second, _ := clusterOf(t, pool, "https://www.ots.at/a/day2")
+	third, _ := clusterOf(t, pool, "https://www.ots.at/a/day5")
+	if first != second {
+		t.Errorf("day 0 and day 2.5 (60 h apart) in clusters %d and %d, want one", first, second)
+	}
+	if third == first {
+		t.Errorf("day 5 (120 h after the first article) joined cluster %d", first)
+	}
+}
+
 func TestClusterUnassignedBackfillsOldArticles(t *testing.T) {
 	r, pool, _, _ := newRunner(t)
 	ctx := context.Background()

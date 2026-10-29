@@ -16,6 +16,10 @@ FROM articles a
 WHERE a.cluster_id IS NOT NULL
   AND a.simhash IS NOT NULL
   AND a.id <> $1
+  AND NOT EXISTS (
+      SELECT 1 FROM articles o
+      WHERE o.cluster_id = a.cluster_id AND o.id <> $1
+        AND (o.published_at, o.id) < (a.published_at, a.id))
   AND a.published_at BETWEEN $2::timestamptz AND $3::timestamptz
   AND bit_count((a.simhash # $4::bigint)::bit(64)) <= $5::int
 ORDER BY bit_count((a.simhash # $4::bigint)::bit(64)), a.published_at, a.id
@@ -35,8 +39,10 @@ type ClusterCandidatesRow struct {
 	Simhash   int64
 }
 
-// Clustered articles near the given fingerprint and publication time, closest
-// first. The caller makes the final same-story decision.
+// First articles of clusters near the given fingerprint and publication time,
+// closest first. Comparing with the first article only keeps a cluster within
+// one window instead of chaining look-alikes day after day. The caller makes
+// the final same-story decision.
 func (q *Queries) ClusterCandidates(ctx context.Context, arg ClusterCandidatesParams) ([]ClusterCandidatesRow, error) {
 	rows, err := q.db.Query(ctx, clusterCandidates,
 		arg.ArticleID,

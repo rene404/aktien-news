@@ -9,5 +9,6 @@ read it first. It is the single source of truth for how to work in this repo.
   through the matching skill (`/plan`, `/tdd`, `/review`, `/verify`, …).
 - Go and Node are not on the host: run every build/test via
   `docker compose --profile test run --rm backend-test …` (or `web-test`).
-- The corporate firewall blocks `sec.gov`; SEC EDGAR work needs fixtures or
-  another network.
+- `sec.gov` is blocked only inside the AustriaCard corporate network; from
+  other networks it works (SEC_USER_AGENT in `.env`). Tests use the fixtures
+  in `ingest/sec/testdata` and `catalog/testdata/sec` either way.

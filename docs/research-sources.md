@@ -2,7 +2,7 @@
 
 **[V]** = selbst abgerufen und geprüft, **[U]** = aus Suchtreffern oder geschlossen, nicht geprüft.
 Das ist eine technische Recherche, keine Rechtsberatung: Vor dem Livegang prüft ein österreichischer Jurist.
-Hinweis: Die Firmen-Firewall blockiert `sec.gov`, und GlobeNewswire liefert 403 (Bot-Schutz).
+Hinweis: Nur im AustriaCard-Firmennetz ist `sec.gov` gesperrt, aus anderen Netzen funktioniert es (geprüft am 2026-10-29). GlobeNewswire liefert 403 (Bot-Schutz).
 
 ## Kernbefunde
 

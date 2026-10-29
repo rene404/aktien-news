@@ -1,16 +1,11 @@
 import Link from "next/link";
-import type { Filters } from "@/lib/filters";
+import { filterHref, type Filters } from "@/lib/filters";
 
 /** "Ältere Meldungen": same filters, next cursor. */
-export default function MoreLink({ path, filters, cursor }: { path: string; filters: Filters; cursor: string | null }) {
+export default function MoreLink({ path, filters, cursor, defaultRange }: { path: string; filters: Filters; cursor: string | null; defaultRange?: string }) {
   if (!cursor) return null;
-  const qs = new URLSearchParams();
-  if (filters.index) qs.set("index", filters.index);
-  if (filters.source) qs.set("source", filters.source);
-  qs.set("range", filters.range);
-  qs.set("cursor", cursor);
   return (
-    <Link className="more" href={`${path}?${qs}`}>
+    <Link className="more" href={filterHref(path, { ...filters, cursor }, { cursor: true, defaultRange })}>
       Ältere Meldungen →
     </Link>
   );

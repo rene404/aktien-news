@@ -18,16 +18,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+// Market identifier codes as readers know them.
+const MARKETS: Record<string, string> = { XWBO: "Wiener Börse", XETR: "Xetra", XNYS: "NYSE", XNAS: "Nasdaq" };
+
+// Single stocks have few headlines, so the stock page shows all of them by
+// default, filings included.
+const DEFAULT_RANGE = "all";
+
 export default async function StockPage({ params, searchParams }: Props) {
   const { ticker } = await params;
   const inst = await getInstrument(decodeURIComponent(ticker));
   if (!inst) notFound();
 
-  const filters = { ...parseFilters(await searchParams), index: "" };
+  const filters = { ...parseFilters(await searchParams, DEFAULT_RANGE), section: "" };
+  const now = new Date();
   const [page, sources] = await Promise.all([
-    getNews({ ...toNewsParams(filters, new Date()), ticker: inst.ticker }),
+    getNews({ ...toNewsParams(filters, now), kind: undefined, ticker: inst.ticker }),
     getSources(),
   ]);
+  const path = `/aktie/${encodeURIComponent(inst.ticker)}`;
 
   return (
     <>
@@ -35,11 +44,11 @@ export default async function StockPage({ params, searchParams }: Props) {
         {inst.name} <span className="chip">{inst.ticker}</span>
       </h1>
       <p className="sub">
-        {[inst.isin, inst.mic, ...inst.indices].filter(Boolean).join(" · ")}
+        {[inst.isin, MARKETS[inst.mic] ?? inst.mic, ...inst.indices].filter(Boolean).join(" · ")}
       </p>
-      <Filters sources={sources} value={filters} showIndex={false} />
-      <NewsList items={page.items} hideTicker={inst.ticker} />
-      <MoreLink path={`/aktie/${encodeURIComponent(inst.ticker)}`} filters={filters} cursor={page.next_cursor} />
+      <Filters sources={sources} value={filters} />
+      <NewsList items={page.items} hideTicker={inst.ticker} now={now} />
+      <MoreLink path={path} filters={filters} cursor={page.next_cursor} defaultRange={DEFAULT_RANGE} />
     </>
   );
 }

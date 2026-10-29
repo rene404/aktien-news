@@ -65,6 +65,16 @@ func TestCheckTDM(t *testing.T) {
 		{name: "anchored location does not match", site: tdmSite{files: map[string]string{"/tdmrep.json": `[{"location":"/$","tdm-reservation":1}]`}}, want: false},
 		{name: "malformed file", site: tdmSite{files: map[string]string{"/tdmrep.json": `{not json`}}, wantErr: true},
 		{name: "server error on file", site: tdmSite{status: map[string]int{"/.well-known/tdmrep.json": http.StatusInternalServerError}}, wantErr: true},
+		{name: "well-known forbidden, root file reserved", site: tdmSite{
+			status: map[string]int{"/.well-known/tdmrep.json": http.StatusForbidden},
+			files:  map[string]string{"/tdmrep.json": string(ots)},
+		}, want: true},
+		{name: "well-known soft 404 page, root file reserved", site: tdmSite{
+			files: map[string]string{"/.well-known/tdmrep.json": "<html>not found</html>", "/tdmrep.json": string(ots)},
+		}, want: true},
+		{name: "well-known fails, root missing", site: tdmSite{
+			status: map[string]int{"/.well-known/tdmrep.json": http.StatusInternalServerError},
+		}, wantErr: true},
 		{name: "feed HEAD not allowed still checks files", site: tdmSite{
 			status: map[string]int{"/rss/finanzen": http.StatusMethodNotAllowed},
 			files:  map[string]string{"/tdmrep.json": string(ots)},

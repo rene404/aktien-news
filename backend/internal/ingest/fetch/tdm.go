@@ -3,6 +3,7 @@ package fetch
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,8 +26,9 @@ type tdmrepEntry struct {
 // CheckTDM reports whether the site behind sourceURL reserves text and data
 // mining rights (§ 42h UrhG / Art. 4 DSM directive), via the TDM-Reservation
 // header on sourceURL or a tdmrep.json entry whose location covers its path.
-// A missing file (404/410) means no reservation. Any other failure is
-// returned as an error so the caller can keep the previous result.
+// A missing file (404/410) means no reservation. A reservation found
+// anywhere wins; otherwise any other failure is returned as an error so the
+// caller can keep the previous result.
 func (f *HTTPFetcher) CheckTDM(ctx context.Context, sourceURL string) (bool, error) {
 	u, err := url.Parse(sourceURL)
 	if err != nil {
@@ -43,11 +45,15 @@ func (f *HTTPFetcher) CheckTDM(ctx context.Context, sourceURL string) (bool, err
 		return true, nil
 	}
 
+	// Both files are read even if one fails: a broken /.well-known/ must not
+	// hide a reservation in the root file.
+	var errs []error
 	for _, p := range tdmrepPaths {
 		fileURL := (&url.URL{Scheme: u.Scheme, Host: u.Host, Path: p}).String()
 		entries, found, err := f.tdmrep(ctx, fileURL)
 		if err != nil {
-			return false, err
+			errs = append(errs, err)
+			continue
 		}
 		if !found {
 			continue
@@ -58,7 +64,7 @@ func (f *HTTPFetcher) CheckTDM(ctx context.Context, sourceURL string) (bool, err
 			}
 		}
 	}
-	return false, nil
+	return false, errors.Join(errs...)
 }
 
 func (f *HTTPFetcher) tdmrep(ctx context.Context, fileURL string) ([]tdmrepEntry, bool, error) {

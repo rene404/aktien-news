@@ -21,3 +21,7 @@ WHERE id = @id;
 
 -- name: SetTDM :exec
 UPDATE sources SET tdm_reserved = @tdm_reserved, tdm_checked_at = @tdm_checked_at WHERE id = @id;
+
+-- name: MarkTDMReserved :exec
+-- Fail closed: an unknown reservation state counts as reserved.
+UPDATE sources SET tdm_reserved = true WHERE id = @id;

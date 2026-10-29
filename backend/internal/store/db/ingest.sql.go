@@ -89,6 +89,16 @@ func (q *Queries) FinishRun(ctx context.Context, arg FinishRunParams) error {
 	return err
 }
 
+const markTDMReserved = `-- name: MarkTDMReserved :exec
+UPDATE sources SET tdm_reserved = true WHERE id = $1
+`
+
+// Fail closed: an unknown reservation state counts as reserved.
+func (q *Queries) MarkTDMReserved(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, markTDMReserved, id)
+	return err
+}
+
 const setTDM = `-- name: SetTDM :exec
 UPDATE sources SET tdm_reserved = $1, tdm_checked_at = $2 WHERE id = $3
 `

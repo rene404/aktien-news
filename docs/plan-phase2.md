@@ -1,6 +1,6 @@
 # Plan Phase 2: mehr Quellen, US-Stammdaten, Clustering, Text-Regeln
 
-Entwurf vom 2026-10-28, noch nicht freigegeben. Entschieden: US-Universum gestuft (alle NYSE/Nasdaq), öffentliche Liste ein Eintrag pro Cluster. Grundlage: `docs/design.md`, `docs/research-sources.md`
+Entwurf vom 2026-10-28, freigegeben am 2026-10-29. Entschieden: US-Universum gestuft (alle NYSE/Nasdaq), öffentliche Liste ein Eintrag pro Cluster. Grundlage: `docs/design.md`, `docs/research-sources.md`
 und ein Erreichbarkeits-Check am 2026-10-28:
 
 - OTS `/rss/finanzen` und `/rss/wirtschaft`: 200, Aussender im Feld `author`. `tdmrep.json` liegt im

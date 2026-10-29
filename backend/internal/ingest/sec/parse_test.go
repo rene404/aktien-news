@@ -101,3 +101,25 @@ func TestParseLiveFeed(t *testing.T) {
 		}
 	}
 }
+
+// A real 6-K response of 2026-10-29 (foreign private issuers): 6-Ks carry no
+// item list, so the title is form and filer only.
+func TestParseLive6KFeed(t *testing.T) {
+	arts, err := parseFile(t, "current_6k_live.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(arts) != 100 {
+		t.Fatalf("got %d filings, want 100", len(arts))
+	}
+	first := arts[0]
+	if first.Title != "6-K: Lloyds Banking Group plc" || first.IssuerCIK != "1160106" ||
+		first.ExternalID != "0001654954-26-009203" {
+		t.Errorf("first = %+v", first)
+	}
+	for _, a := range arts {
+		if a.IssuerCIK == "" || a.URL == "" || a.PublishedAt.IsZero() || !strings.HasPrefix(a.Title, "6-K") {
+			t.Errorf("incomplete: %+v", a)
+		}
+	}
+}

@@ -41,6 +41,25 @@ Hinweis: Nur im AustriaCard-Firmennetz ist `sec.gov` gesperrt, aus anderen Netze
 | Wiener Börse | AT | – | – | – | ❌ ToS-Verbot |
 | NewsAPI, Finnhub free | US | – | – | – | ❌ nicht kommerziell |
 
+## Nachtrag 2026-10-29: weitere RSS/XML-Feeds
+
+Alle Feeds am 2026-10-29 abgerufen [V]. „aktuell“ = neuester Eintrag vom selben Tag.
+Keine der geprüften Domains (FN, Handelsblatt, derStandard, CNBC, onvista, Spiegel, FT, Nasdaq u. a.)
+hat eine `.well-known/tdmrep.json`; damit ist der offene TDM-Punkt bei FinanzNachrichten geprüft.
+
+| Quelle | Status | Einschätzung |
+|---|---|---|
+| FN `rss-aktien-nachrichten`, `rss-aktien-analysen` | ✅ aktuell, mit `fn:isin` | **aufgenommen** (`fn_aktien`, `fn_analysen`): gleiche Erlaubnis wie die übrigen FN-Feeds |
+| FN MDAX (`-3`), SDAX (`-4`), TecDAX (`-2`), ~45 Branchen-Feeds | ✅ aktuell | erst sinnvoll, wenn MDAX/SDAX/TecDAX-Stammdaten im Seed sind (sonst nichts verlinkbar) |
+| SEC EDGAR 6-K (ausländische Emittenten, auch europäische ADRs) | ✅ mit SEC_USER_AGENT | **aufgenommen** (`sec_6k`): gemeinfrei, gleicher Parser wie 8-K |
+| Business Wire RSS | ✅ ein Branchen-Feed erreichbar | die Feed-Übersicht ist aus dem Firmennetz nicht erreichbar; Items haben weder `author` noch Ticker außerhalb der `description` → braucht eigenen Matching-Ansatz |
+| **Nasdaq** `nasdaq.com/feed/rssoutbound?symbol=…` / `?category=…` | ✅ technisch, mit `<nasdaq:tickers>` je Item | ❌ **Terms of Use (Stand 2026-05-11):** Lizenz nur „personal, non-commercial use“; ohne schriftliche Vereinbarung nur Text-Link auf die Startseite `https://www.nasdaq.com` (kein Deep Link); kein automatisiertes Erfassen von Inhalten; kein KI-/Datenanalyse-Einsatz ohne Erlaubnis. Nur mit Lizenz nutzbar |
+| FMA (`fma.gv.at/feed/`), EZB-, Fed-Pressemitteilungen | ✅ | Makro/Aufsicht ohne Ticker; braucht im UI einen Bereich für nicht verlinkte Meldungen |
+| CNBC, MarketWatch/WSJ (Dow-Jones-Feeds), FT, Handelsblatt, tagesschau, Spiegel, FAZ, onvista, Der Aktionär, derStandard, Kurier, ORF | ✅ aktuell | ⚠️ Medien-Schlagzeilen: nur mit schriftlicher Erlaubnis |
+| Yahoo Finance, Seeking Alpha pro Ticker | ✅ technisch | ❌ ToS: nicht kommerziell |
+| CNN Money RSS | letzter Eintrag 2018 | ❌ eingestellt |
+| GlobeNewswire, Accesswire, finanzen.net, boerse-express | 403 | ❌ Bot-Schutz |
+
 ## Stammdaten
 
 | Quelle | Inhalt | Lizenz | Status |
@@ -60,6 +79,8 @@ Hinweis: Nur im AustriaCard-Firmennetz ist `sec.gov` gesperrt, aus anderen Netze
 
 - APA-Comm: Lizenz für OTS-Text für TDM/LLM bzw. eine API.
 - OeKB: maschinenlesbarer Bezug der OAM-Daten.
-- FinanzNachrichten: ob die Übernahme ausdrücklich auch ein kommerzielles Portal abdeckt; TDM-Status (tdmrep) noch nicht geprüft.
+- FinanzNachrichten: ob die Übernahme ausdrücklich auch ein kommerzielles Portal abdeckt (kein tdmrep, geprüft 2026-10-29).
 - Alpha Vantage: interne kommerzielle Nutzung als Baseline.
 - Business Wire / PR Newswire: Nutzungsbedingungen für die Anzeige auf einem kommerziellen Portal.
+- Nasdaq: Lizenz für Schlagzeilen und Deep Links (die Terms erlauben nur private Nutzung).
+- Medien (derStandard, Handelsblatt, CNBC): Erlaubnis zur Anzeige von Schlagzeilen mit Link.

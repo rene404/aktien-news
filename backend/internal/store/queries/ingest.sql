@@ -18,3 +18,6 @@ INSERT INTO ingest_runs (source_id, started_at) VALUES (@source_id, @started_at)
 UPDATE ingest_runs
 SET finished_at = @finished_at, status = @status, fetched = @fetched, new = @new, error = sqlc.narg('error')
 WHERE id = @id;
+
+-- name: SetTDM :exec
+UPDATE sources SET tdm_reserved = @tdm_reserved, tdm_checked_at = @tdm_checked_at WHERE id = @id;

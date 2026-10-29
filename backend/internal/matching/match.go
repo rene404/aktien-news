@@ -13,7 +13,8 @@
 //	core_name  0.55  name without legal form, >= 3 chars → review queue
 //
 // ticker and core_name do not apply to uncurated (bulk-imported) companies,
-// and their full_name does not count right after a capitalized word.
+// and their full_name does not count right after a capitalized word other
+// than a function word ("Of", "The", "Von").
 // >= HighThreshold → linked, >= MinThreshold → pending, else dropped.
 package matching
 
@@ -304,8 +305,21 @@ func titleWords(title string) titleWordList {
 	return titleWordList{title, ws}
 }
 
-// continuesName reports whether word i directly follows a capitalized word,
-// separated only by whitespace.
+// Words that start a capitalized phrase in Title Case headlines ("Shares Of
+// …", "Why The …") or German titles, but never continue a company name.
+var functionWords = map[string]bool{
+	"a": true, "about": true, "after": true, "an": true, "and": true, "as": true, "at": true,
+	"before": true, "by": true, "for": true, "from": true, "how": true, "in": true, "into": true,
+	"of": true, "on": true, "or": true, "over": true, "the": true, "to": true, "vs": true,
+	"what": true, "why": true, "with": true,
+	"am": true, "auf": true, "aus": true, "bei": true, "das": true, "dem": true, "den": true,
+	"der": true, "des": true, "die": true, "für": true, "gegen": true, "im": true, "mit": true,
+	"nach": true, "oder": true, "über": true, "und": true, "von": true, "vor": true, "warum": true,
+	"wie": true, "zu": true, "zum": true, "zur": true,
+}
+
+// continuesName reports whether word i directly follows a capitalized word
+// other than a function word, separated only by whitespace.
 func (l titleWordList) continuesName(i int) bool {
 	if i <= 0 || i >= len(l.words) {
 		return false
@@ -314,8 +328,9 @@ func (l titleWordList) continuesName(i int) bool {
 	if strings.TrimSpace(l.title[prev.end:cur.start]) != "" {
 		return false
 	}
-	r, _ := utf8.DecodeRuneInString(l.title[prev.start:])
-	return unicode.IsUpper(r)
+	text := l.title[prev.start:prev.end]
+	r, _ := utf8.DecodeRuneInString(text)
+	return unicode.IsUpper(r) && !functionWords[strings.ToLower(text)]
 }
 
 // StatusFor maps a confidence to a link status, or "" if it is dropped.

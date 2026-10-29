@@ -147,6 +147,55 @@ func TestMatch(t *testing.T) {
 	}
 }
 
+// Companies imported in bulk from the SEC ticker list are not curated: their
+// short tickers and bare names are too ambiguous for titles.
+func TestMatchUncuratedNeedsStrongSignals(t *testing.T) {
+	const (
+		agilent = iota + 100
+		onsemi
+		gartner
+		target
+	)
+	us := func(id int64, name, ticker, mic string) matching.CompanyEntry {
+		return matching.CompanyEntry{ID: id, Name: name, LegalName: name, Uncurated: true,
+			Listings: []matching.Listing{{Ticker: ticker, MIC: mic}}}
+	}
+	ix := matching.NewIndex([]matching.CompanyEntry{
+		us(agilent, "Agilent Technologies, Inc.", "A", "XNYS"),
+		us(onsemi, "ON SEMICONDUCTOR CORP", "ON", "XNAS"),
+		us(gartner, "GARTNER INC", "IT", "XNYS"),
+		{ID: target, Name: "Target", LegalName: "Target Corporation", Uncurated: true,
+			Listings: []matching.Listing{{Ticker: "TGT", MIC: "XNYS", ISIN: "US87612E1064"}}},
+	})
+	cases := []struct {
+		name string
+		in   matching.Input
+		want []want
+	}{
+		{"single-letter ticker as a word", matching.Input{Title: "Plan A for ON and IT budgets"}, nil},
+		{"ticker word", matching.Input{Title: "TGT shares rise"}, nil},
+		{"bare name without legal form", matching.Input{Title: "Target cuts outlook"}, nil},
+		{"full name with legal form", matching.Input{Title: "Agilent Technologies, Inc. Reports Q3 Results"},
+			[]want{{agilent, "full_name", 0.90}}},
+		{"cashtag", matching.Input{Title: "Why $ON is moving"}, []want{{onsemi, "cashtag", 0.95}}},
+		{"issuer hint", matching.Input{Title: "Q3 results", IssuerHint: "Gartner, Inc."}, []want{{gartner, "issuer", 1.00}}},
+		{"ISIN in title", matching.Input{Title: "US87612E1064: dividend"}, []want{{target, "isin", 0.98}}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := ix.Match(tc.in)
+			if len(got) != len(tc.want) {
+				t.Fatalf("got %+v, want %+v", got, tc.want)
+			}
+			for i, w := range tc.want {
+				if g := got[i]; g.CompanyID != w.id || g.Method != w.method || g.Confidence != w.conf {
+					t.Errorf("match %d = %+v, want %+v", i, g, w)
+				}
+			}
+		})
+	}
+}
+
 func TestStatusFor(t *testing.T) {
 	cases := map[float64]string{1.0: "linked", 0.90: "linked", 0.85: "linked", 0.84: "pending", 0.55: "pending", 0.40: "pending", 0.39: ""}
 	for conf, want := range cases {

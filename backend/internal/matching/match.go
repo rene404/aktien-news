@@ -11,6 +11,7 @@
 //	full_name  0.90  name incl. legal form (legal name, issuer/former names)
 //	core_name  0.55  name without legal form, >= 3 chars → review queue
 //
+// ticker and core_name do not apply to uncurated (bulk-imported) companies.
 // >= HighThreshold → linked, >= MinThreshold → pending, else dropped.
 package matching
 
@@ -42,6 +43,11 @@ type CompanyEntry struct {
 	LegalName string
 	Aliases   []Alias
 	Listings  []Listing
+	// Uncurated companies come from a bulk import (SEC ticker list). Only
+	// strong signals link them: issuer, ISIN, cashtag, full name with legal
+	// form. Their tickers as plain words and bare names are too ambiguous
+	// ("A", "ON", "Target").
+	Uncurated bool
 }
 
 // Input is what the matcher may look at: titles and feed metadata only.
@@ -89,14 +95,15 @@ type nameEntry struct {
 
 // Index is an immutable lookup structure built from the catalog.
 type Index struct {
-	issuer  map[string]int64 // folded name, also without legal form → company (-1 = ambiguous)
-	isin    map[string]int64
-	tickers map[string]int64 // -1 = ambiguous
-	names   []nameEntry
+	issuer   map[string]int64 // folded name, also without legal form → company (-1 = ambiguous)
+	isin     map[string]int64
+	cashtags map[string]int64 // every ticker; -1 = ambiguous
+	tickers  map[string]int64 // tickers of curated companies, matched as plain words; -1 = ambiguous
+	names    []nameEntry
 }
 
 func NewIndex(companies []CompanyEntry) *Index {
-	ix := &Index{issuer: map[string]int64{}, isin: map[string]int64{}, tickers: map[string]int64{}}
+	ix := &Index{issuer: map[string]int64{}, isin: map[string]int64{}, cashtags: map[string]int64{}, tickers: map[string]int64{}}
 	addUnique := func(m map[string]int64, key string, id int64) {
 		if key == "" {
 			return
@@ -107,7 +114,7 @@ func NewIndex(companies []CompanyEntry) *Index {
 		}
 		m[key] = id
 	}
-	addName := func(text string, id int64, fullOnly bool) {
+	addName := func(text string, id int64, fullOnly, uncurated bool) {
 		f := Fold(text)
 		if f == "" {
 			return
@@ -117,19 +124,22 @@ func NewIndex(companies []CompanyEntry) *Index {
 		switch {
 		case hasLegalForm(f) || fullOnly:
 			ix.names = append(ix.names, nameEntry{f, id, 0.90, "full_name"})
-		case len(f) >= 3:
+		case len(f) >= 3 && !uncurated:
 			ix.names = append(ix.names, nameEntry{f, id, 0.55, "core_name"})
 		}
 	}
 
 	for _, c := range companies {
-		addName(c.Name, c.ID, false)
-		addName(c.LegalName, c.ID, false)
+		addName(c.Name, c.ID, false, c.Uncurated)
+		addName(c.LegalName, c.ID, false, c.Uncurated)
 		for _, a := range c.Aliases {
-			addName(a.Text, c.ID, a.Kind == "issuer_name" || a.Kind == "former_name")
+			addName(a.Text, c.ID, a.Kind == "issuer_name" || a.Kind == "former_name", c.Uncurated)
 		}
 		for _, l := range c.Listings {
-			addUnique(ix.tickers, l.Ticker, c.ID)
+			addUnique(ix.cashtags, l.Ticker, c.ID)
+			if !c.Uncurated {
+				addUnique(ix.tickers, l.Ticker, c.ID)
+			}
 			addUnique(ix.isin, l.ISIN, c.ID)
 		}
 	}
@@ -163,7 +173,7 @@ func (ix *Index) Match(in Input) []Match {
 	}
 
 	for _, m := range cashtagRe.FindAllStringSubmatch(in.Title, -1) {
-		consider(ix.tickers[m[1]], 0.95, "cashtag")
+		consider(ix.cashtags[m[1]], 0.95, "cashtag")
 	}
 	for _, tok := range tickerRe.FindAllString(in.Title, -1) {
 		if !tickerStoplist[tok] {

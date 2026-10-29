@@ -55,6 +55,10 @@ func run(ctx context.Context) error {
 		Now: time.Now,
 	}
 
+	if err := runner.ClusterUnassigned(ctx); err != nil {
+		return err
+	}
+
 	slog.Info("worker started", "tick", tick)
 	t := time.NewTicker(tick)
 	defer t.Stop()

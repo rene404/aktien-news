@@ -73,7 +73,7 @@ docs/             # design, research, plans
 ## Commands (repo root)
 
 ```bash
-docker compose up -d --build                      # db + api (:8090) + worker + web (:3000)
+docker compose up -d --build                      # db + api (:8090) + worker + web (:3020)
 docker compose logs -f worker                     # ingest runs (one line per source)
 docker compose --profile test run --rm backend-test                       # go test ./...
 docker compose --profile test run --rm backend-test go test ./internal/httpapi/
@@ -90,7 +90,9 @@ docker compose --profile test down -v             # clean up incl. volumes
 - `go mod tidy` fails behind the corporate firewall on goose's test-only
   dependency (`modernc.org/sqlite`); use `go mod tidy -e` locally.
 
-Host ports: Postgres 5433, API `${API_PORT:-8090}` (8080 is taken on the dev box), web `${WEB_PORT:-3000}`.
+Host ports, all bound to `127.0.0.1`: Postgres 5433, API `${API_PORT:-8090}` (8080 is taken on the dev box),
+web `${WEB_PORT:-3020}` (3000 is taken). LAN/phone access goes through `../devproxy` (Caddy):
+`http://aktien.localhost/` on the Mac, `http://aktien.<LAN_IP>.sslip.io/` on the phone.
 
 ## Testing
 

@@ -41,6 +41,7 @@ services:
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/aktien_news?sslmode=disable
       USER_AGENT: ${USER_AGENT:-aktien-news-bot/0.1 (+https://aktien-news.at)}
+      SEC_USER_AGENT: ${SEC_USER_AGENT:-}
     restart: unless-stopped
     depends_on:
       db:

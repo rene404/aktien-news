@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/rene404/aktien-news/backend/internal/matching"
 	"github.com/rene404/aktien-news/backend/internal/store/db"
 )
 
@@ -89,8 +90,10 @@ func ParseSECTickers(b []byte) ([]SECCompany, error) {
 // ImportSEC merges the SEC list into the catalog in one transaction. Running
 // it again changes nothing.
 //
-//   - A curated company found by CIK, or else by one of the tickers, keeps its
-//     name, aliases and listings; only a missing CIK is filled in.
+//   - A curated company found by CIK, or else (without CIK yet) by its full
+//     legal name or one of the US tickers, keeps its name, aliases and
+//     listings; only the missing CIK is filled in. An uncurated duplicate an
+//     earlier import created for that CIK is removed.
 //   - An uncurated company found by CIK gets missing listings.
 //   - Any other issuer becomes a new uncurated company (slug sec-<cik>).
 //
@@ -99,14 +102,31 @@ func ImportSEC(ctx context.Context, pool *pgxpool.Pool, companies []SECCompany) 
 	var created, filled int
 	err := pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
 		q := db.New(tx)
+		names, err := q.CuratedNamesWithoutCIK(ctx)
+		if err != nil {
+			return fmt.Errorf("curated names: %w", err)
+		}
+		byName := map[string]int64{} // folded full name → curated company, -1 = ambiguous
+		for _, n := range names {
+			f := matching.Fold(n.Name)
+			if prev, ok := byName[f]; ok && prev != n.ID {
+				byName[f] = -1
+				continue
+			}
+			byName[f] = n.ID
+		}
+
 		for _, c := range companies {
 			cik := c.CIK
-			id, curated, err := companyForSEC(ctx, q, c)
+			id, curated, err := companyForSEC(ctx, q, c, byName)
 			if err != nil {
 				return fmt.Errorf("cik %s: %w", cik, err)
 			}
 			switch {
 			case id != 0 && curated:
+				if err := q.DeleteUncuratedByCIK(ctx, &cik); err != nil {
+					return fmt.Errorf("cik %s: %w", cik, err)
+				}
 				if err := q.FillCompanyCIK(ctx, db.FillCompanyCIKParams{ID: id, Cik: &cik}); err != nil {
 					return fmt.Errorf("cik %s: %w", cik, err)
 				}
@@ -133,15 +153,20 @@ func ImportSEC(ctx context.Context, pool *pgxpool.Pool, companies []SECCompany) 
 	return err
 }
 
-// companyForSEC finds the company an SEC issuer belongs to: by CIK, else a
-// curated company owning one of its tickers. 0 means none.
-func companyForSEC(ctx context.Context, q *db.Queries, c SECCompany) (int64, bool, error) {
+// companyForSEC finds the company an SEC issuer belongs to: a curated company
+// by CIK, else a curated company without CIK by full legal name or US ticker,
+// else any company by CIK. 0 means none.
+func companyForSEC(ctx context.Context, q *db.Queries, c SECCompany, curatedByName map[string]int64) (int64, bool, error) {
 	byCIK, err := q.CompanyByCIK(ctx, &c.CIK)
-	if err == nil {
-		return byCIK.ID, byCIK.Curated, nil
-	}
-	if !errors.Is(err, pgx.ErrNoRows) {
+	found := err == nil
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return 0, false, err
+	}
+	if found && byCIK.Curated {
+		return byCIK.ID, true, nil
+	}
+	if id := curatedByName[matching.Fold(c.Name)]; id > 0 {
+		return id, true, nil
 	}
 	for _, l := range c.Listings {
 		owner, err := q.CompanyByListing(ctx, db.CompanyByListingParams{Mic: l.MIC, Ticker: l.Ticker})
@@ -154,6 +179,9 @@ func companyForSEC(ctx context.Context, q *db.Queries, c SECCompany) (int64, boo
 		if owner.Curated && owner.Cik == nil {
 			return owner.ID, true, nil
 		}
+	}
+	if found {
+		return byCIK.ID, false, nil
 	}
 	return 0, false, nil
 }

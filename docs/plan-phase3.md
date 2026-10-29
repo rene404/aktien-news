@@ -26,7 +26,7 @@ Jede Aufgabe läuft auf einem eigenen `feature/phase3-*`-Branch per TDD. Für al
   Command: `docker compose --profile test run --rm backend-test go test ./internal/mcpserver/ ./internal/httpapi/ ./internal/config/`
   Done: Ohne oder mit falschem Token kommt 401. `initialize`, `tools/list` und `tools/call` per einfachem HTTP-POST (wie `McpHubClient`) liefern JSON. `tools/call` mit unbekanntem Ticker liefert `isError: true` mit Text. `as_of` wird durchgereicht. Der DTO-Rechtstest der öffentlichen API bleibt unverändert grün, und `/api/v1/*` liefert weiterhin kein Sentiment. Live antwortet `tools/list` aus einem Container im Compose-Netz.
 
-- [ ] **3. Anbindung an mcp-hub (boerseonline)**
+- [x] **3. Anbindung an mcp-hub (boerseonline)**
   Files: `docker-compose.yml`, `../mcp-hub/clients/boerseonline/proxy.yaml`, `../mcp-hub/clients/boerseonline/docker-compose.client.yml`, `AGENTS.md`, `README.md`
   What: aktien-news hängt sich an ein externes Docker-Netz, das die Proxy-Instanz erreicht. In `proxy.yaml` kommt der Server `news` dazu (`http://<api-host>:8081/mcp`) mit Bearer-Header. Die Änderung im mcp-hub-Repo erfordert laut Datei einen Maintainer-Sign-off, sie läuft deshalb dort auf eigenem Branch und wird erst nach Freigabe gemergt.
   Command: `docker compose up -d --build api` · `tools/list` gegen die Proxy-Instanz
@@ -36,6 +36,11 @@ Umsetzungsnotizen (Aufgaben 1–2): `search_news` liefert einen Eintrag pro Arti
 (Klassifikationen hängen am Paar), mit `company` und deren `tickers`. Beide Tools antworten mit einem Objekt
 (`{items: [...]}` bzw. dem Sentiment-Objekt) als `structuredContent` plus JSON-Text in `content`.
 Go-SDK `v1.8.0`, `Stateless` + `JSONResponse`; `tools/list` geht ohne `initialize`, wie `McpHubClient` es sendet.
+
+Umsetzungsnotiz (Aufgabe 3): Der Hub-Proxy konnte Children keinen Token schicken. mcp-hub bekam dafür
+`auth_token_env` pro Server (Branch `feat/child-server-auth`, Commits `8c1aefb`, `e9892e7`), der Proxy
+schickt den Bearer-Header auf allen Wegen (as_proxy, Discovery, call_server). Live geprüft am 2026-10-29:
+`McpHubClient` in `aistock-api` ruft `news_search_news` und `news_ticker_sentiment` über den Proxy auf.
 
 ## Zurückgestellt: Klassifikation
 

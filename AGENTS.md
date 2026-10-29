@@ -95,7 +95,9 @@ docker compose --profile test down -v             # clean up incl. volumes
 
 Host ports, all bound to `127.0.0.1`: Postgres 5433, API `${API_PORT:-8090}` (8080 is taken on the dev box),
 web `${WEB_PORT:-3020}` (3000 is taken). MCP (`:8081`, only with `MCP_AUTH_TOKEN`) is never
-published to the host — it returns sentiment; reach it from the compose network (`http://api:8081/mcp`). LAN/phone access goes through `../devproxy` (Caddy):
+published to the host — it returns sentiment. mcp-hub's boerseonline proxy reaches it as
+`http://aktien-news-api:8081/mcp` over the network `aktien-news-mcp` (bearer `NEWS_MCP_TOKEN` there =
+`MCP_AUTH_TOKEN` here). Attach nothing else to that network. LAN/phone access goes through `../devproxy` (Caddy):
 `http://aktien.localhost/` on the Mac, `http://aktien.<LAN_IP>.sslip.io/` on the phone.
 
 ## Testing

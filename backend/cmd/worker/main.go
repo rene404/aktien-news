@@ -42,12 +42,14 @@ func run(ctx context.Context) error {
 	}
 	defer pool.Close()
 
+	fetcher := fetch.New(cfg.UserAgent, 30*time.Second)
 	runner := &ingest.Runner{
 		Pool:    pool,
-		Fetcher: fetch.New(cfg.UserAgent, 30*time.Second),
+		Fetcher: fetcher,
 		Parsers: map[string]ingest.Parser{
 			"finanznachrichten": finanznachrichten.Parse,
 		},
+		TDM: fetcher,
 		Now: time.Now,
 	}
 

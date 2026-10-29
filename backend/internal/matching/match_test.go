@@ -155,6 +155,7 @@ func TestMatchUncuratedNeedsStrongSignals(t *testing.T) {
 		onsemi
 		gartner
 		target
+		bancorp
 	)
 	us := func(id int64, name, ticker, mic string) matching.CompanyEntry {
 		return matching.CompanyEntry{ID: id, Name: name, LegalName: name, Uncurated: true,
@@ -163,6 +164,7 @@ func TestMatchUncuratedNeedsStrongSignals(t *testing.T) {
 	ix := matching.NewIndex([]matching.CompanyEntry{
 		us(agilent, "Agilent Technologies, Inc.", "A", "XNYS"),
 		us(onsemi, "ON SEMICONDUCTOR CORP", "ON", "XNAS"),
+		us(bancorp, "Bancorp, Inc.", "TBBK", "XNAS"),
 		{ID: gartner, Name: "GARTNER INC", LegalName: "GARTNER INC", CIK: "749251", Uncurated: true,
 			Listings: []matching.Listing{{Ticker: "IT", MIC: "XNYS"}}},
 		{ID: target, Name: "Target", LegalName: "Target Corporation", Uncurated: true,
@@ -178,6 +180,16 @@ func TestMatchUncuratedNeedsStrongSignals(t *testing.T) {
 		{"bare name without legal form", matching.Input{Title: "Target cuts outlook"}, nil},
 		{"full name with legal form", matching.Input{Title: "Agilent Technologies, Inc. Reports Q3 Results"},
 			[]want{{agilent, "full_name", 0.90}}},
+		{"full name inside a longer company name",
+			matching.Input{Title: "8-K: Monroe Federal Bancorp, Inc. – Item 5.02 Departure of Directors"}, nil},
+		{"full name inside a longer name with a suffix",
+			matching.Input{Title: "8-K: Orange County Bancorp, Inc. /DE/ – Item 2.02 Results"}, nil},
+		{"full name after a lowercase word", matching.Input{Title: "Shares of Bancorp, Inc. rise"},
+			[]want{{bancorp, "full_name", 0.90}}},
+		{"full name after a distribution prefix", matching.Input{Title: "EQS-News: Agilent Technologies, Inc. raises outlook"},
+			[]want{{agilent, "full_name", 0.90}}},
+		{"full name at the start", matching.Input{Title: "Bancorp, Inc. Reports Q3 Results"},
+			[]want{{bancorp, "full_name", 0.90}}},
 		{"cashtag", matching.Input{Title: "Why $ON is moving"}, []want{{onsemi, "cashtag", 0.95}}},
 		{"filer CIK, title without the name", matching.Input{Title: "8-K: GARTNER INC – Item 8.01 Other Events", IssuerCIK: "749251"},
 			[]want{{gartner, "issuer", 1.00}}},
@@ -197,6 +209,15 @@ func TestMatchUncuratedNeedsStrongSignals(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// Curated names keep matching inside longer names; the containment rule for
+// other companies' names covers them.
+func TestMatchCuratedFullNameAfterCapitalizedWord(t *testing.T) {
+	got := testIndex().Match(matching.Input{Title: "Kurs Erste Group Bank AG steigt"})
+	if len(got) != 1 || got[0].CompanyID != erste || got[0].Method != "full_name" {
+		t.Errorf("got %+v, want Erste full_name", got)
 	}
 }
 

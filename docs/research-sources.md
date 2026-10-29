@@ -69,7 +69,7 @@ gemeinfreie oder zur Weiterverwendung freigegebene Behördendaten und Feeds mit 
 
 | Emittent | Feed | Stand | Hinweis |
 |---|---|---|---|
-| Deutsche Telekom | `telekom.com/en/investor-relations.rss.feed.427676.xml` (IR), `…/newsroom/latest-updates/media-information.rss.feed.418728.xml` (Presse) | aktuell | ✅ |
+| Deutsche Telekom | `telekom.com/en/investor-relations.rss.feed.427676.xml` (IR), `…/newsroom/latest-updates/media-information.rss.feed.418728.xml` (Presse) | aktuell | ✅ **aufgenommen** (`telekom_ir`, `telekom_presse`) |
 | Henkel | `henkel.com/service/en/33922/asFeed/index.xml`, `…/39580/…` | aktuell | ✅ Feeds ohne Kanal-Titel; vor Aufnahme klären, welcher Presse und welcher IR ist |
 | SAP | `news.sap.com/feed/` | aktuell | ✅ nur Titel: robots.txt sperrt KI-Bots → `text_policy = none`; viel Blog, wenig Börsenrelevantes |
 | Symrise | `symrise.com/newsroom/press-releases/rss.xml` | aktuell | ✅ |

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Test</title>
+<item><title>Ohne Aussender</title><link>https://example.com/a</link><pubDate>Thu, 29 Oct 2026 08:00:37 +0100</pubDate><description><![CDATA[Body text that must never be stored]]></description></item>
+<item><title>  </title><link>https://example.com/no-title</link><pubDate>Thu, 29 Oct 2026 08:00:37 +0100</pubDate></item>
+<item><title>No date</title><link>https://example.com/no-date</link></item>
+<item><title>Empty contributor</title><link>https://example.com/b</link><guid>b-1</guid><pubDate>Thu, 29 Oct 2026 07:40:00 +0000</pubDate><dc:contributor><![CDATA[  ]]></dc:contributor></item>
+</channel></rss>

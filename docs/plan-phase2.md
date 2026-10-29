@@ -20,7 +20,7 @@ Jede Aufgabe läuft auf einem eigenen `feature/phase2-*`-Branch per TDD. Für al
   Command: `docker compose --profile test run --rm backend-test go test ./internal/ingest/...`
   Done: Die httptest-Fälle Root-Datei mit Vorbehalt (wie bei OTS), `.well-known`, Header, 404 (= kein Vorbehalt) und Netzwerkfehler (= Vorbehalt bleibt unverändert) sind grün. `EffectivePolicy(full_text, reserved)` ergibt `none`.
 
-- [ ] **2. Presse-RSS: APA-OTS und PR Newswire**
+- [x] **2. Presse-RSS: APA-OTS und PR Newswire**
   Files: `backend/internal/ingest/pressrss/parse.go`, `backend/internal/ingest/pressrss/parse_test.go`, `backend/internal/ingest/pressrss/testdata/ots_finanzen.xml`, `backend/internal/ingest/pressrss/testdata/prn.xml`, `backend/seed/sources.csv`, `backend/cmd/worker/main.go`
   What: Ein Parser für RSS-Feeds, die den Aussender in `author` bzw. `dc:contributor` liefern, setzt diesen als `IssuerHint`. `description` wird ignoriert. Neu sind die Quellen `ots_finanzen`, `ots_wirtschaft` und `prn_all`.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/ingest/pressrss/` · `docker compose up -d --build worker && docker compose logs worker --tail 30`

@@ -17,6 +17,7 @@ import (
 	"github.com/rene404/aktien-news/backend/internal/ingest"
 	"github.com/rene404/aktien-news/backend/internal/ingest/fetch"
 	"github.com/rene404/aktien-news/backend/internal/ingest/finanznachrichten"
+	"github.com/rene404/aktien-news/backend/internal/ingest/pressrss"
 	"github.com/rene404/aktien-news/backend/internal/store"
 )
 
@@ -48,6 +49,7 @@ func run(ctx context.Context) error {
 		Fetcher: fetcher,
 		Parsers: map[string]ingest.Parser{
 			"finanznachrichten": finanznachrichten.Parse,
+			"pressrss":          pressrss.Parse,
 		},
 		TDM: fetcher,
 		Now: time.Now,

@@ -11,3 +11,5 @@ prn_all,PR Newswire,press_release,US,https://www.prnewswire.com/rss/news-release
 voestalpine_ir,voestalpine IR,ir,AT,https://www.voestalpine.com/group/en/media/press-releases/rss,pressrss,0.95,60,none,,voestalpine
 sec_8k,SEC 8-K,filing,US,https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=8-K&company=&dateb=&owner=include&start=0&count=100&output=atom,sec,1.00,10,none,https://www.sec.gov/os/accessing-edgar-data,
 sec_6k,SEC 6-K,filing,US,https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=6-K&company=&dateb=&owner=include&start=0&count=100&output=atom,sec,0.90,10,none,https://www.sec.gov/os/accessing-edgar-data,
+telekom_ir,Deutsche Telekom IR,ir,DE,https://www.telekom.com/en/investor-relations.rss.feed.427676.xml,pressrss,0.95,60,none,,deutsche-telekom
+telekom_presse,Deutsche Telekom Presse,ir,DE,https://www.telekom.com/en/newsroom/latest-updates/media-information.rss.feed.418728.xml,pressrss,0.90,60,none,,deutsche-telekom

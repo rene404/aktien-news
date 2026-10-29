@@ -50,8 +50,11 @@ Antworten enthalten bewusst nur Titel, Quelle, Link, Zeit und Ticker – keine T
 ## MCP (intern, für mcp-hub)
 
 Mit `MCP_AUTH_TOKEN` in `.env` startet die API zusätzlich einen MCP-Server (Streamable HTTP, JSON-Antworten,
-zustandslos) unter `http://api:8081/mcp`. Er ist nur im Docker-Netz erreichbar und verlangt
-`Authorization: Bearer <token>`.
+zustandslos) auf Port 8081. Er ist nicht auf den Host gemappt und verlangt `Authorization: Bearer <token>`.
+mcp-hub erreicht ihn als `http://aktien-news-api:8081/mcp` über das Netz `aktien-news-mcp`, dem nur der
+boerseonline-Client-Proxy beitritt. Dort heißen die Tools `news_search_news` und `news_ticker_sentiment`;
+der Proxy liest den Token aus `NEWS_MCP_TOKEN` (`mcp-hub/clients/boerseonline/.env`, gleicher Wert wie hier).
+aktien-news muss laufen, bevor der Client-Proxy startet, weil er das Netz als `external` erwartet.
 
 | Tool | Beschreibung |
 |---|---|

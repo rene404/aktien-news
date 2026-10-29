@@ -52,6 +52,9 @@ type Input struct {
 	// ISINIsIssuer marks IssuerISIN as the issuer of the item (ad-hoc and
 	// filing feeds). In news feeds the ISIN is only a loose tag.
 	ISINIsIssuer bool
+	// IssuerCompanyID is set when the source is the issuer's own channel
+	// (IR feed): every item is about that company.
+	IssuerCompanyID int64
 }
 
 type Match struct {
@@ -146,6 +149,7 @@ func (ix *Index) Match(in Input) []Match {
 		}
 	}
 
+	consider(in.IssuerCompanyID, 1.00, "issuer")
 	if h := Fold(in.IssuerHint); h != "" {
 		if id, ok := ix.issuer[h]; ok {
 			consider(id, 1.00, "issuer")

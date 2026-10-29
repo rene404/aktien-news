@@ -3,6 +3,7 @@ package sec_test
 import (
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -74,5 +75,29 @@ func TestParseDecodesLatin1(t *testing.T) {
 	}
 	if len(arts) != 1 || arts[0].Title != "8-K: SOCIÉTÉ EXAMPLE SA – Item 8.01 Other Events" || arts[0].IssuerCIK != "123456" {
 		t.Errorf("got %+v", arts)
+	}
+}
+
+// A real response of 2026-10-29: 97 8-K and 3 8-K/A filings.
+func TestParseLiveFeed(t *testing.T) {
+	arts, err := parseFile(t, "current_8k_live.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(arts) != 100 {
+		t.Fatalf("got %d filings, want 100", len(arts))
+	}
+	first := arts[0]
+	if first.Title != "8-K: TECHPRECISION CORP – Item 1.01 Entry into a Material Definitive Agreement" ||
+		first.IssuerCIK != "1328792" || first.ExternalID != "0001104659-26-119706" {
+		t.Errorf("first = %+v", first)
+	}
+	if arts[2].Title != "8-K: S&T BANCORP INC – Item 8.01 Other Events" {
+		t.Errorf("entity not decoded: %q", arts[2].Title)
+	}
+	for _, a := range arts {
+		if a.IssuerCIK == "" || a.URL == "" || a.PublishedAt.IsZero() || !strings.Contains(a.Title, " – Item ") {
+			t.Errorf("incomplete: %+v", a)
+		}
 	}
 }

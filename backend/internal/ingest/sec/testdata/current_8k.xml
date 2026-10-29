@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
-<!-- Built from the documented EDGAR "latest filings" Atom format
-     (browse-edgar?action=getcurrent&type=8-K&output=atom); sec.gov is not
-     reachable from the development network. Verify against a live response. -->
+<!-- Hand-built edge cases in the EDGAR "latest filings" Atom format
+     (browse-edgar?action=getcurrent&type=8-K&output=atom). current_8k_live.xml
+     is a real response of 2026-10-29. -->
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Latest Filings - Thu, 29 Oct 2026 09:30:12 EDT</title>
 <link rel="alternate" href="/cgi-bin/browse-edgar?action=getcurrent"/>

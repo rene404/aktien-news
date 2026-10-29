@@ -12,7 +12,8 @@
 //	full_name  0.90  name incl. legal form (legal name, issuer/former names)
 //	core_name  0.55  name without legal form, >= 3 chars → review queue
 //
-// ticker and core_name do not apply to uncurated (bulk-imported) companies.
+// ticker and core_name do not apply to uncurated (bulk-imported) companies,
+// and their full_name does not count right after a capitalized word.
 // >= HighThreshold → linked, >= MinThreshold → pending, else dropped.
 package matching
 
@@ -20,6 +21,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 const (
@@ -95,6 +98,7 @@ type nameEntry struct {
 	companyID int64
 	conf      float64
 	method    string
+	uncurated bool
 }
 
 // Index is an immutable lookup structure built from the catalog.
@@ -128,9 +132,9 @@ func NewIndex(companies []CompanyEntry) *Index {
 		addUnique(ix.issuer, stripLegalForm(f), id)
 		switch {
 		case hasLegalForm(f) || fullOnly:
-			ix.names = append(ix.names, nameEntry{f, id, 0.90, "full_name"})
+			ix.names = append(ix.names, nameEntry{f, id, 0.90, "full_name", uncurated})
 		case len(f) >= 3 && !uncurated:
-			ix.names = append(ix.names, nameEntry{f, id, 0.55, "core_name"})
+			ix.names = append(ix.names, nameEntry{f, id, 0.55, "core_name", false})
 		}
 	}
 
@@ -190,8 +194,14 @@ func (ix *Index) Match(in Input) []Match {
 		}
 	}
 
+	words := titleWords(in.Title)
 	for _, m := range ix.nameMatches(Fold(in.Title)) {
-		consider(m.companyID, m.conf, m.method)
+		// An uncurated name glued to a capitalized word is the tail of a
+		// longer company name: "Bancorp, Inc." in "Monroe Federal Bancorp, Inc.".
+		if m.entry.uncurated && words.continuesName(m.word) {
+			continue
+		}
+		consider(m.entry.companyID, m.entry.conf, m.entry.method)
 	}
 
 	// Feed ISIN last: a news-feed tag only counts as strong evidence when the
@@ -226,12 +236,13 @@ func (ix *Index) Match(in Input) []Match {
 type span struct {
 	entry      nameEntry
 	start, end int
+	word       int // index of the first word of the match in the title
 }
 
 // nameMatches finds every whole-word occurrence of every name and drops
 // occurrences that sit inside a longer occurrence of another company's name
 // ("Siemens" inside "Siemens Energy").
-func (ix *Index) nameMatches(title string) []nameEntry {
+func (ix *Index) nameMatches(title string) []span {
 	padded := " " + title + " "
 	var spans []span
 	for _, e := range ix.names {
@@ -242,12 +253,12 @@ func (ix *Index) nameMatches(title string) []nameEntry {
 				break
 			}
 			start := from + i
-			spans = append(spans, span{e, start, start + len(needle)})
+			spans = append(spans, span{e, start, start + len(needle), strings.Count(padded[:start], " ")})
 			from = start + 1
 		}
 	}
 
-	var out []nameEntry
+	var out []span
 	for _, s := range spans {
 		contained := false
 		for _, o := range spans {
@@ -257,10 +268,54 @@ func (ix *Index) nameMatches(title string) []nameEntry {
 			}
 		}
 		if !contained {
-			out = append(out, s.entry)
+			out = append(out, s)
 		}
 	}
 	return out
+}
+
+// word is one alphanumeric run of the original title. Fold keeps these runs
+// one-to-one, so word i here is word i of the folded title.
+type word struct {
+	start, end int // byte offsets in the original title
+}
+
+type titleWordList struct {
+	title string
+	words []word
+}
+
+func titleWords(title string) titleWordList {
+	var ws []word
+	start := -1
+	for i, r := range title {
+		alnum := unicode.IsLetter(r) || unicode.IsDigit(r)
+		switch {
+		case alnum && start < 0:
+			start = i
+		case !alnum && start >= 0:
+			ws = append(ws, word{start, i})
+			start = -1
+		}
+	}
+	if start >= 0 {
+		ws = append(ws, word{start, len(title)})
+	}
+	return titleWordList{title, ws}
+}
+
+// continuesName reports whether word i directly follows a capitalized word,
+// separated only by whitespace.
+func (l titleWordList) continuesName(i int) bool {
+	if i <= 0 || i >= len(l.words) {
+		return false
+	}
+	prev, cur := l.words[i-1], l.words[i]
+	if strings.TrimSpace(l.title[prev.end:cur.start]) != "" {
+		return false
+	}
+	r, _ := utf8.DecodeRuneInString(l.title[prev.start:])
+	return unicode.IsUpper(r)
 }
 
 // StatusFor maps a confidence to a link status, or "" if it is dropped.

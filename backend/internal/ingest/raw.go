@@ -16,4 +16,5 @@ type RawArticle struct {
 	PublishedAt time.Time
 	IssuerHint  string // issuer name stated by the feed or title, if any
 	IssuerISIN  string // ISIN supplied by the feed, if any
+	IssuerCIK   string // SEC CIK of the filer (filing feeds), no leading zeros
 }

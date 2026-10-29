@@ -84,7 +84,7 @@ func newRunner(t *testing.T) (*ingest.Runner, *pgxpool.Pool, *fakeFetcher, *cloc
 			"finanznachrichten": finanznachrichten.Parse,
 			"pressrss":          pressrss.Parse,
 		},
-		Now:     c.Now,
+		Now: c.Now,
 	}
 	return r, pool, f, c
 }

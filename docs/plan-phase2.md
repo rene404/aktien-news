@@ -56,7 +56,7 @@ Jede Aufgabe läuft auf einem eigenen `feature/phase2-*`-Branch per TDD. Für al
   Command: `docker compose --profile test run --rm backend-test go test ./internal/ingest/... ./internal/matching/`
   Done: Fixture-Tests sind grün (CIK mit führenden Nullen, mehrere Items, leer, kaputt). Ein bekannter CIK ist `linked` (issuer), ein unbekannter erzeugt keinen Link. Ohne `SEC_USER_AGENT` steht der Lauf in `ingest_runs` auf `skipped`.
 
-- [ ] **8. Text-Speicherung nur nach Policy, plus Retention-Purge**
+- [x] **8. Text-Speicherung nur nach Policy, plus Retention-Purge**
   Files: `backend/internal/ingest/texts.go`, `backend/internal/ingest/texts_test.go`, `backend/internal/store/queries/texts.sql`, `backend/cmd/worker/main.go`
   What: `ingest.StoreText` schreibt nach `article_texts` nur bei wirksamer Policy `full_text`, sonst nicht. `purge_after` = jetzt + `TEXT_RETENTION` (Default 30 Tage). Der Worker löscht einmal pro Stunde abgelaufene Texte. Den Abruf von 8-K-Volltexten erledigt Phase 3 zusammen mit dem Classifier, weil erst er Text braucht.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/ingest/`

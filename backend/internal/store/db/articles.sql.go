@@ -39,10 +39,10 @@ func (q *Queries) GetArticle(ctx context.Context, id int64) (Article, error) {
 const insertArticle = `-- name: InsertArticle :one
 INSERT INTO articles (
     source_id, external_id, url, canonical_url, title, lang,
-    published_at, content_hash, issuer_hint, issuer_isin
+    published_at, content_hash, simhash, issuer_hint, issuer_isin
 ) VALUES (
     $1, $2, $3, $4, $5, $6,
-    $7, $8, $9, $10
+    $7, $8, $9, $10, $11
 )
 ON CONFLICT DO NOTHING
 RETURNING id, source_id, external_id, url, canonical_url, title, lang, published_at, ingested_at, content_hash, simhash, cluster_id, issuer_hint, issuer_isin
@@ -57,6 +57,7 @@ type InsertArticleParams struct {
 	Lang         *string
 	PublishedAt  time.Time
 	ContentHash  []byte
+	Simhash      *int64
 	IssuerHint   *string
 	IssuerIsin   *string
 }
@@ -73,6 +74,7 @@ func (q *Queries) InsertArticle(ctx context.Context, arg InsertArticleParams) (A
 		arg.Lang,
 		arg.PublishedAt,
 		arg.ContentHash,
+		arg.Simhash,
 		arg.IssuerHint,
 		arg.IssuerIsin,
 	)

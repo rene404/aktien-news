@@ -3,7 +3,10 @@ package ingest_test
 import (
 	"context"
 	"errors"
+	"fmt"
+	"html"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -376,5 +379,120 @@ func TestRunDueKeepsTDMStateWhenCheckFails(t *testing.T) {
 	// A failed check does not fail the ingest run.
 	if rs := runs(t, pool)["fn_adhoc"]; len(rs) != 1 || rs[0].status != "ok" {
 		t.Errorf("fn_adhoc runs = %+v, want one ok run", rs)
+	}
+}
+
+type feedItem struct {
+	title, link string
+	published   time.Time
+}
+
+// rssFeed builds a minimal RSS 2.0 document both feed parsers accept.
+func rssFeed(items ...feedItem) []byte {
+	var b strings.Builder
+	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>t</title>`)
+	for _, it := range items {
+		fmt.Fprintf(&b, "<item><title>%s</title><link>%s</link><pubDate>%s</pubDate></item>",
+			html.EscapeString(it.title), html.EscapeString(it.link), it.published.Format(time.RFC1123Z))
+	}
+	b.WriteString(`</channel></rss>`)
+	return []byte(b.String())
+}
+
+type clusterRow struct {
+	size           int
+	members        int
+	representative string // source key of the representative article
+}
+
+// clusterOf returns the cluster of the article with the given link.
+func clusterOf(t *testing.T, pool *pgxpool.Pool, link string) (int64, clusterRow) {
+	t.Helper()
+	var id int64
+	var c clusterRow
+	err := pool.QueryRow(context.Background(), `
+		SELECT c.id, c.size,
+		       (SELECT count(*) FROM articles m WHERE m.cluster_id = c.id),
+		       (SELECT s.key FROM articles r JOIN sources s ON s.id = r.source_id WHERE r.id = c.representative_article_id)
+		FROM articles a JOIN clusters c ON c.id = a.cluster_id
+		WHERE a.url = $1`, link).Scan(&id, &c.size, &c.members, &c.representative)
+	if err != nil {
+		t.Fatalf("cluster of %s: %v", link, err)
+	}
+	return id, c
+}
+
+func TestRunDueClustersTheSameReleaseAcrossSources(t *testing.T) {
+	r, pool, f, c := newRunner(t)
+	const title = "EQS-CMS: Andritz AG: Sonstige Emittenten-/Unternehmensinformationen"
+	at := c.now.Add(-2 * time.Hour)
+	// OTS publishes first; the ad-hoc source still represents the cluster.
+	f.bodies[urlOTSF] = rssFeed(feedItem{title, "https://www.ots.at/presseaussendung/EQS_1/andritz", at})
+	f.bodies[urlAdhoc] = rssFeed(feedItem{title, "https://www.finanznachrichten.de/nachrichten-2026-10/1-andritz.htm", at.Add(time.Minute)})
+	if err := r.RunDue(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	otsCluster, got := clusterOf(t, pool, "https://www.ots.at/presseaussendung/EQS_1/andritz")
+	fnCluster, _ := clusterOf(t, pool, "https://www.finanznachrichten.de/nachrichten-2026-10/1-andritz.htm")
+	if otsCluster != fnCluster {
+		t.Fatalf("same release in clusters %d and %d", otsCluster, fnCluster)
+	}
+	if want := (clusterRow{size: 2, members: 2, representative: "fn_adhoc"}); got != want {
+		t.Errorf("cluster = %+v, want %+v", got, want)
+	}
+}
+
+func TestRunDueKeepsFollowUpsAndOldStoriesApart(t *testing.T) {
+	r, pool, f, c := newRunner(t)
+	const (
+		corr23 = "EQS-PVR: KORREKTUR vom 23.10.2026: Lenzing AG: Veröffentlichung gemäß § 135 Abs. 2 BörseG mit dem Ziel der europaweiten Verbreitung"
+		corr27 = "EQS-PVR: KORREKTUR vom 27.10.2026: Lenzing AG: Veröffentlichung gemäß § 135 Abs. 2 BörseG mit dem Ziel der europaweiten Verbreitung"
+		cms    = "EQS-CMS: Andritz AG: Sonstige Emittenten-/Unternehmensinformationen"
+	)
+	f.bodies[urlOTSF] = rssFeed(
+		feedItem{corr23, "https://www.ots.at/a/23", c.now.Add(-time.Hour)},
+		feedItem{corr27, "https://www.ots.at/a/27", c.now.Add(-time.Hour)},
+		feedItem{cms, "https://www.ots.at/a/cms-old", c.now.Add(-100 * time.Hour)},
+		feedItem{cms, "https://www.ots.at/a/cms-new", c.now.Add(-time.Hour)},
+	)
+	if err := r.RunDue(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, pair := range [][2]string{
+		{"https://www.ots.at/a/23", "https://www.ots.at/a/27"},
+		{"https://www.ots.at/a/cms-old", "https://www.ots.at/a/cms-new"}, // 99 h apart
+	} {
+		a, ca := clusterOf(t, pool, pair[0])
+		b, cb := clusterOf(t, pool, pair[1])
+		if a == b || ca.size != 1 || cb.size != 1 {
+			t.Errorf("%s and %s: clusters %d/%+v and %d/%+v, want two singletons", pair[0], pair[1], a, ca, b, cb)
+		}
+	}
+}
+
+func TestClusterUnassignedBackfillsOldArticles(t *testing.T) {
+	r, pool, _, _ := newRunner(t)
+	ctx := context.Background()
+	if err := r.RunDue(ctx); err != nil {
+		t.Fatal(err)
+	}
+	// Articles from before clustering existed: no fingerprint, no cluster.
+	if _, err := pool.Exec(ctx, `UPDATE articles SET cluster_id = NULL, simhash = NULL`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `DELETE FROM clusters`); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := r.ClusterUnassigned(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM articles WHERE cluster_id IS NULL OR simhash IS NULL`); n != 0 {
+		t.Errorf("%d articles still unclustered", n)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM clusters c WHERE size <> (SELECT count(*) FROM articles a WHERE a.cluster_id = c.id)`); n != 0 {
+		t.Errorf("%d clusters with a wrong size", n)
 	}
 }

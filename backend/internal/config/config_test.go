@@ -22,3 +22,16 @@ func TestTextRetention(t *testing.T) {
 		}
 	}
 }
+
+func TestMCP(t *testing.T) {
+	t.Setenv("MCP_ADDR", "")
+	t.Setenv("MCP_AUTH_TOKEN", "")
+	if c := config.Load(); c.MCPAddr != ":8081" || c.MCPAuthToken != "" {
+		t.Fatalf("defaults: addr %q token %q, want :8081 and none (MCP off)", c.MCPAddr, c.MCPAuthToken)
+	}
+	t.Setenv("MCP_ADDR", ":9000")
+	t.Setenv("MCP_AUTH_TOKEN", "tok")
+	if c := config.Load(); c.MCPAddr != ":9000" || c.MCPAuthToken != "tok" {
+		t.Fatalf("from env: addr %q token %q", c.MCPAddr, c.MCPAuthToken)
+	}
+}

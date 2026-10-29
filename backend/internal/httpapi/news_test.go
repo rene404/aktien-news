@@ -38,6 +38,11 @@ func newServer(t *testing.T) http.Handler {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if _, err := pool.Exec(ctx, `
+		WITH c AS (INSERT INTO clusters (first_seen_at, representative_article_id) VALUES (now(), $1) RETURNING id)
+		UPDATE articles SET cluster_id = (SELECT id FROM c) WHERE id = $1`, a.ID); err != nil {
+		t.Fatal(err)
+	}
 	erste, err := catalog.New(pool).CompanyByISIN(ctx, "AT0000652011")
 	if err != nil {
 		t.Fatal(err)

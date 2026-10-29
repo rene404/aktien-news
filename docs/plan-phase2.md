@@ -38,7 +38,7 @@ Jede Aufgabe läuft auf einem eigenen `feature/phase2-*`-Branch per TDD. Für al
   Command: `docker compose --profile test run --rm backend-test go test ./internal/dedupe/ ./internal/ingest/`
   Done: Dieselbe EQS-Meldung über FN und OTS landet in einem Cluster mit `size` 2, und der Repräsentant ist die Ad-hoc-Quelle. Ähnlich lautende, aber verschiedene Meldungen bleiben getrennt (z. B. die Korrekturen vom 23.10. und 27.10.). Ein Artikel außerhalb von 72 h gründet einen neuen Cluster.
 
-- [ ] **5. Öffentliche Liste: ein Eintrag pro Cluster**
+- [x] **5. Öffentliche Liste: ein Eintrag pro Cluster**
   Files: `backend/internal/store/queries/news.sql`, `backend/internal/service/news.go`, `backend/internal/service/news_test.go`, `backend/internal/httpapi/news_test.go`
   What: `ListNews` liefert pro Cluster nur den Repräsentanten (Titel, Link, Quelle) mit den Tickern aller verlinkten Artikel des Clusters. Filter und Cursor beziehen sich auf den Repräsentanten.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/service/ ./internal/httpapi/`

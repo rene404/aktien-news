@@ -1,32 +1,37 @@
 -- name: ListNews :many
--- Public feed: articles with at least one company whose CURRENT link state
--- (article_links, the projection of the append-only article_entities) is 'linked'.
--- Keyset pagination over (published_at, id), newest first.
+-- Public feed, one item per cluster: the representative's title, link,
+-- source and time, with the tickers of every member whose CURRENT link state
+-- (article_links, the projection of the append-only article_entities) is
+-- 'linked'. A cluster is listed when at least one member is linked.
+-- Ticker/index filters match any member; source, time and the keyset cursor
+-- over (published_at, id), newest first, refer to the representative.
 WITH linked AS (
-    SELECT article_id, company_id FROM article_links WHERE status = 'linked'
+    SELECT m.cluster_id, l.ticker, l.id AS listing_id
+    FROM article_links k
+    JOIN articles m ON m.id = k.article_id
+    JOIN listings l ON l.company_id = k.company_id AND l.active
+    WHERE k.status = 'linked' AND m.cluster_id IS NOT NULL
 )
 SELECT a.id, a.title, a.url, a.published_at,
        s.key AS source_key, s.name AS source_name,
-       array_agg(DISTINCT l.ticker ORDER BY l.ticker)::text[] AS tickers
-FROM articles a
+       array_agg(DISTINCT k.ticker ORDER BY k.ticker)::text[] AS tickers
+FROM clusters c
+JOIN articles a ON a.id = c.representative_article_id AND a.cluster_id = c.id
 JOIN sources s  ON s.id = a.source_id
-JOIN linked k   ON k.article_id = a.id
-JOIN listings l ON l.company_id = k.company_id AND l.active
+JOIN linked k   ON k.cluster_id = c.id
 WHERE (sqlc.narg('source')::text IS NULL OR s.key = sqlc.narg('source')::text)
   AND (sqlc.narg('from_ts')::timestamptz IS NULL OR a.published_at >= sqlc.narg('from_ts')::timestamptz)
   AND (sqlc.narg('to_ts')::timestamptz IS NULL OR a.published_at < sqlc.narg('to_ts')::timestamptz)
   AND (sqlc.narg('ticker')::text IS NULL OR EXISTS (
         SELECT 1 FROM linked k2
-        JOIN listings l2 ON l2.company_id = k2.company_id AND l2.active
-        WHERE k2.article_id = a.id AND upper(l2.ticker) = upper(sqlc.narg('ticker')::text)))
+        WHERE k2.cluster_id = c.id AND upper(k2.ticker) = upper(sqlc.narg('ticker')::text)))
   AND (sqlc.narg('index_key')::text IS NULL OR EXISTS (
         SELECT 1 FROM linked k3
-        JOIN listings l3 ON l3.company_id = k3.company_id AND l3.active
-        JOIN index_memberships m ON m.listing_id = l3.id
-        WHERE k3.article_id = a.id
-          AND m.index_key = sqlc.narg('index_key')::text
-          AND m.valid_from <= current_date
-          AND (m.valid_to IS NULL OR m.valid_to > current_date)))
+        JOIN index_memberships im ON im.listing_id = k3.listing_id
+        WHERE k3.cluster_id = c.id
+          AND im.index_key = sqlc.narg('index_key')::text
+          AND im.valid_from <= current_date
+          AND (im.valid_to IS NULL OR im.valid_to > current_date)))
   AND (sqlc.narg('cursor_ts')::timestamptz IS NULL
        OR (a.published_at, a.id) < (sqlc.narg('cursor_ts')::timestamptz, sqlc.narg('cursor_id')::bigint))
 GROUP BY a.id, s.key, s.name

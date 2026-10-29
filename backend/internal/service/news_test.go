@@ -73,6 +73,12 @@ func (w *world) article(t *testing.T, source int64, minutes int, title string, l
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Every stored article sits in a cluster; alone until w.cluster merges it.
+	if _, err := w.pool.Exec(ctx, `
+		WITH c AS (INSERT INTO clusters (first_seen_at, representative_article_id) VALUES (now(), $1) RETURNING id)
+		UPDATE articles SET cluster_id = (SELECT id FROM c) WHERE id = $1`, a.ID); err != nil {
+		t.Fatal(err)
+	}
 	for i, l := range links {
 		if _, err := w.pool.Exec(ctx, `
 			INSERT INTO article_entities (article_id, company_id, confidence, method, status, decided_by, decided_at)
@@ -82,6 +88,24 @@ func (w *world) article(t *testing.T, source int64, minutes int, title string, l
 		}
 	}
 	return a.ID
+}
+
+// cluster moves the members into the representative's cluster.
+func (w *world) cluster(t *testing.T, representative int64, members ...int64) {
+	t.Helper()
+	ctx := context.Background()
+	for _, m := range members {
+		if _, err := w.pool.Exec(ctx, `
+			UPDATE articles SET cluster_id = (SELECT cluster_id FROM articles WHERE id = $1) WHERE id = $2`,
+			representative, m); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := w.pool.Exec(ctx, `
+		UPDATE clusters c SET size = (SELECT count(*) FROM articles a WHERE a.cluster_id = c.id)
+		WHERE c.id = (SELECT cluster_id FROM articles WHERE id = $1)`, representative); err != nil {
+		t.Fatal(err)
+	}
 }
 
 type link struct {
@@ -130,6 +154,59 @@ func TestListNewsTickersOfAllLinkedCompanies(t *testing.T) {
 	}
 }
 
+func TestListNewsOneItemPerCluster(t *testing.T) {
+	w := newWorld(t)
+	rep := w.article(t, w.adhoc, 2, "EQS-Adhoc: Erste Group Bank AG: Dividende", link{w.erste, "linked"})
+	dup := w.article(t, w.other, 1, "EQS-Adhoc: Erste Group Bank AG: Dividende (FN USA)", link{w.post, "linked"})
+	w.article(t, w.adhoc, 3, "alone", link{w.apple, "linked"})
+	w.cluster(t, rep, dup)
+
+	page, err := w.svc.ListNews(context.Background(), service.NewsQuery{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := titles(page), []string{"alone", "EQS-Adhoc: Erste Group Bank AG: Dividende"}; !slices.Equal(got, want) {
+		t.Fatalf("titles = %v, want %v", got, want)
+	}
+	// The representative's title, link and source; the tickers of every member.
+	it := page.Items[1]
+	if it.ID != rep || it.SourceKey != "fn_adhoc" || !slices.Equal(it.Tickers, []string{"EBS", "POST"}) {
+		t.Errorf("cluster item = %+v", it)
+	}
+}
+
+func TestListNewsClusterFilters(t *testing.T) {
+	w := newWorld(t)
+	// Only the non-representative member is linked, and to Post.
+	rep := w.article(t, w.adhoc, 2, "rep", link{w.erste, "pending"})
+	member := w.article(t, w.other, 1, "member", link{w.post, "linked"})
+	w.cluster(t, rep, member)
+	ctx := context.Background()
+
+	cases := []struct {
+		name string
+		q    service.NewsQuery
+		want []string
+	}{
+		{"ticker of a member", service.NewsQuery{Ticker: "POST"}, []string{"rep"}},
+		{"index of a member", service.NewsQuery{Index: "ATX"}, []string{"rep"}},
+		{"pending link does not count", service.NewsQuery{Ticker: "EBS"}, []string{}},
+		{"source is the representative's", service.NewsQuery{Source: "fn_adhoc"}, []string{"rep"}},
+		{"member's source does not match", service.NewsQuery{Source: "fn_usa"}, []string{}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			page, err := w.svc.ListNews(ctx, tc.q)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := titles(page); !slices.Equal(got, tc.want) {
+				t.Errorf("titles = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestListNewsFilters(t *testing.T) {
 	w := newWorld(t)
 	w.article(t, w.adhoc, 1, "erste", link{w.erste, "linked"})
@@ -168,11 +245,17 @@ func TestListNewsFilters(t *testing.T) {
 
 func TestListNewsPagination(t *testing.T) {
 	w := newWorld(t)
+	var ids []int64
 	for i := range 5 {
-		w.article(t, w.adhoc, i, fmt.Sprintf("a%d", i), link{w.erste, "linked"})
+		ids = append(ids, w.article(t, w.adhoc, i, fmt.Sprintf("a%d", i), link{w.erste, "linked"}))
 	}
 	// Same timestamp: the id breaks the tie, nothing is skipped or repeated.
 	w.article(t, w.adhoc, 2, "a2-twin", link{w.erste, "linked"})
+	// Cluster members never show up as items of their own.
+	for i := range 3 {
+		m := w.article(t, w.other, i, fmt.Sprintf("a%d-copy", i), link{w.erste, "linked"})
+		w.cluster(t, ids[i], m)
+	}
 
 	ctx := context.Background()
 	var all []string

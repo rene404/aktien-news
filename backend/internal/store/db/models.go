@@ -408,20 +408,21 @@ type Listing struct {
 }
 
 type Source struct {
-	ID            int64
-	Key           string
-	Name          string
-	Kind          SourceKind
-	Market        string
-	Url           string
-	Weight        pgtype.Numeric
-	Enabled       bool
-	FetchInterval pgtype.Interval
-	TextPolicy    TextPolicy
-	TdmReserved   bool
-	TdmCheckedAt  *time.Time
-	TermsUrl      *string
-	Notes         *string
-	CreatedAt     time.Time
-	Parser        string
+	ID              int64
+	Key             string
+	Name            string
+	Kind            SourceKind
+	Market          string
+	Url             string
+	Weight          pgtype.Numeric
+	Enabled         bool
+	FetchInterval   pgtype.Interval
+	TextPolicy      TextPolicy
+	TdmReserved     bool
+	TdmCheckedAt    *time.Time
+	TermsUrl        *string
+	Notes           *string
+	CreatedAt       time.Time
+	Parser          string
+	IssuerCompanyID *int64
 }

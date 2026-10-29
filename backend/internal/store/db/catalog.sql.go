@@ -61,7 +61,7 @@ func (q *Queries) CompanyByTicker(ctx context.Context, arg CompanyByTickerParams
 }
 
 const getSourceByKey = `-- name: GetSourceByKey :one
-SELECT id, key, name, kind, market, url, weight, enabled, fetch_interval, text_policy, tdm_reserved, tdm_checked_at, terms_url, notes, created_at, parser FROM sources WHERE key = $1
+SELECT id, key, name, kind, market, url, weight, enabled, fetch_interval, text_policy, tdm_reserved, tdm_checked_at, terms_url, notes, created_at, parser, issuer_company_id FROM sources WHERE key = $1
 `
 
 func (q *Queries) GetSourceByKey(ctx context.Context, key string) (Source, error) {
@@ -84,6 +84,7 @@ func (q *Queries) GetSourceByKey(ctx context.Context, key string) (Source, error
 		&i.Notes,
 		&i.CreatedAt,
 		&i.Parser,
+		&i.IssuerCompanyID,
 	)
 	return i, err
 }
@@ -191,32 +192,35 @@ func (q *Queries) UpsertListing(ctx context.Context, arg UpsertListingParams) (i
 }
 
 const upsertSource = `-- name: UpsertSource :one
-INSERT INTO sources (key, name, kind, market, url, parser, weight, fetch_interval, text_policy, terms_url)
+INSERT INTO sources (key, name, kind, market, url, parser, weight, fetch_interval, text_policy, terms_url, issuer_company_id)
 VALUES (
     $1, $2, $3, $4, $5, $6,
     COALESCE($7::numeric, 0.50),
     COALESCE($8::interval, '10 minutes'),
     COALESCE($9::text_policy, 'none'),
-    $10
+    $10,
+    $11
 )
 ON CONFLICT (key) DO UPDATE
 SET name = EXCLUDED.name, kind = EXCLUDED.kind, market = EXCLUDED.market, url = EXCLUDED.url, parser = EXCLUDED.parser,
     weight = EXCLUDED.weight, fetch_interval = EXCLUDED.fetch_interval,
-    text_policy = EXCLUDED.text_policy, terms_url = EXCLUDED.terms_url
-RETURNING id, key, name, kind, market, url, weight, enabled, fetch_interval, text_policy, tdm_reserved, tdm_checked_at, terms_url, notes, created_at, parser
+    text_policy = EXCLUDED.text_policy, terms_url = EXCLUDED.terms_url,
+    issuer_company_id = EXCLUDED.issuer_company_id
+RETURNING id, key, name, kind, market, url, weight, enabled, fetch_interval, text_policy, tdm_reserved, tdm_checked_at, terms_url, notes, created_at, parser, issuer_company_id
 `
 
 type UpsertSourceParams struct {
-	Key           string
-	Name          string
-	Kind          SourceKind
-	Market        string
-	Url           string
-	Parser        string
-	Weight        pgtype.Numeric
-	FetchInterval pgtype.Interval
-	TextPolicy    *TextPolicy
-	TermsUrl      *string
+	Key             string
+	Name            string
+	Kind            SourceKind
+	Market          string
+	Url             string
+	Parser          string
+	Weight          pgtype.Numeric
+	FetchInterval   pgtype.Interval
+	TextPolicy      *TextPolicy
+	TermsUrl        *string
+	IssuerCompanyID *int64
 }
 
 func (q *Queries) UpsertSource(ctx context.Context, arg UpsertSourceParams) (Source, error) {
@@ -231,6 +235,7 @@ func (q *Queries) UpsertSource(ctx context.Context, arg UpsertSourceParams) (Sou
 		arg.FetchInterval,
 		arg.TextPolicy,
 		arg.TermsUrl,
+		arg.IssuerCompanyID,
 	)
 	var i Source
 	err := row.Scan(
@@ -250,6 +255,7 @@ func (q *Queries) UpsertSource(ctx context.Context, arg UpsertSourceParams) (Sou
 		&i.Notes,
 		&i.CreatedAt,
 		&i.Parser,
+		&i.IssuerCompanyID,
 	)
 	return i, err
 }

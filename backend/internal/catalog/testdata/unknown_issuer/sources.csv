@@ -1,0 +1,2 @@
+key,name,kind,market,url,parser,weight,fetch_interval_minutes,text_policy,terms_url,issuer_slug
+acme_ir,ACME IR,ir,AT,https://example.com/acme/rss,pressrss,0.95,60,none,,acme

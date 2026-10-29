@@ -3,6 +3,7 @@ package catalog_test
 import (
 	"context"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -35,7 +36,7 @@ func TestSeedIsIdempotent(t *testing.T) {
 		t.Fatalf("first seed: %v", err)
 	}
 	first := countRows(t, pool)
-	want := map[string]int{"sources": 1, "companies": 3, "listings": 3, "index_memberships": 3, "company_aliases": 2}
+	want := map[string]int{"sources": 2, "companies": 3, "listings": 3, "index_memberships": 3, "company_aliases": 2}
 	for table, n := range want {
 		if first[table] != n {
 			t.Errorf("%s: %d rows, want %d", table, first[table], n)
@@ -76,6 +77,48 @@ func TestLookups(t *testing.T) {
 
 	if _, err := cat.CompanyByISIN(ctx, "DE0007164600"); err != catalog.ErrNotFound {
 		t.Errorf("unknown isin: err = %v, want ErrNotFound", err)
+	}
+}
+
+func TestSeedLinksIRSourceToIssuer(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+	if err := catalog.Seed(ctx, pool, os.DirFS("testdata/valid")); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := pool.Query(ctx, `
+		SELECT s.key, coalesce(c.slug, '') FROM sources s
+		LEFT JOIN companies c ON c.id = s.issuer_company_id ORDER BY s.key`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	got := map[string]string{}
+	for rows.Next() {
+		var key, slug string
+		if err := rows.Scan(&key, &slug); err != nil {
+			t.Fatal(err)
+		}
+		got[key] = slug
+	}
+	want := map[string]string{"fn_adhoc": "", "post_ir": "oesterreichische-post"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("source issuers = %v, want %v", got, want)
+	}
+}
+
+func TestSeedRejectsUnknownIssuerSlug(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+
+	err := catalog.Seed(ctx, pool, os.DirFS("testdata/unknown_issuer"))
+	if err == nil || !strings.Contains(err.Error(), `unknown issuer_slug "acme"`) {
+		t.Fatalf("err = %v, want an error naming the unknown issuer_slug", err)
+	}
+	for table, n := range countRows(t, pool) {
+		if n != 0 {
+			t.Errorf("%s has %d rows after a failed seed, want 0", table, n)
+		}
 	}
 }
 

@@ -80,6 +80,9 @@ docker compose --profile test run --rm backend-test go test ./internal/httpapi/
 docker compose --profile test run --rm backend-test sh -c "go vet ./... && go test ./..."
 docker compose --profile test run --rm web-test      # npm ci + lint + test + build
 docker compose --profile tools run --rm --build seed   # migrate + load backend/seed/*.csv (idempotent)
+docker compose --profile tools run --rm -v <dir>:/sec:ro seed -sec-file /sec/company_tickers_exchange.json
+                                                  # + US issuers from sec.gov/files/company_tickers_exchange.json
+                                                  #   (download outside the corporate network)
 docker compose --profile tools run --rm sqlc      # regenerate internal/store/db
 docker compose --profile tools run --rm sqlc diff # CI: generated code must be current
 docker compose --profile test down -v             # clean up incl. volumes

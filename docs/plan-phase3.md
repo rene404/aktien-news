@@ -14,7 +14,7 @@ Grundlage: `docs/design.md` (§6 MCP, §7, §11) und der Live-Stand vom 2026-10-
 Jede Aufgabe läuft auf einem eigenen `feature/phase3-*`-Branch per TDD. Für alle gilt der Gate
 `docker compose --profile test run --rm backend-test sh -c "gofmt -l .; go vet ./... && go test ./..."`.
 
-- [ ] **1. Point-in-time-Service: `SearchNews` und `TickerSentiment`**
+- [x] **1. Point-in-time-Service: `SearchNews` und `TickerSentiment`**
   Files: `backend/internal/service/insight.go`, `backend/internal/service/insight_test.go`, `backend/internal/store/queries/insight.sql`
   What: `SearchNews(ticker?, query?, since, until?, eventType?, minConfidence=0.85, asOf=jetzt, limit 1–50)` liefert Artikel mit `id`, `cluster_id`, Titel, URL, Quelle, `source_weight`, `published_at`, `ingested_at`, Tickern und, falls vorhanden, Event-Typ, Sentiment, Confidence, Novelty und `classified_at`. `minConfidence` filtert die Link-Confidence. `eventType` setzt eine Klassifikation voraus. `TickerSentiment(ticker, window 1d|7d|30d, asOf)` liefert `n_articles`, `n_clusters`, `score_weighted` nach design §6, `score_mean`, `by_event_type` und `baseline: null`. Point-in-time bedeutet: Es zählen nur `ingested_at`, `decided_at` (jüngste Zeile in `article_entities`) und `classified_at` ≤ `as_of`. Bei mehreren Klassifikationen gilt die jüngste ≤ `as_of`.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/service/`

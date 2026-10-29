@@ -76,10 +76,3 @@ func (s *Service) Sources(ctx context.Context) ([]Source, error) {
 	}
 	return out, nil
 }
-
-func deref(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}

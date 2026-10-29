@@ -1,0 +1,15 @@
+{"fields":["cik","name","ticker","exchange"],"data":[
+[320193,"Apple Inc.","AAPL","Nasdaq"],
+[789019,"MICROSOFT CORP","MSFT","Nasdaq"],
+[1652044,"Alphabet Inc.","GOOGL","Nasdaq"],
+[1652044,"Alphabet Inc.","GOOG","Nasdaq"],
+[1067983,"BERKSHIRE HATHAWAY INC","BRK-B","NYSE"],
+[1067983,"BERKSHIRE HATHAWAY INC","BRK-A","NYSE"],
+[1090872,"Agilent Technologies, Inc.","A","NYSE"],
+[1097864,"ON SEMICONDUCTOR CORP","ON","Nasdaq"],
+[749251,"GARTNER INC","IT","NYSE"],
+[1418091,"Twitter Pink Sheet Holdings","TWTRX","OTC"],
+[1000045,"NICHOLAS FINANCIAL INC","NICK","CBOE"],
+[1000097,"KINGSTONE COMPANIES, INC.",null,null],
+[1000209,"MEDALLION FINANCIAL CORP","MFIN",null]
+]}

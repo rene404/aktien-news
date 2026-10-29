@@ -163,7 +163,8 @@ func TestMatchUncuratedNeedsStrongSignals(t *testing.T) {
 	ix := matching.NewIndex([]matching.CompanyEntry{
 		us(agilent, "Agilent Technologies, Inc.", "A", "XNYS"),
 		us(onsemi, "ON SEMICONDUCTOR CORP", "ON", "XNAS"),
-		us(gartner, "GARTNER INC", "IT", "XNYS"),
+		{ID: gartner, Name: "GARTNER INC", LegalName: "GARTNER INC", CIK: "749251", Uncurated: true,
+			Listings: []matching.Listing{{Ticker: "IT", MIC: "XNYS"}}},
 		{ID: target, Name: "Target", LegalName: "Target Corporation", Uncurated: true,
 			Listings: []matching.Listing{{Ticker: "TGT", MIC: "XNYS", ISIN: "US87612E1064"}}},
 	})
@@ -178,6 +179,9 @@ func TestMatchUncuratedNeedsStrongSignals(t *testing.T) {
 		{"full name with legal form", matching.Input{Title: "Agilent Technologies, Inc. Reports Q3 Results"},
 			[]want{{agilent, "full_name", 0.90}}},
 		{"cashtag", matching.Input{Title: "Why $ON is moving"}, []want{{onsemi, "cashtag", 0.95}}},
+		{"filer CIK, title without the name", matching.Input{Title: "8-K: GARTNER INC – Item 8.01 Other Events", IssuerCIK: "749251"},
+			[]want{{gartner, "issuer", 1.00}}},
+		{"unknown CIK", matching.Input{Title: "8-K: SMALLCAP WIDGETS CORP – Item 8.01 Other Events", IssuerCIK: "1999999"}, nil},
 		{"issuer hint", matching.Input{Title: "Q3 results", IssuerHint: "Gartner, Inc."}, []want{{gartner, "issuer", 1.00}}},
 		{"ISIN in title", matching.Input{Title: "US87612E1064: dividend"}, []want{{target, "isin", 0.98}}},
 	}

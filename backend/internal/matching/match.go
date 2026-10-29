@@ -2,7 +2,8 @@
 //
 // Signals (highest per company wins):
 //
-//	issuer     1.00  issuer named by the feed/title equals a known name
+//	issuer     1.00  issuer named by the feed/title equals a known name, the
+//	                 source is the issuer's own channel, or the filer's CIK
 //	isin       0.98  issuer ISIN (ad-hoc/filing feed) or ISIN in the title
 //	isin       0.90  ISIN tagged by a news feed, company also named in the title
 //	isin       0.60  ISIN tagged by a news feed, not corroborated → review
@@ -41,6 +42,7 @@ type CompanyEntry struct {
 	ID        int64
 	Name      string
 	LegalName string
+	CIK       string // SEC CIK, no leading zeros
 	Aliases   []Alias
 	Listings  []Listing
 	// Uncurated companies come from a bulk import (SEC ticker list). Only
@@ -61,6 +63,8 @@ type Input struct {
 	// IssuerCompanyID is set when the source is the issuer's own channel
 	// (IR feed): every item is about that company.
 	IssuerCompanyID int64
+	// IssuerCIK is the SEC CIK of the filer (filing feeds).
+	IssuerCIK string
 }
 
 type Match struct {
@@ -96,6 +100,7 @@ type nameEntry struct {
 // Index is an immutable lookup structure built from the catalog.
 type Index struct {
 	issuer   map[string]int64 // folded name, also without legal form → company (-1 = ambiguous)
+	cik      map[string]int64
 	isin     map[string]int64
 	cashtags map[string]int64 // every ticker; -1 = ambiguous
 	tickers  map[string]int64 // tickers of curated companies, matched as plain words; -1 = ambiguous
@@ -103,7 +108,7 @@ type Index struct {
 }
 
 func NewIndex(companies []CompanyEntry) *Index {
-	ix := &Index{issuer: map[string]int64{}, isin: map[string]int64{}, cashtags: map[string]int64{}, tickers: map[string]int64{}}
+	ix := &Index{issuer: map[string]int64{}, cik: map[string]int64{}, isin: map[string]int64{}, cashtags: map[string]int64{}, tickers: map[string]int64{}}
 	addUnique := func(m map[string]int64, key string, id int64) {
 		if key == "" {
 			return
@@ -130,6 +135,7 @@ func NewIndex(companies []CompanyEntry) *Index {
 	}
 
 	for _, c := range companies {
+		addUnique(ix.cik, c.CIK, c.ID)
 		addName(c.Name, c.ID, false, c.Uncurated)
 		addName(c.LegalName, c.ID, false, c.Uncurated)
 		for _, a := range c.Aliases {
@@ -160,6 +166,9 @@ func (ix *Index) Match(in Input) []Match {
 	}
 
 	consider(in.IssuerCompanyID, 1.00, "issuer")
+	if in.IssuerCIK != "" {
+		consider(ix.cik[in.IssuerCIK], 1.00, "issuer")
+	}
 	if h := Fold(in.IssuerHint); h != "" {
 		if id, ok := ix.issuer[h]; ok {
 			consider(id, 1.00, "issuer")

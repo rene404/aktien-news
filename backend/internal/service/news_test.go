@@ -228,6 +228,8 @@ func TestListNewsFilters(t *testing.T) {
 		{"index", service.NewsQuery{Index: "ATX"}, []string{"post", "erste"}},
 		{"index sp500", service.NewsQuery{Index: "SP500"}, []string{"apple"}},
 		{"source", service.NewsQuery{Source: "fn_usa"}, []string{"apple"}},
+		{"kind", service.NewsQuery{Kinds: []string{"news_api"}}, []string{"apple"}},
+		{"several kinds", service.NewsQuery{Kinds: []string{"adhoc", "filing"}}, []string{"post", "erste"}},
 		{"from/to inclusive from, exclusive to", service.NewsQuery{From: &from, To: &to}, []string{"post"}},
 	}
 	for _, tc := range cases {
@@ -291,6 +293,7 @@ func TestListNewsValidation(t *testing.T) {
 		"bad cursor":      {Cursor: "not-a-cursor"},
 		"bad ticker":      {Ticker: "DROP TABLE"},
 		"bad index":       {Index: "atx; --"},
+		"unknown kind":    {Kinds: []string{"gossip"}},
 	} {
 		_, err := w.svc.ListNews(context.Background(), q)
 		var verr *service.ValidationError

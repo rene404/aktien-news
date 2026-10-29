@@ -98,7 +98,7 @@ func TestNewsEndpoint(t *testing.T) {
 			t.Errorf("%s = %v, want %v", k, item[k], v)
 		}
 	}
-	if src := item["source"].(map[string]any); src["key"] != "fn_adhoc" || src["name"] == "" {
+	if src := item["source"].(map[string]any); src["key"] != "fn_adhoc" || src["name"] == "" || src["kind"] != "adhoc" {
 		t.Errorf("source = %v", src)
 	}
 	if tickers := item["tickers"].([]any); len(tickers) != 1 || tickers[0] != "EBS" {
@@ -129,6 +129,7 @@ func TestNewsBadRequests(t *testing.T) {
 		"/api/v1/news?from=2026-10-28T10:00:00Z&to=2026-10-28T09:00:00Z",
 		"/api/v1/news?cursor=garbage",
 		"/api/v1/news?ticker=%27%3B--",
+		"/api/v1/news?kind=adhoc,gossip",
 	} {
 		rec := get(t, h, target)
 		if rec.Code != http.StatusBadRequest {
@@ -180,7 +181,25 @@ func TestSourcesEndpoint(t *testing.T) {
 		t.Fatalf("status = %d", rec.Code)
 	}
 	items := decode(t, rec)["items"].([]any)
-	if len(items) != 1 || items[0].(map[string]any)["key"] != "fn_adhoc" {
+	if len(items) != 1 || items[0].(map[string]any)["key"] != "fn_adhoc" || items[0].(map[string]any)["kind"] != "adhoc" {
 		t.Errorf("items = %v", items)
+	}
+}
+
+func TestNewsKindFilter(t *testing.T) {
+	h := newServer(t)
+	for target, want := range map[string]int{
+		"/api/v1/news?kind=adhoc":                1,
+		"/api/v1/news?kind=filing,press_release": 0,
+		"/api/v1/news?kind=":                     1, // empty means no filter
+	} {
+		rec := get(t, h, target)
+		if rec.Code != http.StatusOK {
+			t.Errorf("%s: status = %d", target, rec.Code)
+			continue
+		}
+		if items := decode(t, rec)["items"].([]any); len(items) != want {
+			t.Errorf("%s: %d items, want %d", target, len(items), want)
+		}
 	}
 }

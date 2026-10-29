@@ -3,8 +3,8 @@
 -- source and time, with the tickers of every member whose CURRENT link state
 -- (article_links, the projection of the append-only article_entities) is
 -- 'linked'. A cluster is listed when at least one member is linked.
--- Ticker/index filters match any member; source, time and the keyset cursor
--- over (published_at, id), newest first, refer to the representative.
+-- Ticker/index filters match any member; source, source kinds, time and the
+-- keyset cursor over (published_at, id), newest first, refer to the representative.
 WITH linked AS (
     SELECT m.cluster_id, l.ticker, l.id AS listing_id
     FROM article_links k
@@ -13,13 +13,14 @@ WITH linked AS (
     WHERE k.status = 'linked' AND m.cluster_id IS NOT NULL
 )
 SELECT a.id, a.title, a.url, a.published_at,
-       s.key AS source_key, s.name AS source_name,
+       s.key AS source_key, s.name AS source_name, s.kind AS source_kind,
        array_agg(DISTINCT k.ticker ORDER BY k.ticker)::text[] AS tickers
 FROM clusters c
 JOIN articles a ON a.id = c.representative_article_id AND a.cluster_id = c.id
 JOIN sources s  ON s.id = a.source_id
 JOIN linked k   ON k.cluster_id = c.id
 WHERE (sqlc.narg('source')::text IS NULL OR s.key = sqlc.narg('source')::text)
+  AND (sqlc.narg('kinds')::text[] IS NULL OR s.kind::text = ANY(sqlc.narg('kinds')::text[]))
   AND (sqlc.narg('from_ts')::timestamptz IS NULL OR a.published_at >= sqlc.narg('from_ts')::timestamptz)
   AND (sqlc.narg('to_ts')::timestamptz IS NULL OR a.published_at < sqlc.narg('to_ts')::timestamptz)
   AND (sqlc.narg('ticker')::text IS NULL OR EXISTS (
@@ -34,7 +35,7 @@ WHERE (sqlc.narg('source')::text IS NULL OR s.key = sqlc.narg('source')::text)
           AND (im.valid_to IS NULL OR im.valid_to > current_date)))
   AND (sqlc.narg('cursor_ts')::timestamptz IS NULL
        OR (a.published_at, a.id) < (sqlc.narg('cursor_ts')::timestamptz, sqlc.narg('cursor_id')::bigint))
-GROUP BY a.id, s.key, s.name
+GROUP BY a.id, s.key, s.name, s.kind
 ORDER BY a.published_at DESC, a.id DESC
 LIMIT sqlc.arg('lim')::int;
 
@@ -62,4 +63,4 @@ WHERE listing_id = @listing_id
 ORDER BY index_key;
 
 -- name: ListEnabledSources :many
-SELECT key, name, market FROM sources WHERE enabled ORDER BY name;
+SELECT key, name, market, kind FROM sources WHERE enabled ORDER BY name;

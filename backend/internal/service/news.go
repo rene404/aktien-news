@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +25,9 @@ const (
 )
 
 var ErrNotFound = errors.New("not found")
+
+// SourceKinds are the values of the source_kind enum.
+var SourceKinds = []string{"adhoc", "press_release", "news_api", "ir", "filing"}
 
 // ValidationError means the caller sent bad input (HTTP 400).
 type ValidationError struct{ Msg string }
@@ -46,6 +50,7 @@ type NewsQuery struct {
 	Ticker   string
 	Index    string
 	Source   string
+	Kinds    []string // source kinds; empty = all
 	From, To *time.Time
 	Cursor   string
 	Limit    int // 0 = DefaultLimit
@@ -57,6 +62,7 @@ type NewsItem struct {
 	URL         string
 	SourceKey   string
 	SourceName  string
+	SourceKind  string
 	PublishedAt time.Time
 	Tickers     []string
 }
@@ -91,9 +97,15 @@ func (s *Service) ListNews(ctx context.Context, nq NewsQuery) (NewsPage, error) 
 	if nq.Source != "" && !keyPattern.MatchString(nq.Source) {
 		return NewsPage{}, invalid("invalid source")
 	}
+	for _, k := range nq.Kinds {
+		if !slices.Contains(SourceKinds, k) {
+			return NewsPage{}, invalid("unknown source kind %q", k)
+		}
+	}
 
 	params := db.ListNewsParams{
 		Source: optional(nq.Source), Ticker: optional(nq.Ticker), IndexKey: optional(nq.Index),
+		Kinds:  nq.Kinds,
 		FromTs: nq.From, ToTs: nq.To,
 		Lim: int32(limit + 1), // one extra row tells us whether there is a next page
 	}
@@ -117,7 +129,7 @@ func (s *Service) ListNews(ctx context.Context, nq NewsQuery) (NewsPage, error) 
 			break
 		}
 		page.Items = append(page.Items, NewsItem{
-			ID: r.ID, Title: r.Title, URL: r.Url, SourceKey: r.SourceKey, SourceName: r.SourceName,
+			ID: r.ID, Title: r.Title, URL: r.Url, SourceKey: r.SourceKey, SourceName: r.SourceName, SourceKind: string(r.SourceKind),
 			PublishedAt: r.PublishedAt.UTC(), Tickers: r.Tickers,
 		})
 	}

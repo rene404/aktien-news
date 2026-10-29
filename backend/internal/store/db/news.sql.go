@@ -42,13 +42,14 @@ func (q *Queries) InstrumentByTicker(ctx context.Context, ticker string) (Instru
 }
 
 const listEnabledSources = `-- name: ListEnabledSources :many
-SELECT key, name, market FROM sources WHERE enabled ORDER BY name
+SELECT key, name, market, kind FROM sources WHERE enabled ORDER BY name
 `
 
 type ListEnabledSourcesRow struct {
 	Key    string
 	Name   string
 	Market string
+	Kind   SourceKind
 }
 
 func (q *Queries) ListEnabledSources(ctx context.Context) ([]ListEnabledSourcesRow, error) {
@@ -60,7 +61,12 @@ func (q *Queries) ListEnabledSources(ctx context.Context) ([]ListEnabledSourcesR
 	var items []ListEnabledSourcesRow
 	for rows.Next() {
 		var i ListEnabledSourcesRow
-		if err := rows.Scan(&i.Key, &i.Name, &i.Market); err != nil {
+		if err := rows.Scan(
+			&i.Key,
+			&i.Name,
+			&i.Market,
+			&i.Kind,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -80,34 +86,36 @@ WITH linked AS (
     WHERE k.status = 'linked' AND m.cluster_id IS NOT NULL
 )
 SELECT a.id, a.title, a.url, a.published_at,
-       s.key AS source_key, s.name AS source_name,
+       s.key AS source_key, s.name AS source_name, s.kind AS source_kind,
        array_agg(DISTINCT k.ticker ORDER BY k.ticker)::text[] AS tickers
 FROM clusters c
 JOIN articles a ON a.id = c.representative_article_id AND a.cluster_id = c.id
 JOIN sources s  ON s.id = a.source_id
 JOIN linked k   ON k.cluster_id = c.id
 WHERE ($1::text IS NULL OR s.key = $1::text)
-  AND ($2::timestamptz IS NULL OR a.published_at >= $2::timestamptz)
-  AND ($3::timestamptz IS NULL OR a.published_at < $3::timestamptz)
-  AND ($4::text IS NULL OR EXISTS (
-        SELECT 1 FROM linked k2
-        WHERE k2.cluster_id = c.id AND upper(k2.ticker) = upper($4::text)))
+  AND ($2::text[] IS NULL OR s.kind::text = ANY($2::text[]))
+  AND ($3::timestamptz IS NULL OR a.published_at >= $3::timestamptz)
+  AND ($4::timestamptz IS NULL OR a.published_at < $4::timestamptz)
   AND ($5::text IS NULL OR EXISTS (
+        SELECT 1 FROM linked k2
+        WHERE k2.cluster_id = c.id AND upper(k2.ticker) = upper($5::text)))
+  AND ($6::text IS NULL OR EXISTS (
         SELECT 1 FROM linked k3
         JOIN index_memberships im ON im.listing_id = k3.listing_id
         WHERE k3.cluster_id = c.id
-          AND im.index_key = $5::text
+          AND im.index_key = $6::text
           AND im.valid_from <= current_date
           AND (im.valid_to IS NULL OR im.valid_to > current_date)))
-  AND ($6::timestamptz IS NULL
-       OR (a.published_at, a.id) < ($6::timestamptz, $7::bigint))
-GROUP BY a.id, s.key, s.name
+  AND ($7::timestamptz IS NULL
+       OR (a.published_at, a.id) < ($7::timestamptz, $8::bigint))
+GROUP BY a.id, s.key, s.name, s.kind
 ORDER BY a.published_at DESC, a.id DESC
-LIMIT $8::int
+LIMIT $9::int
 `
 
 type ListNewsParams struct {
 	Source   *string
+	Kinds    []string
 	FromTs   *time.Time
 	ToTs     *time.Time
 	Ticker   *string
@@ -124,6 +132,7 @@ type ListNewsRow struct {
 	PublishedAt time.Time
 	SourceKey   string
 	SourceName  string
+	SourceKind  SourceKind
 	Tickers     []string
 }
 
@@ -131,11 +140,12 @@ type ListNewsRow struct {
 // source and time, with the tickers of every member whose CURRENT link state
 // (article_links, the projection of the append-only article_entities) is
 // 'linked'. A cluster is listed when at least one member is linked.
-// Ticker/index filters match any member; source, time and the keyset cursor
-// over (published_at, id), newest first, refer to the representative.
+// Ticker/index filters match any member; source, source kinds, time and the
+// keyset cursor over (published_at, id), newest first, refer to the representative.
 func (q *Queries) ListNews(ctx context.Context, arg ListNewsParams) ([]ListNewsRow, error) {
 	rows, err := q.db.Query(ctx, listNews,
 		arg.Source,
+		arg.Kinds,
 		arg.FromTs,
 		arg.ToTs,
 		arg.Ticker,
@@ -158,6 +168,7 @@ func (q *Queries) ListNews(ctx context.Context, arg ListNewsParams) ([]ListNewsR
 			&i.PublishedAt,
 			&i.SourceKey,
 			&i.SourceName,
+			&i.SourceKind,
 			&i.Tickers,
 		); err != nil {
 			return nil, err

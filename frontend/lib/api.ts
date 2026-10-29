@@ -1,11 +1,13 @@
 // Server-side client for the Go REST API. Only called from server
 // components; the browser never talks to the API directly.
 
+export type SourceKind = "adhoc" | "press_release" | "news_api" | "ir" | "filing";
+
 export type NewsItem = {
   id: number;
   title: string;
   url: string;
-  source: { key: string; name: string };
+  source: { key: string; name: string; kind: SourceKind };
   published_at: string;
   tickers: string[];
 };
@@ -16,12 +18,14 @@ export type Instrument = { ticker: string; mic: string; name: string; isin?: str
 
 export type InstrumentDetail = Instrument & { country: string; indices: string[] };
 
-export type Source = { key: string; name: string; market: string };
+export type Source = { key: string; name: string; market: string; kind: SourceKind };
 
 export type NewsParams = {
   ticker?: string;
   index?: string;
   source?: string;
+  /** Comma-separated source kinds. */
+  kind?: string;
   from?: string;
   to?: string;
   cursor?: string;

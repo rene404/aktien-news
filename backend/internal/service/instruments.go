@@ -22,6 +22,7 @@ type Source struct {
 	Key    string
 	Name   string
 	Market string
+	Kind   string
 }
 
 // SearchInstruments matches ticker prefix, name substring or exact ISIN.
@@ -71,7 +72,7 @@ func (s *Service) Sources(ctx context.Context) ([]Source, error) {
 	}
 	out := make([]Source, len(rows))
 	for i, r := range rows {
-		out[i] = Source{Key: r.Key, Name: r.Name, Market: r.Market}
+		out[i] = Source{Key: r.Key, Name: r.Name, Market: r.Market, Kind: string(r.Kind)}
 	}
 	return out, nil
 }

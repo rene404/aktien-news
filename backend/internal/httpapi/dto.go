@@ -28,6 +28,7 @@ type newsItemDTO struct {
 type sourceRef struct {
 	Key  string `json:"key"`
 	Name string `json:"name"`
+	Kind string `json:"kind"`
 }
 
 type instrumentDTO struct {
@@ -51,6 +52,7 @@ type sourceDTO struct {
 	Key    string `json:"key"`
 	Name   string `json:"name"`
 	Market string `json:"market"`
+	Kind   string `json:"kind"`
 }
 
 type sourceListDTO struct {
@@ -70,7 +72,7 @@ func toNewsPage(p service.NewsPage) newsPageDTO {
 		}
 		out.Items[i] = newsItemDTO{
 			ID: it.ID, Title: it.Title, URL: it.URL,
-			Source:      sourceRef{Key: it.SourceKey, Name: it.SourceName},
+			Source:      sourceRef{Key: it.SourceKey, Name: it.SourceName, Kind: it.SourceKind},
 			PublishedAt: it.PublishedAt, Tickers: tickers,
 		}
 	}

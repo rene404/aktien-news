@@ -25,6 +25,7 @@ const (
 	urlOTSF  = "https://www.ots.at/rss/finanzen"
 	urlOTSW  = "https://www.ots.at/rss/wirtschaft"
 	urlPRN   = "https://www.prnewswire.com/rss/news-releases-list.rss"
+	urlVoest = "https://www.voestalpine.com/group/en/media/press-releases/rss"
 )
 
 type fakeFetcher struct {
@@ -72,6 +73,7 @@ func newRunner(t *testing.T) (*ingest.Runner, *pgxpool.Pool, *fakeFetcher, *cloc
 			urlOTSF:  readFixture(t, "pressrss/testdata/ots_finanzen.xml"),
 			urlOTSW:  readFixture(t, "pressrss/testdata/empty.xml"),
 			urlPRN:   readFixture(t, "pressrss/testdata/prn.xml"),
+			urlVoest: readFixture(t, "pressrss/testdata/voestalpine_en.xml"),
 		},
 		errs:  map[string]error{urlDAX: errors.New("connection reset")},
 		calls: map[string]int{},
@@ -84,7 +86,7 @@ func newRunner(t *testing.T) (*ingest.Runner, *pgxpool.Pool, *fakeFetcher, *cloc
 			"finanznachrichten": finanznachrichten.Parse,
 			"pressrss":          pressrss.Parse,
 		},
-		Now:     c.Now,
+		Now: c.Now,
 	}
 	return r, pool, f, c
 }
@@ -153,9 +155,10 @@ func TestRunDueIsolatesFailingSources(t *testing.T) {
 	check("ots_finanzen", "ok", 15, 15)
 	check("ots_wirtschaft", "ok", 0, 0)
 	check("prn_all", "ok", 20, 20)
+	check("voestalpine_ir", "ok", 10, 10)
 
-	if n := count(t, pool, "SELECT count(*) FROM articles"); n != 45 {
-		t.Errorf("%d articles, want 45", n)
+	if n := count(t, pool, "SELECT count(*) FROM articles"); n != 55 {
+		t.Errorf("%d articles, want 55", n)
 	}
 	// The Mercedes-Benz ad-hoc item is linked via its issuer.
 	n := count(t, pool, `
@@ -186,6 +189,34 @@ func TestRunDueLinksPressReleasesViaSender(t *testing.T) {
 	}
 }
 
+func TestRunDueLinksIRFeedToItsIssuer(t *testing.T) {
+	r, pool, _, _ := newRunner(t)
+	if err := r.RunDue(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	// Every item of voestalpine's own feed is about voestalpine, also when
+	// the title does not name it.
+	n := count(t, pool, `
+		SELECT count(*) FROM articles a
+		JOIN sources s ON s.id = a.source_id
+		JOIN article_entities e ON e.article_id = a.id
+		JOIN companies c ON c.id = e.company_id
+		WHERE s.key = 'voestalpine_ir' AND c.slug = 'voestalpine'
+		  AND e.status = 'linked' AND e.method = 'issuer'`)
+	if n != 10 {
+		t.Errorf("voestalpine issuer links = %d, want 10", n)
+	}
+	n = count(t, pool, `
+		SELECT count(*) FROM articles a
+		JOIN article_links l ON l.article_id = a.id
+		JOIN companies c ON c.id = l.company_id
+		WHERE a.title LIKE 'Next milestone for greentec steel%' AND c.slug = 'voestalpine'
+		  AND l.status = 'linked'`)
+	if n != 1 {
+		t.Errorf("title without company name: %d links, want 1", n)
+	}
+}
+
 func TestRunDueRespectsFetchInterval(t *testing.T) {
 	r, pool, f, c := newRunner(t)
 	ctx := context.Background()
@@ -212,8 +243,8 @@ func TestRunDueRespectsFetchInterval(t *testing.T) {
 	if len(adhoc) != 2 || adhoc[1].status != "ok" || adhoc[1].fetched != 10 || adhoc[1].new != 0 {
 		t.Fatalf("second adhoc run = %+v, want ok fetched=10 new=0", adhoc)
 	}
-	if n := count(t, pool, "SELECT count(*) FROM articles"); n != 45 {
-		t.Errorf("%d articles after refetch, want 45", n)
+	if n := count(t, pool, "SELECT count(*) FROM articles"); n != 55 {
+		t.Errorf("%d articles after refetch, want 55", n)
 	}
 }
 

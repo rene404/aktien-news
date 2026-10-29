@@ -11,7 +11,7 @@ import (
 )
 
 const dueSources = `-- name: DueSources :many
-SELECT s.id, s.key, s.name, s.kind, s.market, s.url, s.weight, s.enabled, s.fetch_interval, s.text_policy, s.tdm_reserved, s.tdm_checked_at, s.terms_url, s.notes, s.created_at, s.parser FROM sources s
+SELECT s.id, s.key, s.name, s.kind, s.market, s.url, s.weight, s.enabled, s.fetch_interval, s.text_policy, s.tdm_reserved, s.tdm_checked_at, s.terms_url, s.notes, s.created_at, s.parser, s.issuer_company_id FROM sources s
 WHERE s.enabled
   AND NOT EXISTS (
       SELECT 1 FROM ingest_runs r
@@ -50,6 +50,7 @@ func (q *Queries) DueSources(ctx context.Context, now time.Time) ([]Source, erro
 			&i.Notes,
 			&i.CreatedAt,
 			&i.Parser,
+			&i.IssuerCompanyID,
 		); err != nil {
 			return nil, err
 		}

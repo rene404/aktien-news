@@ -88,6 +88,21 @@ func (q *Queries) FinishRun(ctx context.Context, arg FinishRunParams) error {
 	return err
 }
 
+const setTDM = `-- name: SetTDM :exec
+UPDATE sources SET tdm_reserved = $1, tdm_checked_at = $2 WHERE id = $3
+`
+
+type SetTDMParams struct {
+	TdmReserved  bool
+	TdmCheckedAt *time.Time
+	ID           int64
+}
+
+func (q *Queries) SetTDM(ctx context.Context, arg SetTDMParams) error {
+	_, err := q.db.Exec(ctx, setTDM, arg.TdmReserved, arg.TdmCheckedAt, arg.ID)
+	return err
+}
+
 const startRun = `-- name: StartRun :one
 INSERT INTO ingest_runs (source_id, started_at) VALUES ($1, $2) RETURNING id
 `

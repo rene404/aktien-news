@@ -20,6 +20,15 @@ type Fetcher interface {
 	Fetch(ctx context.Context, url string) ([]byte, error)
 }
 
+// TDMChecker reports whether a source's site reserves TDM rights.
+// ingest/fetch.HTTPFetcher is the live one.
+type TDMChecker interface {
+	CheckTDM(ctx context.Context, url string) (bool, error)
+}
+
+// TDMCheckInterval is how often a source's TDM reservation is re-checked.
+const TDMCheckInterval = 24 * time.Hour
+
 // Parser is a pure function from feed bytes to articles.
 type Parser func([]byte) ([]RawArticle, error)
 
@@ -28,6 +37,7 @@ type Runner struct {
 	Pool    *pgxpool.Pool
 	Fetcher Fetcher
 	Parsers map[string]Parser // by sources.parser
+	TDM     TDMChecker        // nil disables the TDM check
 	Now     func() time.Time
 }
 
@@ -57,6 +67,9 @@ func (r *Runner) RunDue(ctx context.Context) error {
 	}
 
 	for _, src := range sources {
+		if err := r.checkTDM(ctx, q, src); err != nil {
+			return fmt.Errorf("tdm %s: %w", src.Key, err)
+		}
 		started := r.Now()
 		runID, err := q.StartRun(ctx, db.StartRunParams{SourceID: src.ID, StartedAt: started})
 		if err != nil {
@@ -73,6 +86,25 @@ func (r *Runner) RunDue(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// checkTDM refreshes the source's TDM reservation once per TDMCheckInterval.
+// A failed check keeps the previous state and is retried on the next run;
+// only database errors are returned.
+func (r *Runner) checkTDM(ctx context.Context, q *db.Queries, src db.Source) error {
+	now := r.Now()
+	if r.TDM == nil || (src.TdmCheckedAt != nil && now.Sub(*src.TdmCheckedAt) < TDMCheckInterval) {
+		return nil
+	}
+	reserved, err := r.TDM.CheckTDM(ctx, src.Url)
+	if err != nil {
+		slog.Warn("tdm check failed", "source", src.Key, "err", err)
+		return nil
+	}
+	if reserved != src.TdmReserved {
+		slog.Info("tdm reservation changed", "source", src.Key, "reserved", reserved)
+	}
+	return q.SetTDM(ctx, db.SetTDMParams{ID: src.ID, TdmReserved: reserved, TdmCheckedAt: &now})
 }
 
 func (r *Runner) runSource(ctx context.Context, src db.Source, index *matching.Index) (res result) {

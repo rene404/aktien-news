@@ -14,7 +14,7 @@ und ein Erreichbarkeits-Check am 2026-10-28:
 Jede Aufgabe läuft auf einem eigenen `feature/phase2-*`-Branch per TDD. Für alle gilt der Gate
 `docker compose --profile test run --rm backend-test sh -c "go vet ./... && go test ./..."`.
 
-- [ ] **1. TDM-Prüfung und wirksame `text_policy`**
+- [x] **1. TDM-Prüfung und wirksame `text_policy`**
   Files: `backend/internal/ingest/fetch/tdm.go`, `backend/internal/ingest/fetch/tdm_test.go`, `backend/internal/ingest/policy.go`, `backend/internal/ingest/policy_test.go`, `backend/internal/store/queries/ingest.sql`, `backend/internal/ingest/runner.go`, `backend/internal/ingest/runner_test.go`
   What: Der Worker prüft pro Quelle höchstens einmal in 24 h den Header `TDM-Reservation` sowie `/.well-known/tdmrep.json` und `/tdmrep.json` und schreibt das Ergebnis nach `sources.tdm_reserved`/`tdm_checked_at`. `ingest.EffectivePolicy` liefert `none`, sobald ein Vorbehalt besteht.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/ingest/...`

@@ -222,3 +222,94 @@ func TestRunDueRecoversFromParserPanic(t *testing.T) {
 		}
 	}
 }
+
+type fakeTDM struct {
+	reserved map[string]bool
+	errs     map[string]error
+	calls    map[string]int
+}
+
+func (f *fakeTDM) CheckTDM(_ context.Context, url string) (bool, error) {
+	f.calls[url]++
+	if err := f.errs[url]; err != nil {
+		return false, err
+	}
+	return f.reserved[url], nil
+}
+
+type tdmRow struct {
+	reserved  bool
+	checkedAt *time.Time
+}
+
+func tdmState(t *testing.T, pool *pgxpool.Pool, key string) tdmRow {
+	t.Helper()
+	var r tdmRow
+	if err := pool.QueryRow(context.Background(),
+		`SELECT tdm_reserved, tdm_checked_at FROM sources WHERE key = $1`, key).Scan(&r.reserved, &r.checkedAt); err != nil {
+		t.Fatal(err)
+	}
+	return r
+}
+
+func TestRunDueChecksTDMAtMostDaily(t *testing.T) {
+	r, pool, _, c := newRunner(t)
+	ctx := context.Background()
+	tdm := &fakeTDM{reserved: map[string]bool{urlAdhoc: true}, calls: map[string]int{}}
+	r.TDM = tdm
+	start := c.now
+
+	if err := r.RunDue(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := tdmState(t, pool, "fn_adhoc"); !got.reserved || got.checkedAt == nil || !got.checkedAt.Equal(start) {
+		t.Errorf("fn_adhoc after check = %+v, want reserved at %v", got, start)
+	}
+	if got := tdmState(t, pool, "fn_atx"); got.reserved || got.checkedAt == nil {
+		t.Errorf("fn_atx after check = %+v, want not reserved, checked", got)
+	}
+	// The check is independent of the feed: a failing fetch still gets checked.
+	if tdm.calls[urlDAX] != 1 {
+		t.Errorf("fn_dax checks = %d, want 1", tdm.calls[urlDAX])
+	}
+
+	c.now = start.Add(11 * time.Minute) // due again, but checked recently
+	if err := r.RunDue(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if tdm.calls[urlAdhoc] != 1 {
+		t.Errorf("rechecked within 24h: %d calls", tdm.calls[urlAdhoc])
+	}
+
+	tdm.reserved[urlAdhoc] = false
+	c.now = start.Add(24*time.Hour + time.Minute)
+	if err := r.RunDue(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if tdm.calls[urlAdhoc] != 2 {
+		t.Errorf("adhoc checks after 24h = %d, want 2", tdm.calls[urlAdhoc])
+	}
+	if got := tdmState(t, pool, "fn_adhoc"); got.reserved || !got.checkedAt.Equal(c.now) {
+		t.Errorf("fn_adhoc after recheck = %+v, want lifted at %v", got, c.now)
+	}
+}
+
+func TestRunDueKeepsTDMStateWhenCheckFails(t *testing.T) {
+	r, pool, _, _ := newRunner(t)
+	ctx := context.Background()
+	if _, err := pool.Exec(ctx, `UPDATE sources SET tdm_reserved = true WHERE key = 'fn_adhoc'`); err != nil {
+		t.Fatal(err)
+	}
+	r.TDM = &fakeTDM{errs: map[string]error{urlAdhoc: errors.New("timeout")}, calls: map[string]int{}}
+
+	if err := r.RunDue(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := tdmState(t, pool, "fn_adhoc"); !got.reserved || got.checkedAt != nil {
+		t.Errorf("fn_adhoc = %+v, want reservation kept and unchecked", got)
+	}
+	// A failed check does not fail the ingest run.
+	if rs := runs(t, pool)["fn_adhoc"]; len(rs) != 1 || rs[0].status != "ok" {
+		t.Errorf("fn_adhoc runs = %+v, want one ok run", rs)
+	}
+}

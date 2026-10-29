@@ -39,6 +39,12 @@ type Runner struct {
 	Parsers map[string]Parser // by sources.parser
 	TDM     TDMChecker        // nil disables the TDM check
 	Now     func() time.Time
+
+	// Per-parser overrides: a fetcher with its own identity (SEC wants a
+	// contact address in the User-Agent; it also does the TDM check when it
+	// can), or a reason to skip the source, e.g. a missing setting.
+	Fetchers map[string]Fetcher
+	Skip     map[string]string
 }
 
 type result struct {
@@ -67,15 +73,23 @@ func (r *Runner) RunDue(ctx context.Context) error {
 	}
 
 	for _, src := range sources {
-		if err := r.checkTDM(ctx, q, src); err != nil {
-			return fmt.Errorf("tdm %s: %w", src.Key, err)
+		reason, skip := r.Skip[src.Parser]
+		if !skip {
+			if err := r.checkTDM(ctx, q, src); err != nil {
+				return fmt.Errorf("tdm %s: %w", src.Key, err)
+			}
 		}
 		started := r.Now()
 		runID, err := q.StartRun(ctx, db.StartRunParams{SourceID: src.ID, StartedAt: started})
 		if err != nil {
 			return fmt.Errorf("start run %s: %w", src.Key, err)
 		}
-		res := r.runSource(ctx, src, index)
+		var res result
+		if skip {
+			res = result{status: db.RunStatusSkipped, err: errors.New(reason)}
+		} else {
+			res = r.runSource(ctx, src, index)
+		}
 		if res.err != nil {
 			slog.Warn("ingest source failed", "source", src.Key, "status", res.status, "err", res.err)
 		} else {
@@ -96,7 +110,11 @@ func (r *Runner) checkTDM(ctx context.Context, q *db.Queries, src db.Source) err
 	if r.TDM == nil || (src.TdmCheckedAt != nil && now.Sub(*src.TdmCheckedAt) < TDMCheckInterval) {
 		return nil
 	}
-	reserved, err := r.TDM.CheckTDM(ctx, src.Url)
+	checker := r.TDM
+	if c, ok := r.Fetchers[src.Parser].(TDMChecker); ok {
+		checker = c
+	}
+	reserved, err := checker.CheckTDM(ctx, src.Url)
 	if err != nil {
 		slog.Warn("tdm check failed", "source", src.Key, "err", err)
 		return nil
@@ -118,7 +136,11 @@ func (r *Runner) runSource(ctx context.Context, src db.Source, index *matching.I
 	if !ok {
 		return result{status: db.RunStatusSkipped, err: fmt.Errorf("no parser %q", src.Parser)}
 	}
-	body, err := r.Fetcher.Fetch(ctx, src.Url)
+	fetcher := r.Fetcher
+	if f, ok := r.Fetchers[src.Parser]; ok {
+		fetcher = f
+	}
+	body, err := fetcher.Fetch(ctx, src.Url)
 	if err != nil {
 		return result{status: db.RunStatusFailed, err: err}
 	}

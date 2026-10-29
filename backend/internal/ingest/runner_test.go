@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/rene404/aktien-news/backend/internal/ingest"
 	"github.com/rene404/aktien-news/backend/internal/ingest/finanznachrichten"
 	"github.com/rene404/aktien-news/backend/internal/ingest/pressrss"
+	"github.com/rene404/aktien-news/backend/internal/ingest/sec"
 	"github.com/rene404/aktien-news/backend/internal/store/testdb"
 	"github.com/rene404/aktien-news/backend/seed"
 )
@@ -29,6 +31,7 @@ const (
 	urlOTSW  = "https://www.ots.at/rss/wirtschaft"
 	urlPRN   = "https://www.prnewswire.com/rss/news-releases-list.rss"
 	urlVoest = "https://www.voestalpine.com/group/en/media/press-releases/rss"
+	urlSEC   = "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=8-K&company=&dateb=&owner=include&start=0&count=100&output=atom"
 )
 
 type fakeFetcher struct {
@@ -77,6 +80,7 @@ func newRunner(t *testing.T) (*ingest.Runner, *pgxpool.Pool, *fakeFetcher, *cloc
 			urlOTSW:  readFixture(t, "pressrss/testdata/empty.xml"),
 			urlPRN:   readFixture(t, "pressrss/testdata/prn.xml"),
 			urlVoest: readFixture(t, "pressrss/testdata/voestalpine_en.xml"),
+			urlSEC:   readFixture(t, "sec/testdata/current_8k.xml"),
 		},
 		errs:  map[string]error{urlDAX: errors.New("connection reset")},
 		calls: map[string]int{},
@@ -88,6 +92,7 @@ func newRunner(t *testing.T) (*ingest.Runner, *pgxpool.Pool, *fakeFetcher, *cloc
 		Parsers: map[string]ingest.Parser{
 			"finanznachrichten": finanznachrichten.Parse,
 			"pressrss":          pressrss.Parse,
+			"sec":               sec.Parse,
 		},
 		Now: c.Now,
 	}
@@ -159,9 +164,10 @@ func TestRunDueIsolatesFailingSources(t *testing.T) {
 	check("ots_wirtschaft", "ok", 0, 0)
 	check("prn_all", "ok", 20, 20)
 	check("voestalpine_ir", "ok", 10, 10)
+	check("sec_8k", "ok", 3, 3)
 
-	if n := count(t, pool, "SELECT count(*) FROM articles"); n != 55 {
-		t.Errorf("%d articles, want 55", n)
+	if n := count(t, pool, "SELECT count(*) FROM articles"); n != 58 {
+		t.Errorf("%d articles, want 58", n)
 	}
 	// The Mercedes-Benz ad-hoc item is linked via its issuer.
 	n := count(t, pool, `
@@ -220,6 +226,71 @@ func TestRunDueLinksIRFeedToItsIssuer(t *testing.T) {
 	}
 }
 
+func TestRunDueLinksFilingsByCIK(t *testing.T) {
+	r, pool, _, _ := newRunner(t)
+	if err := r.RunDue(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	links := func(ext string) []string {
+		t.Helper()
+		rows, err := pool.Query(context.Background(), `
+			SELECT c.slug || ':' || e.method || ':' || e.status
+			FROM articles a JOIN article_entities e ON e.article_id = a.id JOIN companies c ON c.id = e.company_id
+			WHERE a.external_id = $1 ORDER BY 1`, ext)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer rows.Close()
+		var out []string
+		for rows.Next() {
+			var l string
+			if err := rows.Scan(&l); err != nil {
+				t.Fatal(err)
+			}
+			out = append(out, l)
+		}
+		return out
+	}
+	if got := links("0000320193-26-000080"); !slices.Equal(got, []string{"apple:issuer:linked"}) {
+		t.Errorf("apple 8-K links = %v", got)
+	}
+	if got := links("0001999999-26-000002"); len(got) != 0 {
+		t.Errorf("unknown CIK links = %v, want none", got)
+	}
+}
+
+func TestRunDueSkipsSourcesWithAReason(t *testing.T) {
+	r, pool, f, _ := newRunner(t)
+	tdm := &fakeTDM{calls: map[string]int{}}
+	r.TDM = tdm
+	r.Skip = map[string]string{"sec": "SEC_USER_AGENT not set"}
+	if err := r.RunDue(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	rs := runs(t, pool)["sec_8k"]
+	if len(rs) != 1 || rs[0].status != "skipped" || rs[0].err == nil || *rs[0].err != "SEC_USER_AGENT not set" {
+		t.Errorf("sec_8k runs = %+v, want one skipped run with the reason", rs)
+	}
+	if f.calls[urlSEC] != 0 || tdm.calls[urlSEC] != 0 {
+		t.Errorf("skipped source was fetched (%d) or TDM-checked (%d)", f.calls[urlSEC], tdm.calls[urlSEC])
+	}
+}
+
+func TestRunDueUsesPerParserFetcher(t *testing.T) {
+	r, pool, f, _ := newRunner(t)
+	secFetcher := &fakeFetcher{bodies: map[string][]byte{urlSEC: f.bodies[urlSEC]}, calls: map[string]int{}}
+	r.Fetchers = map[string]ingest.Fetcher{"sec": secFetcher}
+	if err := r.RunDue(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if secFetcher.calls[urlSEC] != 1 || f.calls[urlSEC] != 0 {
+		t.Errorf("sec fetched by override %d times, by default %d times", secFetcher.calls[urlSEC], f.calls[urlSEC])
+	}
+	if rs := runs(t, pool)["sec_8k"]; len(rs) != 1 || rs[0].status != "ok" {
+		t.Errorf("sec_8k runs = %+v", rs)
+	}
+}
+
 func TestRunDueRespectsFetchInterval(t *testing.T) {
 	r, pool, f, c := newRunner(t)
 	ctx := context.Background()
@@ -246,8 +317,8 @@ func TestRunDueRespectsFetchInterval(t *testing.T) {
 	if len(adhoc) != 2 || adhoc[1].status != "ok" || adhoc[1].fetched != 10 || adhoc[1].new != 0 {
 		t.Fatalf("second adhoc run = %+v, want ok fetched=10 new=0", adhoc)
 	}
-	if n := count(t, pool, "SELECT count(*) FROM articles"); n != 55 {
-		t.Errorf("%d articles after refetch, want 55", n)
+	if n := count(t, pool, "SELECT count(*) FROM articles"); n != 58 {
+		t.Errorf("%d articles after refetch, want 58", n)
 	}
 }
 

@@ -3,7 +3,7 @@
 Authoritative working agreement for agents and contributors. The README is the
 user-facing overview; this file is the rulebook. Design rationale lives in
 `docs/design.md`, source/licensing research in `docs/research-sources.md`, the
-current task plan in `docs/plan-phase1.md`.
+task plans in `docs/plan-phase*.md` (Phase 2 done).
 
 ## What this is
 

@@ -60,6 +60,61 @@ hat eine `.well-known/tdmrep.json`; damit ist der offene TDM-Punkt bei FinanzNac
 | CNN Money RSS | letzter Eintrag 2018 | ❌ eingestellt |
 | GlobeNewswire, Accesswire, finanzen.net, boerse-express | 403 | ❌ Bot-Schutz |
 
+### Nutzbare Feeds, 2. Runde (2026-10-29)
+
+Geprüft wurde, was wir **rechtlich** nutzen können: Quellen, die Verbreitung wollen (Emittenten, Verteiler),
+gemeinfreie oder zur Weiterverwendung freigegebene Behördendaten und Feeds mit eigenen Bedingungen.
+
+**Emittenten-IR/Presse-RSS** [V] (gleiche Grundlage wie voestalpine: Kanal des Emittenten → `issuer_slug`, Titel + Link):
+
+| Emittent | Feed | Stand | Hinweis |
+|---|---|---|---|
+| Deutsche Telekom | `telekom.com/en/investor-relations.rss.feed.427676.xml` (IR), `…/newsroom/latest-updates/media-information.rss.feed.418728.xml` (Presse) | aktuell | ✅ |
+| Henkel | `henkel.com/service/en/33922/asFeed/index.xml`, `…/39580/…` | aktuell | ✅ Feeds ohne Kanal-Titel; vor Aufnahme klären, welcher Presse und welcher IR ist |
+| SAP | `news.sap.com/feed/` | aktuell | ✅ nur Titel: robots.txt sperrt KI-Bots → `text_policy = none`; viel Blog, wenig Börsenrelevantes |
+| Symrise | `symrise.com/newsroom/press-releases/rss.xml` | aktuell | ✅ |
+| DO & CO | `doco.com/feed/` | 2019 | ❌ tot |
+
+Bei den übrigen ATX- und DAX-Emittenten fand der automatische Scan (Startseite, Presse- und IR-Seite) keinen Feed.
+Viele dieser Seiten rendern per JavaScript oder blocken Bots; das ist kein Beweis, dass es keinen Feed gibt.
+
+**Pressemitteilungs-Verteiler**
+
+| Quelle | Status | Einschätzung |
+|---|---|---|
+| presseportal.de (news aktuell, ots DE) `/rss/wirtschaft.rss2`, `/rss/finanzen.rss2` | ✅ aktuell; `<source>` = Absender (Emittenten-Signal wie bei OTS) | ⚠️ Nutzungsbedingungen: Nutzung „für eigene Geschäftszwecke … nur mit schriftlicher Genehmigung der news aktuell GmbH“; es gibt ein Antragsverfahren für die automatisierte Einbindung in Websites Dritter. robots.txt sperrt KI-Bots |
+| GlobeNewswire | 403 | ❌ Bot-Schutz |
+| pressetext.com | 404 | Feed-URL nicht gefunden |
+| EQS News | kein Feed | ❌ |
+
+**SEC EDGAR, weitere Formulare** [V] (gemeinfrei, gleicher Endpunkt `getcurrent`):
+
+| Formular | Inhalt | Parser |
+|---|---|---|
+| 10-Q, 10-K | Quartals- und Jahresberichte | ✅ funktioniert mit dem bestehenden `sec`-Parser (Filer-Zeilen) |
+| 4 | Insider-Geschäfte (Directors' Dealings) | ⚠️ sehr viele Meldungen; der Emittent steht in der `(Issuer)`-Zeile, der Parser liest nur `(Filer)` |
+| SCHEDULE 13D, 13D/A | Beteiligungen über 5 % mit Einflussabsicht | ⚠️ der Emittent steht in der `(Subject)`-Zeile → Parser-Erweiterung |
+| 144 | geplante Verkäufe von Insidern | ⚠️ ebenso viel Rauschen |
+| `SC 13D`/`SC 13G` | – | liefern 0 Einträge; EDGAR nennt die Formulare jetzt `SCHEDULE 13D/13G` |
+
+**Behörden, Zentralbanken** [V] (keine Ticker; brauchen im UI einen Bereich „Markt & Politik“ für nicht verlinkte Meldungen):
+
+| Quelle | Status | Nutzung |
+|---|---|---|
+| EZB `ecb.europa.eu/rss/press.html` | ✅ | Weiterverwendung mit Quellenangabe erlaubt |
+| Fed `federalreserve.gov/feeds/press_all.xml` | ✅ | gemeinfrei |
+| Bundesbank `bundesbank.de/service/rss/de/633286/feed.rss` | ✅ | Quellenangabe |
+| EU-Kommission Presse `ec.europa.eu/commission/presscorner/api/rss?language=en&type=IP` | ✅ | Weiterverwendung nach Beschluss 2011/833/EU; Fusionskontrolle und Beihilfen nennen Unternehmen → Matcher kann verlinken |
+| FDA Pressemitteilungen `fda.gov/…/press-releases/rss.xml` | ✅ | gemeinfrei; Zulassungen nennen Pharmafirmen |
+| ESMA `esma.europa.eu/rss.xml` | ✅ | Quellenangabe |
+| FMA `fma.gv.at/feed/` | ✅ | AT-Aufsicht |
+| BaFin, OeNB | 404 | aktuelle Feed-URLs nicht gefunden |
+| BLS, US Treasury | 403 | Bot-Schutz |
+
+**Nasdaq Trade Halts** `nasdaqtrader.com/rss.aspx?feed=tradehalts` [V]: Handelsaussetzungen mit Symbol, Name, Grund (`ndaq:ReasonCode`).
+Die eigenen Bedingungen („Trade Halt RSS Feed Terms and Conditions“) verbieten keine kommerzielle Nutzung, aber „editing, modifying,
+misrepresenting“. Die Items haben **keinen Link** → wir müssten auf die Halts-Seite verlinken. ⚠️ vor Nutzung bei Nasdaq nachfragen.
+
 ## Stammdaten
 
 | Quelle | Inhalt | Lizenz | Status |
@@ -84,3 +139,5 @@ hat eine `.well-known/tdmrep.json`; damit ist der offene TDM-Punkt bei FinanzNac
 - Business Wire / PR Newswire: Nutzungsbedingungen für die Anzeige auf einem kommerziellen Portal.
 - Nasdaq: Lizenz für Schlagzeilen und Deep Links (die Terms erlauben nur private Nutzung).
 - Medien (derStandard, Handelsblatt, CNBC): Erlaubnis zur Anzeige von Schlagzeilen mit Link.
+- news aktuell (presseportal.de): Antrag auf automatisierte Einbindung der ots-Meldungen.
+- Nasdaq Trade Halts: Anzeige ohne Original-Link, Verlinkung auf die Halts-Seite.

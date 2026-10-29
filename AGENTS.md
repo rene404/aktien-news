@@ -26,7 +26,7 @@ backend/
   internal/
     config/       # env settings, all with local defaults
     httpapi/      # public REST handlers — THIN
-    mcpserver/    # MCP tools — THIN (Phase 3)
+    mcpserver/    # internal MCP tools for mcp-hub — THIN
     service/      # query logic shared by REST + MCP
     store/        # migrations (goose), sqlc queries, generated code
     ingest/<src>/ # pure parsers: Parse([]byte) -> []RawArticle
@@ -94,7 +94,8 @@ docker compose --profile test down -v             # clean up incl. volumes
   dependency (`modernc.org/sqlite`); use `go mod tidy -e` locally.
 
 Host ports, all bound to `127.0.0.1`: Postgres 5433, API `${API_PORT:-8090}` (8080 is taken on the dev box),
-web `${WEB_PORT:-3020}` (3000 is taken). LAN/phone access goes through `../devproxy` (Caddy):
+web `${WEB_PORT:-3020}` (3000 is taken). MCP (`:8081`, only with `MCP_AUTH_TOKEN`) is never
+published to the host — it returns sentiment; reach it from the compose network (`http://api:8081/mcp`). LAN/phone access goes through `../devproxy` (Caddy):
 `http://aktien.localhost/` on the Mac, `http://aktien.<LAN_IP>.sslip.io/` on the phone.
 
 ## Testing

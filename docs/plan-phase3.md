@@ -20,7 +20,7 @@ Jede Aufgabe läuft auf einem eigenen `feature/phase3-*`-Branch per TDD. Für al
   Command: `docker compose --profile test run --rm backend-test go test ./internal/service/`
   Done: Ein Artikel mit `ingested_at` nach `as_of` ist unsichtbar. Ein Link, der nach `as_of` rejected wurde, zählt zu `as_of` noch und danach nicht mehr. Pending zählt nie. Eine Klassifikation nach `as_of` ist unsichtbar, eine neuere ersetzt eine ältere. `score_weighted` stimmt mit festen Daten exakt. Ohne Klassifikationen gibt es Zählungen, aber Scores `null`. Ein unbekannter Ticker ergibt `ErrNotFound`, ungültige Argumente einen `ValidationError`. `query` sucht im Titel ohne Groß-/Kleinschreibung.
 
-- [ ] **2. MCP-Server**
+- [x] **2. MCP-Server**
   Files: `backend/internal/mcpserver/server.go`, `backend/internal/mcpserver/server_test.go`, `backend/cmd/api/main.go`, `backend/internal/config/config.go`, `backend/internal/config/config_test.go`, `backend/go.mod`, `docker-compose.yml`, `.env.example`
   What: `mcpserver` registriert die Tools `search_news` und `ticker_sentiment` mit dem offiziellen Go-SDK `github.com/modelcontextprotocol/go-sdk` (Version und JSON-Response-Option vorher in der Doku prüfen). Die Tools sind dünn: Argumente lesen, `service` aufrufen, Ergebnis formen. Der Transport ist Streamable HTTP unter `/mcp` auf eigenem Port (`MCP_ADDR`, Default `:8081`) mit JSON-Antworten, zustandslos. Auth läuft über eine Bearer-Middleware mit zeitkonstantem Vergleich (`MCP_AUTH_TOKEN`). Ohne Token startet MCP nicht, und die API bootet trotzdem. In Compose ist der Port nicht auf den Host gemappt, sondern nur im Docker-Netz erreichbar.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/mcpserver/ ./internal/httpapi/ ./internal/config/`
@@ -31,6 +31,11 @@ Jede Aufgabe läuft auf einem eigenen `feature/phase3-*`-Branch per TDD. Für al
   What: aktien-news hängt sich an ein externes Docker-Netz, das die Proxy-Instanz erreicht. In `proxy.yaml` kommt der Server `news` dazu (`http://<api-host>:8081/mcp`) mit Bearer-Header. Die Änderung im mcp-hub-Repo erfordert laut Datei einen Maintainer-Sign-off, sie läuft deshalb dort auf eigenem Branch und wird erst nach Freigabe gemergt.
   Command: `docker compose up -d --build api` · `tools/list` gegen die Proxy-Instanz
   Done: Die Proxy-Instanz listet `news_search_news` und `news_ticker_sentiment`. `call_tool("news_search_news", {"ticker": "VOE", "since": …})` aus dem boerseonline-Container liefert Meldungen.
+
+Umsetzungsnotizen (Aufgaben 1–2): `search_news` liefert einen Eintrag pro Artikel **und** verlinkter Firma
+(Klassifikationen hängen am Paar), mit `company` und deren `tickers`. Beide Tools antworten mit einem Objekt
+(`{items: [...]}` bzw. dem Sentiment-Objekt) als `structuredContent` plus JSON-Text in `content`.
+Go-SDK `v1.8.0`, `Stateless` + `JSONResponse`; `tools/list` geht ohne `initialize`, wie `McpHubClient` es sendet.
 
 ## Zurückgestellt: Klassifikation
 

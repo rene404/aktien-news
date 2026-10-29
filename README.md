@@ -47,6 +47,20 @@ docker compose --profile test run --rm web-test       # Frontend: lint, test, bu
 
 Antworten enthalten bewusst nur Titel, Quelle, Link, Zeit und Ticker – keine Textauszüge, kein Sentiment.
 
+## MCP (intern, für mcp-hub)
+
+Mit `MCP_AUTH_TOKEN` in `.env` startet die API zusätzlich einen MCP-Server (Streamable HTTP, JSON-Antworten,
+zustandslos) unter `http://api:8081/mcp`. Er ist nur im Docker-Netz erreichbar und verlangt
+`Authorization: Bearer <token>`.
+
+| Tool | Beschreibung |
+|---|---|
+| `search_news` | `since` (Pflicht), `until`, `ticker`, `query`, `event_type`, `min_confidence` (0.85), `as_of`, `limit` (1–50, 20). Ein Eintrag pro Artikel und verlinkter Firma |
+| `ticker_sentiment` | `ticker` (Pflicht), `window` (`1d`/`7d`/`30d`), `as_of`. Zählungen und gewichteter Score |
+
+`as_of` liefert den Wissensstand zu diesem Zeitpunkt (Links, Klassifikationen, Ingest). Solange nichts
+klassifiziert ist, sind Event-Typ, Sentiment und Scores `null`.
+
 ## Doku
 
 - [AGENTS.md](AGENTS.md) – Regeln, Befehle, Architektur

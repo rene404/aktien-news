@@ -23,6 +23,10 @@ type Config struct {
 	// TextRetention: stored article text is purged this long after it was
 	// fetched. TEXT_RETENTION takes a Go duration ("720h") or days ("30d").
 	TextRetention time.Duration
+	// MCPAddr serves the internal MCP endpoint (mcp-hub only, never public).
+	MCPAddr string
+	// MCPAuthToken is the bearer token mcp-hub sends. Empty: MCP is off.
+	MCPAuthToken string
 }
 
 func Load() Config {
@@ -32,6 +36,8 @@ func Load() Config {
 		UserAgent:     getenv("USER_AGENT", "aktien-news-bot/0.1 (+https://aktien-news.at)"),
 		SECUserAgent:  os.Getenv("SEC_USER_AGENT"),
 		TextRetention: retention(os.Getenv("TEXT_RETENTION")),
+		MCPAddr:       getenv("MCP_ADDR", ":8081"),
+		MCPAuthToken:  os.Getenv("MCP_AUTH_TOKEN"),
 	}
 }
 

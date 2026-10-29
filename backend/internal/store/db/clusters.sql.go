@@ -90,6 +90,7 @@ func (q *Queries) CreateCluster(ctx context.Context, arg CreateClusterParams) (i
 const refreshCluster = `-- name: RefreshCluster :exec
 UPDATE clusters c
 SET size = (SELECT count(*) FROM articles a WHERE a.cluster_id = c.id),
+    first_seen_at = LEAST(c.first_seen_at, (SELECT min(a.ingested_at) FROM articles a WHERE a.cluster_id = c.id)),
     representative_article_id = (
         SELECT a.id FROM articles a JOIN sources s ON s.id = a.source_id
         WHERE a.cluster_id = c.id
@@ -99,7 +100,8 @@ WHERE c.id = $1
 `
 
 // Size and representative follow from the members: the source with the
-// highest weight wins, ties go to the earliest article.
+// highest weight wins, ties go to the earliest article. first_seen_at is the
+// earliest time a member was stored (matters for backfilled clusters).
 func (q *Queries) RefreshCluster(ctx context.Context, id int64) error {
 	_, err := q.db.Exec(ctx, refreshCluster, id)
 	return err
@@ -134,7 +136,7 @@ func (q *Queries) SetArticleSimHash(ctx context.Context, arg SetArticleSimHashPa
 }
 
 const unclusteredArticles = `-- name: UnclusteredArticles :many
-SELECT id, title, published_at, simhash FROM articles
+SELECT id, title, published_at, ingested_at, simhash FROM articles
 WHERE cluster_id IS NULL
 ORDER BY published_at, id
 `
@@ -143,6 +145,7 @@ type UnclusteredArticlesRow struct {
 	ID          int64
 	Title       string
 	PublishedAt time.Time
+	IngestedAt  time.Time
 	Simhash     *int64
 }
 
@@ -159,6 +162,7 @@ func (q *Queries) UnclusteredArticles(ctx context.Context) ([]UnclusteredArticle
 			&i.ID,
 			&i.Title,
 			&i.PublishedAt,
+			&i.IngestedAt,
 			&i.Simhash,
 		); err != nil {
 			return nil, err

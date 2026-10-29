@@ -618,13 +618,44 @@ func TestClusterUnassignedBackfillsOldArticles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := r.ClusterUnassigned(ctx); err != nil {
-		t.Fatal(err)
+	if failed, err := r.ClusterUnassigned(ctx); err != nil || failed != 0 {
+		t.Fatalf("failed = %d, err = %v", failed, err)
 	}
 	if n := count(t, pool, `SELECT count(*) FROM articles WHERE cluster_id IS NULL OR simhash IS NULL`); n != 0 {
 		t.Errorf("%d articles still unclustered", n)
 	}
 	if n := count(t, pool, `SELECT count(*) FROM clusters c WHERE size <> (SELECT count(*) FROM articles a WHERE a.cluster_id = c.id)`); n != 0 {
 		t.Errorf("%d clusters with a wrong size", n)
+	}
+	// A backfilled cluster was first seen when its article was stored, not now.
+	if n := count(t, pool, `SELECT count(*) FROM clusters c WHERE first_seen_at <> (SELECT min(ingested_at) FROM articles a WHERE a.cluster_id = c.id)`); n != 0 {
+		t.Errorf("%d clusters with first_seen_at not from ingested_at", n)
+	}
+}
+
+func TestClusterUnassignedSkipsFailingArticles(t *testing.T) {
+	r, pool, _, _ := newRunner(t)
+	ctx := context.Background()
+	if err := r.RunDue(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `
+		UPDATE articles SET cluster_id = NULL, simhash = NULL;
+		DELETE FROM clusters;
+		CREATE FUNCTION fail_cluster() RETURNS trigger LANGUAGE plpgsql AS $$
+		BEGIN
+			IF OLD.id = (SELECT min(id) FROM articles) THEN RAISE EXCEPTION 'boom'; END IF;
+			RETURN NEW;
+		END $$;
+		CREATE TRIGGER fail_cluster BEFORE UPDATE ON articles FOR EACH ROW EXECUTE FUNCTION fail_cluster();`); err != nil {
+		t.Fatal(err)
+	}
+
+	failed, err := r.ClusterUnassigned(ctx)
+	if err != nil || failed != 1 {
+		t.Fatalf("failed = %d, err = %v, want 1 failure and no error", failed, err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM articles WHERE cluster_id IS NULL`); n != 1 {
+		t.Errorf("%d unclustered articles, want only the failing one", n)
 	}
 }

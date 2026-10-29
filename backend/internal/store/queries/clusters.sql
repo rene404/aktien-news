@@ -26,9 +26,11 @@ UPDATE articles SET cluster_id = @cluster_id WHERE id = @id;
 
 -- name: RefreshCluster :exec
 -- Size and representative follow from the members: the source with the
--- highest weight wins, ties go to the earliest article.
+-- highest weight wins, ties go to the earliest article. first_seen_at is the
+-- earliest time a member was stored (matters for backfilled clusters).
 UPDATE clusters c
 SET size = (SELECT count(*) FROM articles a WHERE a.cluster_id = c.id),
+    first_seen_at = LEAST(c.first_seen_at, (SELECT min(a.ingested_at) FROM articles a WHERE a.cluster_id = c.id)),
     representative_article_id = (
         SELECT a.id FROM articles a JOIN sources s ON s.id = a.source_id
         WHERE a.cluster_id = c.id
@@ -37,7 +39,7 @@ SET size = (SELECT count(*) FROM articles a WHERE a.cluster_id = c.id),
 WHERE c.id = @id;
 
 -- name: UnclusteredArticles :many
-SELECT id, title, published_at, simhash FROM articles
+SELECT id, title, published_at, ingested_at, simhash FROM articles
 WHERE cluster_id IS NULL
 ORDER BY published_at, id;
 

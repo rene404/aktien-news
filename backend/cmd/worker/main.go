@@ -18,6 +18,7 @@ import (
 	"github.com/rene404/aktien-news/backend/internal/ingest/fetch"
 	"github.com/rene404/aktien-news/backend/internal/ingest/finanznachrichten"
 	"github.com/rene404/aktien-news/backend/internal/ingest/pressrss"
+	"github.com/rene404/aktien-news/backend/internal/ingest/sec"
 	"github.com/rene404/aktien-news/backend/internal/store"
 )
 
@@ -50,9 +51,15 @@ func run(ctx context.Context) error {
 		Parsers: map[string]ingest.Parser{
 			"finanznachrichten": finanznachrichten.Parse,
 			"pressrss":          pressrss.Parse,
+			"sec":               sec.Parse,
 		},
 		TDM: fetcher,
 		Now: time.Now,
+	}
+	if cfg.SECUserAgent == "" {
+		runner.Skip = map[string]string{"sec": "SEC_USER_AGENT not set"}
+	} else {
+		runner.Fetchers = map[string]ingest.Fetcher{"sec": fetch.New(cfg.SECUserAgent, 30*time.Second)}
 	}
 
 	if err := runner.ClusterUnassigned(ctx); err != nil {

@@ -7,3 +7,4 @@ ots_finanzen,APA-OTS Finanzen,press_release,AT,https://www.ots.at/rss/finanzen,p
 ots_wirtschaft,APA-OTS Wirtschaft,press_release,AT,https://www.ots.at/rss/wirtschaft,pressrss,0.70,15,none,,
 prn_all,PR Newswire All News Releases,press_release,US,https://www.prnewswire.com/rss/news-releases-list.rss,pressrss,0.80,15,none,https://www.prnewswire.com/terms-of-use/,
 voestalpine_ir,voestalpine Press Releases,ir,AT,https://www.voestalpine.com/group/en/media/press-releases/rss,pressrss,0.95,60,none,,voestalpine
+sec_8k,SEC EDGAR 8-K (latest filings),filing,US,https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=8-K&company=&dateb=&owner=include&start=0&count=100&output=atom,sec,1.00,10,none,https://www.sec.gov/os/accessing-edgar-data,

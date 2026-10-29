@@ -50,7 +50,7 @@ Jede Aufgabe läuft auf einem eigenen `feature/phase2-*`-Branch per TDD. Für al
   Command: `docker compose --profile test run --rm backend-test go test ./internal/store/ ./internal/catalog/ ./internal/matching/`
   Done: Der Import ist idempotent, und vorhandene kuratierte Firmen behalten Namen und Aliase. Nach dem Import wird „A“, „ON“ oder „IT“ im Titel nicht verlinkt. „Agilent Technologies, Inc.“ wird über den vollen Namen verlinkt.
 
-- [ ] **7. SEC EDGAR 8-K**
+- [x] **7. SEC EDGAR 8-K**
   Files: `backend/internal/ingest/raw.go`, `backend/internal/ingest/sec/parse.go`, `backend/internal/ingest/sec/parse_test.go`, `backend/internal/ingest/sec/testdata/current_8k.xml`, `backend/internal/config/config.go`, `backend/internal/matching/match.go`, `backend/internal/matching/match_test.go`, `backend/seed/sources.csv`, `backend/cmd/worker/main.go`
   What: Ein Parser für den Atom-Feed „latest filings“ (8-K) liest CIK, Firmenname, Item-Nummern und Link. Der CIK wird als Emittent mit 1.0 zugeordnet. Abgerufen wird nur mit `SEC_USER_AGENT` (Kontakt-E-Mail); ohne ihn wird die Quelle `skipped`.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/ingest/... ./internal/matching/`

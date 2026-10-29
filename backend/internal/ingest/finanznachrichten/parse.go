@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/rene404/aktien-news/backend/internal/ingest"
 )
@@ -42,7 +41,7 @@ func Parse(b []byte) ([]ingest.RawArticle, error) {
 	for _, it := range doc.Items {
 		title := strings.TrimSpace(it.Title)
 		link := strings.TrimSpace(it.Link)
-		published, ok := parseDate(it.PubDate)
+		published, ok := ingest.ParseFeedDate(it.PubDate)
 		if title == "" || link == "" || !ok {
 			continue
 		}
@@ -60,18 +59,6 @@ func Parse(b []byte) ([]ingest.RawArticle, error) {
 		})
 	}
 	return arts, nil
-}
-
-var dateLayouts = []string{time.RFC3339, time.RFC1123Z, time.RFC1123}
-
-func parseDate(s string) (time.Time, bool) {
-	s = strings.TrimSpace(s)
-	for _, layout := range dateLayouts {
-		if t, err := time.Parse(layout, s); err == nil {
-			return t.UTC(), true
-		}
-	}
-	return time.Time{}, false
 }
 
 // Distribution prefixes of mandatory/corporate announcements, e.g.

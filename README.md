@@ -17,7 +17,7 @@ docker compose --profile tools run --rm --build seed   # Schema + Stammdaten
 docker compose up -d --build                          # db, api, worker, web
 ```
 
-- Webseite: http://localhost:3000
+- Webseite: http://localhost:3020 (über devproxy: http://aktien.localhost)
 - API: http://localhost:8090/api/v1/news
 - Ingest-Log: `docker compose logs -f worker`
 

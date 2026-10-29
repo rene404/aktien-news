@@ -186,6 +186,12 @@ func load(dir fs.FS) (*seedData, error) {
 func (d *seedData) write(ctx context.Context, q *db.Queries) error {
 	companyIDs := map[string]int64{}
 	for _, c := range d.companies {
+		if c.Cik != nil {
+			// An SEC import may have given this CIK to an uncurated company.
+			if err := q.DeleteUncuratedByCIK(ctx, c.Cik); err != nil {
+				return fmt.Errorf("company %s: %w", c.Slug, err)
+			}
+		}
 		id, err := q.UpsertCompany(ctx, c)
 		if err != nil {
 			return fmt.Errorf("company %s: %w", c.Slug, err)

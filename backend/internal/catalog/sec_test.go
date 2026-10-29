@@ -174,3 +174,93 @@ func TestImportedCompaniesMatchOnlyOnStrongSignals(t *testing.T) {
 		t.Errorf("curated ticker: %+v", got)
 	}
 }
+
+func countCompanies(t *testing.T, pool *pgxpool.Pool) int {
+	t.Helper()
+	var n int
+	if err := pool.QueryRow(context.Background(), `SELECT count(*) FROM companies`).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	return n
+}
+
+// European issuers with a US listing (ADR) are in the seed without CIK and
+// with home-exchange tickers only; the legal name ties them to the SEC row.
+func TestImportSECMatchesCuratedByLegalName(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+	if err := catalog.Seed(ctx, pool, seed.FS); err != nil {
+		t.Fatal(err)
+	}
+	before := countCompanies(t, pool)
+	secs := []catalog.SECCompany{
+		{CIK: "1000184", Name: "SAP SE", Listings: []catalog.SECListing{{Ticker: "SAP", MIC: "XNYS"}}},
+		{CIK: "1159508", Name: "DEUTSCHE BANK AKTIENGESELLSCHAFT", Listings: []catalog.SECListing{{Ticker: "DB", MIC: "XNYS"}}},
+	}
+	if err := catalog.ImportSEC(ctx, pool, secs); err != nil {
+		t.Fatal(err)
+	}
+	got := companies(t, pool)
+	if got["sap"].cik != "1000184" || got["deutsche-bank"].cik != "1159508" {
+		t.Errorf("sap = %+v, deutsche-bank = %+v", got["sap"], got["deutsche-bank"])
+	}
+	if n := countCompanies(t, pool); n != before {
+		t.Errorf("%d companies, want %d (no duplicates)", n, before)
+	}
+}
+
+// An earlier import created an uncurated duplicate; the next import folds it
+// into the curated company.
+func TestImportSECRemovesEarlierDuplicate(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+	if err := catalog.Seed(ctx, pool, seed.FS); err != nil {
+		t.Fatal(err)
+	}
+	before := countCompanies(t, pool)
+	if _, err := pool.Exec(ctx, `
+		WITH c AS (INSERT INTO companies (slug, name, legal_name, country, cik, curated)
+		           VALUES ('sec-1000184', 'SAP SE', 'SAP SE', 'US', '1000184', false) RETURNING id)
+		INSERT INTO listings (company_id, ticker, mic) SELECT id, 'SAP', 'XNYS' FROM c`); err != nil {
+		t.Fatal(err)
+	}
+
+	err := catalog.ImportSEC(ctx, pool, []catalog.SECCompany{
+		{CIK: "1000184", Name: "SAP SE", Listings: []catalog.SECListing{{Ticker: "SAP", MIC: "XNYS"}}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := companies(t, pool)
+	if _, dup := got["sec-1000184"]; dup || got["sap"].cik != "1000184" {
+		t.Errorf("duplicate kept = %v, sap = %+v", dup, got["sap"])
+	}
+	if n := countCompanies(t, pool); n != before {
+		t.Errorf("%d companies, want %d", n, before)
+	}
+}
+
+// Adding a curated company whose CIK an import already gave to an uncurated
+// row must not break the seed: the curated row takes over.
+func TestSeedTakesOverUncuratedCompanyWithSameCIK(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+	if err := catalog.Seed(ctx, pool, os.DirFS("testdata/valid")); err != nil {
+		t.Fatal(err)
+	}
+	if err := catalog.ImportSEC(ctx, pool, []catalog.SECCompany{
+		{CIK: "1999999", Name: "NEWCO INC", Listings: []catalog.SECListing{{Ticker: "NEWC", MIC: "XNAS"}}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := catalog.Seed(ctx, pool, os.DirFS("testdata/sec/seed_new_curated")); err != nil {
+		t.Fatalf("seed after import: %v", err)
+	}
+	got := companies(t, pool)
+	if _, dup := got["sec-1999999"]; dup {
+		t.Error("uncurated sec-1999999 still exists")
+	}
+	if want := (companyRow{slug: "newco", name: "NewCo", cik: "1999999", curated: true, tickers: "XNAS:NEWC"}); got["newco"] != want {
+		t.Errorf("newco = %+v, want %+v", got["newco"], want)
+	}
+}

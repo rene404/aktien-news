@@ -75,3 +75,15 @@ RETURNING id;
 INSERT INTO listings (company_id, ticker, mic, currency)
 VALUES (@company_id, @ticker, @mic, 'USD')
 ON CONFLICT (mic, ticker) DO NOTHING;
+
+-- name: CuratedNamesWithoutCIK :many
+-- Full names (with legal form) of curated companies that still lack a CIK.
+SELECT c.id, c.legal_name::text AS name FROM companies c
+WHERE c.curated AND c.cik IS NULL AND c.legal_name IS NOT NULL
+UNION ALL
+SELECT c.id, a.alias FROM company_aliases a JOIN companies c ON c.id = a.company_id
+WHERE c.curated AND c.cik IS NULL AND a.kind IN ('issuer_name', 'former_name');
+
+-- name: DeleteUncuratedByCIK :exec
+-- Makes room for a curated company with this CIK; listings and links cascade.
+DELETE FROM companies WHERE cik = @cik AND NOT curated;

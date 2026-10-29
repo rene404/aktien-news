@@ -101,6 +101,50 @@ func (q *Queries) CompanyByTicker(ctx context.Context, arg CompanyByTickerParams
 	return i, err
 }
 
+const curatedNamesWithoutCIK = `-- name: CuratedNamesWithoutCIK :many
+SELECT c.id, c.legal_name::text AS name FROM companies c
+WHERE c.curated AND c.cik IS NULL AND c.legal_name IS NOT NULL
+UNION ALL
+SELECT c.id, a.alias FROM company_aliases a JOIN companies c ON c.id = a.company_id
+WHERE c.curated AND c.cik IS NULL AND a.kind IN ('issuer_name', 'former_name')
+`
+
+type CuratedNamesWithoutCIKRow struct {
+	ID   int64
+	Name string
+}
+
+// Full names (with legal form) of curated companies that still lack a CIK.
+func (q *Queries) CuratedNamesWithoutCIK(ctx context.Context) ([]CuratedNamesWithoutCIKRow, error) {
+	rows, err := q.db.Query(ctx, curatedNamesWithoutCIK)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CuratedNamesWithoutCIKRow
+	for rows.Next() {
+		var i CuratedNamesWithoutCIKRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const deleteUncuratedByCIK = `-- name: DeleteUncuratedByCIK :exec
+DELETE FROM companies WHERE cik = $1 AND NOT curated
+`
+
+// Makes room for a curated company with this CIK; listings and links cascade.
+func (q *Queries) DeleteUncuratedByCIK(ctx context.Context, cik *string) error {
+	_, err := q.db.Exec(ctx, deleteUncuratedByCIK, cik)
+	return err
+}
+
 const fillCompanyCIK = `-- name: FillCompanyCIK :exec
 UPDATE companies SET cik = $1 WHERE id = $2 AND cik IS NULL
 `

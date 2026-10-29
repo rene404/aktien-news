@@ -3,6 +3,7 @@ package ingest
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -44,11 +45,14 @@ func cluster(ctx context.Context, q *db.Queries, articleID int64, title string, 
 }
 
 // ClusterUnassigned fingerprints and clusters articles stored before
-// clustering existed, oldest first, one transaction per article.
-func (r *Runner) ClusterUnassigned(ctx context.Context) error {
+// clustering existed, oldest first, one transaction per article. A backfilled
+// cluster counts as first seen when its article was stored. An article that
+// fails is logged and left for the next start; only a failure to list the
+// articles is returned.
+func (r *Runner) ClusterUnassigned(ctx context.Context) (failed int, err error) {
 	arts, err := db.New(r.Pool).UnclusteredArticles(ctx)
 	if err != nil {
-		return fmt.Errorf("unclustered articles: %w", err)
+		return 0, fmt.Errorf("unclustered articles: %w", err)
 	}
 	for _, a := range arts {
 		err := pgx.BeginFunc(ctx, r.Pool, func(tx pgx.Tx) error {
@@ -61,13 +65,17 @@ func (r *Runner) ClusterUnassigned(ctx context.Context) error {
 			} else {
 				hash = uint64(*a.Simhash)
 			}
-			return cluster(ctx, q, a.ID, a.Title, a.PublishedAt, hash, r.Now())
+			return cluster(ctx, q, a.ID, a.Title, a.PublishedAt, hash, a.IngestedAt)
 		})
 		if err != nil {
-			return fmt.Errorf("cluster article %d: %w", a.ID, err)
+			if ctx.Err() != nil {
+				return failed, ctx.Err()
+			}
+			failed++
+			slog.Warn("cluster backfill failed", "article", a.ID, "err", err)
 		}
 	}
-	return nil
+	return failed, nil
 }
 
 func ptr[T any](v T) *T { return &v }

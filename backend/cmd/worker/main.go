@@ -65,8 +65,11 @@ func run(ctx context.Context) error {
 		runner.Fetchers = map[string]ingest.Fetcher{"sec": fetch.New(cfg.SECUserAgent, 30*time.Second)}
 	}
 
-	if err := runner.ClusterUnassigned(ctx); err != nil {
-		return err
+	// Backfill problems must not keep ingestion from starting.
+	if failed, err := runner.ClusterUnassigned(ctx); err != nil {
+		slog.Error("cluster backfill failed", "err", err)
+	} else if failed > 0 {
+		slog.Warn("cluster backfill incomplete", "failed", failed)
 	}
 
 	slog.Info("worker started", "tick", tick)

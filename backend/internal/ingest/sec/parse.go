@@ -1,5 +1,5 @@
-// Package sec parses the SEC EDGAR "latest filings" Atom feed for 8-K
-// reports (browse-edgar?action=getcurrent&type=8-K&output=atom). EDGAR data
+// Package sec parses the SEC EDGAR "latest filings" Atom feed for 8-K and
+// 6-K reports (browse-edgar?action=getcurrent&type=8-K&output=atom). EDGAR data
 // is public domain; sec.gov requires a User-Agent with a contact address and
 // at most 10 requests per second.
 package sec

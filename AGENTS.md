@@ -3,7 +3,7 @@
 Authoritative working agreement for agents and contributors. The README is the
 user-facing overview; this file is the rulebook. Design rationale lives in
 `docs/design.md`, source/licensing research in `docs/research-sources.md`, the
-current task plan in `docs/plan-phase1.md`.
+task plans in `docs/plan-phase*.md` (Phase 2 done).
 
 ## What this is
 
@@ -61,6 +61,7 @@ docs/             # design, research, plans
 ## Data invariants
 
 - `classifications` and `article_entities` are append-only (no UPDATE).
+  `article_links` is their trigger-maintained "current state" projection — never write it directly.
 - `articles.ingested_at` is set by the DB on insert and never changes.
 - The matcher never resurrects a `rejected` link; it only upgrades `pending → linked`.
 - A feed-supplied ISIN is only issuer-grade for `adhoc`/`filing` sources. In news
@@ -72,13 +73,16 @@ docs/             # design, research, plans
 ## Commands (repo root)
 
 ```bash
-docker compose up -d --build                      # db + api (:8090) + worker + web (:3000)
+docker compose up -d --build                      # db + api (:8090) + worker + web (:3020)
 docker compose logs -f worker                     # ingest runs (one line per source)
 docker compose --profile test run --rm backend-test                       # go test ./...
 docker compose --profile test run --rm backend-test go test ./internal/httpapi/
 docker compose --profile test run --rm backend-test sh -c "go vet ./... && go test ./..."
 docker compose --profile test run --rm web-test      # npm ci + lint + test + build
 docker compose --profile tools run --rm --build seed   # migrate + load backend/seed/*.csv (idempotent)
+docker compose --profile tools run --rm -v <dir>:/sec:ro seed -sec-file /sec/company_tickers_exchange.json
+                                                  # + US issuers from sec.gov/files/company_tickers_exchange.json
+                                                  #   (download outside the corporate network)
 docker compose --profile tools run --rm sqlc      # regenerate internal/store/db
 docker compose --profile tools run --rm sqlc diff # CI: generated code must be current
 docker compose --profile test down -v             # clean up incl. volumes
@@ -89,7 +93,9 @@ docker compose --profile test down -v             # clean up incl. volumes
 - `go mod tidy` fails behind the corporate firewall on goose's test-only
   dependency (`modernc.org/sqlite`); use `go mod tidy -e` locally.
 
-Host ports: Postgres 5433, API `${API_PORT:-8090}` (8080 is taken on the dev box), web `${WEB_PORT:-3000}`.
+Host ports, all bound to `127.0.0.1`: Postgres 5433, API `${API_PORT:-8090}` (8080 is taken on the dev box),
+web `${WEB_PORT:-3020}` (3000 is taken). LAN/phone access goes through `../devproxy` (Caddy):
+`http://aktien.localhost/` on the Mac, `http://aktien.<LAN_IP>.sslip.io/` on the phone.
 
 ## Testing
 

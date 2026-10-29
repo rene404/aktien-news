@@ -2,7 +2,8 @@
 //
 // Signals (highest per company wins):
 //
-//	issuer     1.00  issuer named by the feed/title equals a known name
+//	issuer     1.00  issuer named by the feed/title equals a known name, the
+//	                 source is the issuer's own channel, or the filer's CIK
 //	isin       0.98  issuer ISIN (ad-hoc/filing feed) or ISIN in the title
 //	isin       0.90  ISIN tagged by a news feed, company also named in the title
 //	isin       0.60  ISIN tagged by a news feed, not corroborated → review
@@ -11,6 +12,9 @@
 //	full_name  0.90  name incl. legal form (legal name, issuer/former names)
 //	core_name  0.55  name without legal form, >= 3 chars → review queue
 //
+// ticker and core_name do not apply to uncurated (bulk-imported) companies,
+// and their full_name does not count right after a capitalized word other
+// than a function word ("Of", "The", "Von").
 // >= HighThreshold → linked, >= MinThreshold → pending, else dropped.
 package matching
 
@@ -18,6 +22,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 const (
@@ -40,8 +46,14 @@ type CompanyEntry struct {
 	ID        int64
 	Name      string
 	LegalName string
+	CIK       string // SEC CIK, no leading zeros
 	Aliases   []Alias
 	Listings  []Listing
+	// Uncurated companies come from a bulk import (SEC ticker list). Only
+	// strong signals link them: issuer, ISIN, cashtag, full name with legal
+	// form. Their tickers as plain words and bare names are too ambiguous
+	// ("A", "ON", "Target").
+	Uncurated bool
 }
 
 // Input is what the matcher may look at: titles and feed metadata only.
@@ -52,6 +64,11 @@ type Input struct {
 	// ISINIsIssuer marks IssuerISIN as the issuer of the item (ad-hoc and
 	// filing feeds). In news feeds the ISIN is only a loose tag.
 	ISINIsIssuer bool
+	// IssuerCompanyID is set when the source is the issuer's own channel
+	// (IR feed): every item is about that company.
+	IssuerCompanyID int64
+	// IssuerCIK is the SEC CIK of the filer (filing feeds).
+	IssuerCIK string
 }
 
 type Match struct {
@@ -82,18 +99,21 @@ type nameEntry struct {
 	companyID int64
 	conf      float64
 	method    string
+	uncurated bool
 }
 
 // Index is an immutable lookup structure built from the catalog.
 type Index struct {
-	issuer  map[string]int64 // folded name, also without legal form → company (-1 = ambiguous)
-	isin    map[string]int64
-	tickers map[string]int64 // -1 = ambiguous
-	names   []nameEntry
+	issuer   map[string]int64 // folded name, also without legal form → company (-1 = ambiguous)
+	cik      map[string]int64
+	isin     map[string]int64
+	cashtags map[string]int64 // every ticker; -1 = ambiguous
+	tickers  map[string]int64 // tickers of curated companies, matched as plain words; -1 = ambiguous
+	names    []nameEntry
 }
 
 func NewIndex(companies []CompanyEntry) *Index {
-	ix := &Index{issuer: map[string]int64{}, isin: map[string]int64{}, tickers: map[string]int64{}}
+	ix := &Index{issuer: map[string]int64{}, cik: map[string]int64{}, isin: map[string]int64{}, cashtags: map[string]int64{}, tickers: map[string]int64{}}
 	addUnique := func(m map[string]int64, key string, id int64) {
 		if key == "" {
 			return
@@ -104,7 +124,7 @@ func NewIndex(companies []CompanyEntry) *Index {
 		}
 		m[key] = id
 	}
-	addName := func(text string, id int64, fullOnly bool) {
+	addName := func(text string, id int64, fullOnly, uncurated bool) {
 		f := Fold(text)
 		if f == "" {
 			return
@@ -113,20 +133,24 @@ func NewIndex(companies []CompanyEntry) *Index {
 		addUnique(ix.issuer, stripLegalForm(f), id)
 		switch {
 		case hasLegalForm(f) || fullOnly:
-			ix.names = append(ix.names, nameEntry{f, id, 0.90, "full_name"})
-		case len(f) >= 3:
-			ix.names = append(ix.names, nameEntry{f, id, 0.55, "core_name"})
+			ix.names = append(ix.names, nameEntry{f, id, 0.90, "full_name", uncurated})
+		case len(f) >= 3 && !uncurated:
+			ix.names = append(ix.names, nameEntry{f, id, 0.55, "core_name", false})
 		}
 	}
 
 	for _, c := range companies {
-		addName(c.Name, c.ID, false)
-		addName(c.LegalName, c.ID, false)
+		addUnique(ix.cik, c.CIK, c.ID)
+		addName(c.Name, c.ID, false, c.Uncurated)
+		addName(c.LegalName, c.ID, false, c.Uncurated)
 		for _, a := range c.Aliases {
-			addName(a.Text, c.ID, a.Kind == "issuer_name" || a.Kind == "former_name")
+			addName(a.Text, c.ID, a.Kind == "issuer_name" || a.Kind == "former_name", c.Uncurated)
 		}
 		for _, l := range c.Listings {
-			addUnique(ix.tickers, l.Ticker, c.ID)
+			addUnique(ix.cashtags, l.Ticker, c.ID)
+			if !c.Uncurated {
+				addUnique(ix.tickers, l.Ticker, c.ID)
+			}
 			addUnique(ix.isin, l.ISIN, c.ID)
 		}
 	}
@@ -146,6 +170,10 @@ func (ix *Index) Match(in Input) []Match {
 		}
 	}
 
+	consider(in.IssuerCompanyID, 1.00, "issuer")
+	if in.IssuerCIK != "" {
+		consider(ix.cik[in.IssuerCIK], 1.00, "issuer")
+	}
 	if h := Fold(in.IssuerHint); h != "" {
 		if id, ok := ix.issuer[h]; ok {
 			consider(id, 1.00, "issuer")
@@ -159,7 +187,7 @@ func (ix *Index) Match(in Input) []Match {
 	}
 
 	for _, m := range cashtagRe.FindAllStringSubmatch(in.Title, -1) {
-		consider(ix.tickers[m[1]], 0.95, "cashtag")
+		consider(ix.cashtags[m[1]], 0.95, "cashtag")
 	}
 	for _, tok := range tickerRe.FindAllString(in.Title, -1) {
 		if !tickerStoplist[tok] {
@@ -167,8 +195,14 @@ func (ix *Index) Match(in Input) []Match {
 		}
 	}
 
+	words := titleWords(in.Title)
 	for _, m := range ix.nameMatches(Fold(in.Title)) {
-		consider(m.companyID, m.conf, m.method)
+		// An uncurated name glued to a capitalized word is the tail of a
+		// longer company name: "Bancorp, Inc." in "Monroe Federal Bancorp, Inc.".
+		if m.entry.uncurated && words.continuesName(m.word) {
+			continue
+		}
+		consider(m.entry.companyID, m.entry.conf, m.entry.method)
 	}
 
 	// Feed ISIN last: a news-feed tag only counts as strong evidence when the
@@ -203,12 +237,13 @@ func (ix *Index) Match(in Input) []Match {
 type span struct {
 	entry      nameEntry
 	start, end int
+	word       int // index of the first word of the match in the title
 }
 
 // nameMatches finds every whole-word occurrence of every name and drops
 // occurrences that sit inside a longer occurrence of another company's name
 // ("Siemens" inside "Siemens Energy").
-func (ix *Index) nameMatches(title string) []nameEntry {
+func (ix *Index) nameMatches(title string) []span {
 	padded := " " + title + " "
 	var spans []span
 	for _, e := range ix.names {
@@ -219,12 +254,12 @@ func (ix *Index) nameMatches(title string) []nameEntry {
 				break
 			}
 			start := from + i
-			spans = append(spans, span{e, start, start + len(needle)})
+			spans = append(spans, span{e, start, start + len(needle), strings.Count(padded[:start], " ")})
 			from = start + 1
 		}
 	}
 
-	var out []nameEntry
+	var out []span
 	for _, s := range spans {
 		contained := false
 		for _, o := range spans {
@@ -234,10 +269,68 @@ func (ix *Index) nameMatches(title string) []nameEntry {
 			}
 		}
 		if !contained {
-			out = append(out, s.entry)
+			out = append(out, s)
 		}
 	}
 	return out
+}
+
+// word is one alphanumeric run of the original title. Fold keeps these runs
+// one-to-one, so word i here is word i of the folded title.
+type word struct {
+	start, end int // byte offsets in the original title
+}
+
+type titleWordList struct {
+	title string
+	words []word
+}
+
+func titleWords(title string) titleWordList {
+	var ws []word
+	start := -1
+	for i, r := range title {
+		alnum := unicode.IsLetter(r) || unicode.IsDigit(r)
+		switch {
+		case alnum && start < 0:
+			start = i
+		case !alnum && start >= 0:
+			ws = append(ws, word{start, i})
+			start = -1
+		}
+	}
+	if start >= 0 {
+		ws = append(ws, word{start, len(title)})
+	}
+	return titleWordList{title, ws}
+}
+
+// Words that start a capitalized phrase in Title Case headlines ("Shares Of
+// …", "Why The …") or German titles, but never continue a company name.
+var functionWords = map[string]bool{
+	"a": true, "about": true, "after": true, "an": true, "and": true, "as": true, "at": true,
+	"before": true, "by": true, "for": true, "from": true, "how": true, "in": true, "into": true,
+	"of": true, "on": true, "or": true, "over": true, "the": true, "to": true, "vs": true,
+	"what": true, "why": true, "with": true,
+	"am": true, "auf": true, "aus": true, "bei": true, "das": true, "dem": true, "den": true,
+	"der": true, "des": true, "die": true, "für": true, "gegen": true, "im": true, "mit": true,
+	"nach": true, "oder": true, "über": true, "und": true, "von": true, "vor": true, "warum": true,
+	"wie": true, "zu": true, "zum": true, "zur": true,
+}
+
+// continuesName reports whether word i directly follows a capitalized word
+// other than a function word, separated only by whitespace.
+func (l titleWordList) continuesName(i int) bool {
+	if i <= 0 || i >= len(l.words) {
+		return false
+	}
+	prev, cur := l.words[i-1], l.words[i]
+	if strings.TrimSpace(l.title[prev.end:cur.start]) != "" {
+		return false
+	}
+	text := l.title[prev.start:prev.end]
+	r, _ := utf8.DecodeRuneInString(text)
+	return unicode.IsUpper(r) && !functionWords[strings.ToLower(text)]
 }
 
 // StatusFor maps a confidence to a link status, or "" if it is dropped.

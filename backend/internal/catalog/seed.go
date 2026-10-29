@@ -42,11 +42,17 @@ func Seed(ctx context.Context, pool *pgxpool.Pool, dir fs.FS) error {
 }
 
 type seedData struct {
-	sources     []db.UpsertSourceParams
+	sources     []sourceRow
 	companies   []db.UpsertCompanyParams
 	listings    []listingRow
 	memberships []db.UpsertIndexMembershipParams
 	aliases     []db.UpsertAliasParams
+}
+
+type sourceRow struct {
+	line       int
+	issuerSlug string // "" unless the source is the issuer's own channel
+	params     db.UpsertSourceParams
 }
 
 type listingRow struct {
@@ -61,7 +67,7 @@ func load(dir fs.FS) (*seedData, error) {
 		errs = append(errs, fmt.Errorf("%s:%d: %s", file, line, fmt.Sprintf(format, args...)))
 	}
 
-	err := readCSV(dir, "sources.csv", []string{"key", "name", "kind", "market", "url", "parser", "weight", "fetch_interval_minutes", "text_policy", "terms_url"},
+	err := readCSV(dir, "sources.csv", []string{"key", "name", "kind", "market", "url", "parser", "weight", "fetch_interval_minutes", "text_policy", "terms_url", "issuer_slug"},
 		func(line int, r map[string]string) {
 			if !slices.Contains(knownKinds, r["kind"]) {
 				addErr("sources.csv", line, "unknown kind %q", r["kind"])
@@ -86,13 +92,13 @@ func load(dir fs.FS) (*seedData, error) {
 				addErr("sources.csv", line, "fetch_interval_minutes %q must be a positive integer", r["fetch_interval_minutes"])
 			}
 			policy := db.TextPolicy(r["text_policy"])
-			d.sources = append(d.sources, db.UpsertSourceParams{
+			d.sources = append(d.sources, sourceRow{line: line, issuerSlug: r["issuer_slug"], params: db.UpsertSourceParams{
 				Key: r["key"], Name: r["name"], Kind: db.SourceKind(r["kind"]), Market: r["market"], Url: r["url"], Parser: r["parser"],
 				Weight:        weight,
 				FetchInterval: pgtype.Interval{Microseconds: int64(minutes) * int64(time.Minute/time.Microsecond), Valid: true},
 				TextPolicy:    &policy,
 				TermsUrl:      optional(r["terms_url"]),
-			})
+			}})
 		})
 	errs = append(errs, err)
 
@@ -112,6 +118,11 @@ func load(dir fs.FS) (*seedData, error) {
 			})
 		})
 	errs = append(errs, err)
+	for _, s := range d.sources {
+		if s.issuerSlug != "" && !slugs[s.issuerSlug] {
+			addErr("sources.csv", s.line, "unknown issuer_slug %q", s.issuerSlug)
+		}
+	}
 
 	listingKeys := map[string]bool{}
 	err = readCSV(dir, "listings.csv", []string{"company_slug", "isin", "ticker", "mic", "currency"},
@@ -173,18 +184,28 @@ func load(dir fs.FS) (*seedData, error) {
 }
 
 func (d *seedData) write(ctx context.Context, q *db.Queries) error {
-	for _, s := range d.sources {
-		if _, err := q.UpsertSource(ctx, s); err != nil {
-			return fmt.Errorf("source %s: %w", s.Key, err)
-		}
-	}
 	companyIDs := map[string]int64{}
 	for _, c := range d.companies {
+		if c.Cik != nil {
+			// An SEC import may have given this CIK to an uncurated company.
+			if err := q.DeleteUncuratedByCIK(ctx, c.Cik); err != nil {
+				return fmt.Errorf("company %s: %w", c.Slug, err)
+			}
+		}
 		id, err := q.UpsertCompany(ctx, c)
 		if err != nil {
 			return fmt.Errorf("company %s: %w", c.Slug, err)
 		}
 		companyIDs[c.Slug] = id
+	}
+	for _, s := range d.sources {
+		if s.issuerSlug != "" {
+			id := companyIDs[s.issuerSlug]
+			s.params.IssuerCompanyID = &id
+		}
+		if _, err := q.UpsertSource(ctx, s.params); err != nil {
+			return fmt.Errorf("source %s: %w", s.params.Key, err)
+		}
 	}
 	for _, l := range d.listings {
 		l.params.CompanyID = companyIDs[l.companySlug]

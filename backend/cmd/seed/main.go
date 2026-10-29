@@ -1,9 +1,12 @@
 // Command seed migrates the database and loads the embedded master data.
-// Safe to run repeatedly.
+// With -sec-file it also imports NYSE/Nasdaq issuers from a downloaded
+// https://www.sec.gov/files/company_tickers_exchange.json. Safe to run
+// repeatedly.
 package main
 
 import (
 	"context"
+	"flag"
 	"log/slog"
 	"os"
 
@@ -24,6 +27,9 @@ func main() {
 }
 
 func run(ctx context.Context) error {
+	secFile := flag.String("sec-file", "", "path to SEC company_tickers_exchange.json to import")
+	flag.Parse()
+
 	cfg := config.Load()
 	if err := store.MigrateUp(ctx, cfg.DatabaseURL); err != nil {
 		return err
@@ -33,5 +39,19 @@ func run(ctx context.Context) error {
 		return err
 	}
 	defer pool.Close()
-	return catalog.Seed(ctx, pool, seed.FS)
+	if err := catalog.Seed(ctx, pool, seed.FS); err != nil {
+		return err
+	}
+	if *secFile == "" {
+		return nil
+	}
+	b, err := os.ReadFile(*secFile)
+	if err != nil {
+		return err
+	}
+	companies, err := catalog.ParseSECTickers(b)
+	if err != nil {
+		return err
+	}
+	return catalog.ImportSEC(ctx, pool, companies)
 }

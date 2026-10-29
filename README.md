@@ -17,7 +17,14 @@ docker compose --profile tools run --rm --build seed   # Schema + Stammdaten
 docker compose up -d --build                          # db, api, worker, web
 ```
 
-- Webseite: http://localhost:3000
+US-Stammdaten (optional, alle NYSE-/Nasdaq-Titel) und SEC-8-K-Meldungen brauchen
+`SEC_USER_AGENT` mit Kontaktadresse in `.env` (sec.gov ist im AustriaCard-Netz gesperrt):
+
+```bash
+docker compose --profile tools run --rm -v <ordner>:/sec:ro seed -sec-file /sec/company_tickers_exchange.json
+```
+
+- Webseite: http://localhost:3020 (über devproxy: http://aktien.localhost)
 - API: http://localhost:8090/api/v1/news
 - Ingest-Log: `docker compose logs -f worker`
 
@@ -32,7 +39,7 @@ docker compose --profile test run --rm web-test       # Frontend: lint, test, bu
 
 | Endpoint | Beschreibung |
 |---|---|
-| `GET /api/v1/news?ticker=&index=&source=&from=&to=&cursor=&limit=` | Meldungen mit sicher verknüpfter Firma, neueste zuerst. `from`/`to` RFC 3339, `limit` 1–100 (Default 25), `cursor` aus `next_cursor` |
+| `GET /api/v1/news?ticker=&index=&source=&from=&to=&cursor=&limit=` | Meldungen mit sicher verknüpfter Firma, neueste zuerst, ein Eintrag pro Cluster gleicher Meldungen (Titel/Link/Quelle der wichtigsten Quelle, Ticker aller Mitglieder). `source`/`from`/`to` beziehen sich auf diesen Eintrag. `from`/`to` RFC 3339, `limit` 1–100 (Default 25), `cursor` aus `next_cursor` |
 | `GET /api/v1/instruments?q=` | Suche nach Ticker, Name oder ISIN (max. 10) |
 | `GET /api/v1/instruments/{ticker}` | Name, ISIN, Börse, Indizes einer Aktie (404 wenn unbekannt) |
 | `GET /api/v1/sources` | aktive Quellen |
@@ -45,4 +52,5 @@ Antworten enthalten bewusst nur Titel, Quelle, Link, Zeit und Ticker – keine T
 - [AGENTS.md](AGENTS.md) – Regeln, Befehle, Architektur
 - [docs/design.md](docs/design.md) – Design des MVP
 - [docs/research-sources.md](docs/research-sources.md) – Datenquellen und Lizenzen
-- [docs/plan-phase1.md](docs/plan-phase1.md) – aktueller Umsetzungsplan
+- [docs/plan-phase2.md](docs/plan-phase2.md) – Phase 2 (abgeschlossen): mehr Quellen, US-Stammdaten, Clustering
+- [docs/plan-phase1.md](docs/plan-phase1.md) – Phase 1

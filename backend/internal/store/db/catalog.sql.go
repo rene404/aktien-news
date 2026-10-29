@@ -11,8 +11,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const companyByCIK = `-- name: CompanyByCIK :one
+SELECT id, curated FROM companies WHERE cik = $1
+`
+
+type CompanyByCIKRow struct {
+	ID      int64
+	Curated bool
+}
+
+func (q *Queries) CompanyByCIK(ctx context.Context, cik *string) (CompanyByCIKRow, error) {
+	row := q.db.QueryRow(ctx, companyByCIK, cik)
+	var i CompanyByCIKRow
+	err := row.Scan(&i.ID, &i.Curated)
+	return i, err
+}
+
 const companyByISIN = `-- name: CompanyByISIN :one
-SELECT DISTINCT c.id, c.name, c.legal_name, c.lei, c.cik, c.country, c.created_at, c.slug FROM companies c
+SELECT DISTINCT c.id, c.name, c.legal_name, c.lei, c.cik, c.country, c.created_at, c.slug, c.curated FROM companies c
 JOIN listings l ON l.company_id = c.id
 WHERE l.isin = $1
 `
@@ -29,12 +45,36 @@ func (q *Queries) CompanyByISIN(ctx context.Context, isin *string) (Company, err
 		&i.Country,
 		&i.CreatedAt,
 		&i.Slug,
+		&i.Curated,
 	)
 	return i, err
 }
 
+const companyByListing = `-- name: CompanyByListing :one
+SELECT c.id, c.curated, c.cik FROM listings l JOIN companies c ON c.id = l.company_id
+WHERE l.mic = $1 AND l.ticker = $2
+`
+
+type CompanyByListingParams struct {
+	Mic    string
+	Ticker string
+}
+
+type CompanyByListingRow struct {
+	ID      int64
+	Curated bool
+	Cik     *string
+}
+
+func (q *Queries) CompanyByListing(ctx context.Context, arg CompanyByListingParams) (CompanyByListingRow, error) {
+	row := q.db.QueryRow(ctx, companyByListing, arg.Mic, arg.Ticker)
+	var i CompanyByListingRow
+	err := row.Scan(&i.ID, &i.Curated, &i.Cik)
+	return i, err
+}
+
 const companyByTicker = `-- name: CompanyByTicker :one
-SELECT c.id, c.name, c.legal_name, c.lei, c.cik, c.country, c.created_at, c.slug FROM companies c
+SELECT c.id, c.name, c.legal_name, c.lei, c.cik, c.country, c.created_at, c.slug, c.curated FROM companies c
 JOIN listings l ON l.company_id = c.id
 WHERE l.mic = $1 AND l.ticker = $2
 `
@@ -56,12 +96,71 @@ func (q *Queries) CompanyByTicker(ctx context.Context, arg CompanyByTickerParams
 		&i.Country,
 		&i.CreatedAt,
 		&i.Slug,
+		&i.Curated,
 	)
 	return i, err
 }
 
+const curatedNamesWithoutCIK = `-- name: CuratedNamesWithoutCIK :many
+SELECT c.id, c.legal_name::text AS name FROM companies c
+WHERE c.curated AND c.cik IS NULL AND c.legal_name IS NOT NULL
+UNION ALL
+SELECT c.id, a.alias FROM company_aliases a JOIN companies c ON c.id = a.company_id
+WHERE c.curated AND c.cik IS NULL AND a.kind IN ('issuer_name', 'former_name')
+`
+
+type CuratedNamesWithoutCIKRow struct {
+	ID   int64
+	Name string
+}
+
+// Full names (with legal form) of curated companies that still lack a CIK.
+func (q *Queries) CuratedNamesWithoutCIK(ctx context.Context) ([]CuratedNamesWithoutCIKRow, error) {
+	rows, err := q.db.Query(ctx, curatedNamesWithoutCIK)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CuratedNamesWithoutCIKRow
+	for rows.Next() {
+		var i CuratedNamesWithoutCIKRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const deleteUncuratedByCIK = `-- name: DeleteUncuratedByCIK :exec
+DELETE FROM companies WHERE cik = $1 AND NOT curated
+`
+
+// Makes room for a curated company with this CIK; listings and links cascade.
+func (q *Queries) DeleteUncuratedByCIK(ctx context.Context, cik *string) error {
+	_, err := q.db.Exec(ctx, deleteUncuratedByCIK, cik)
+	return err
+}
+
+const fillCompanyCIK = `-- name: FillCompanyCIK :exec
+UPDATE companies SET cik = $1 WHERE id = $2 AND cik IS NULL
+`
+
+type FillCompanyCIKParams struct {
+	Cik *string
+	ID  int64
+}
+
+func (q *Queries) FillCompanyCIK(ctx context.Context, arg FillCompanyCIKParams) error {
+	_, err := q.db.Exec(ctx, fillCompanyCIK, arg.Cik, arg.ID)
+	return err
+}
+
 const getSourceByKey = `-- name: GetSourceByKey :one
-SELECT id, key, name, kind, market, url, weight, enabled, fetch_interval, text_policy, tdm_reserved, tdm_checked_at, terms_url, notes, created_at, parser FROM sources WHERE key = $1
+SELECT id, key, name, kind, market, url, weight, enabled, fetch_interval, text_policy, tdm_reserved, tdm_checked_at, terms_url, notes, created_at, parser, issuer_company_id FROM sources WHERE key = $1
 `
 
 func (q *Queries) GetSourceByKey(ctx context.Context, key string) (Source, error) {
@@ -84,8 +183,45 @@ func (q *Queries) GetSourceByKey(ctx context.Context, key string) (Source, error
 		&i.Notes,
 		&i.CreatedAt,
 		&i.Parser,
+		&i.IssuerCompanyID,
 	)
 	return i, err
+}
+
+const insertListingIfAbsent = `-- name: InsertListingIfAbsent :exec
+INSERT INTO listings (company_id, ticker, mic, currency)
+VALUES ($1, $2, $3, 'USD')
+ON CONFLICT (mic, ticker) DO NOTHING
+`
+
+type InsertListingIfAbsentParams struct {
+	CompanyID int64
+	Ticker    string
+	Mic       string
+}
+
+func (q *Queries) InsertListingIfAbsent(ctx context.Context, arg InsertListingIfAbsentParams) error {
+	_, err := q.db.Exec(ctx, insertListingIfAbsent, arg.CompanyID, arg.Ticker, arg.Mic)
+	return err
+}
+
+const insertUncuratedCompany = `-- name: InsertUncuratedCompany :one
+INSERT INTO companies (slug, name, legal_name, country, cik, curated)
+VALUES ($1, $2, $2, 'US', $3, false)
+RETURNING id
+`
+
+type InsertUncuratedCompanyParams struct {
+	Slug string
+	Name string
+	Cik  *string
+}
+
+func (q *Queries) InsertUncuratedCompany(ctx context.Context, arg InsertUncuratedCompanyParams) (int64, error) {
+	row := q.db.QueryRow(ctx, insertUncuratedCompany, arg.Slug, arg.Name, arg.Cik)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const upsertAlias = `-- name: UpsertAlias :exec
@@ -110,7 +246,9 @@ INSERT INTO companies (slug, name, legal_name, country, lei, cik)
 VALUES ($1, $2, $3, $4, $5, $6)
 ON CONFLICT (slug) DO UPDATE
 SET name = EXCLUDED.name, legal_name = EXCLUDED.legal_name, country = EXCLUDED.country,
-    lei = EXCLUDED.lei, cik = EXCLUDED.cik
+    lei = EXCLUDED.lei,
+    -- A CIK filled in by the SEC import survives a seed row without one.
+    cik = COALESCE(EXCLUDED.cik, companies.cik)
 RETURNING id
 `
 
@@ -191,32 +329,35 @@ func (q *Queries) UpsertListing(ctx context.Context, arg UpsertListingParams) (i
 }
 
 const upsertSource = `-- name: UpsertSource :one
-INSERT INTO sources (key, name, kind, market, url, parser, weight, fetch_interval, text_policy, terms_url)
+INSERT INTO sources (key, name, kind, market, url, parser, weight, fetch_interval, text_policy, terms_url, issuer_company_id)
 VALUES (
     $1, $2, $3, $4, $5, $6,
     COALESCE($7::numeric, 0.50),
     COALESCE($8::interval, '10 minutes'),
     COALESCE($9::text_policy, 'none'),
-    $10
+    $10,
+    $11
 )
 ON CONFLICT (key) DO UPDATE
 SET name = EXCLUDED.name, kind = EXCLUDED.kind, market = EXCLUDED.market, url = EXCLUDED.url, parser = EXCLUDED.parser,
     weight = EXCLUDED.weight, fetch_interval = EXCLUDED.fetch_interval,
-    text_policy = EXCLUDED.text_policy, terms_url = EXCLUDED.terms_url
-RETURNING id, key, name, kind, market, url, weight, enabled, fetch_interval, text_policy, tdm_reserved, tdm_checked_at, terms_url, notes, created_at, parser
+    text_policy = EXCLUDED.text_policy, terms_url = EXCLUDED.terms_url,
+    issuer_company_id = EXCLUDED.issuer_company_id
+RETURNING id, key, name, kind, market, url, weight, enabled, fetch_interval, text_policy, tdm_reserved, tdm_checked_at, terms_url, notes, created_at, parser, issuer_company_id
 `
 
 type UpsertSourceParams struct {
-	Key           string
-	Name          string
-	Kind          SourceKind
-	Market        string
-	Url           string
-	Parser        string
-	Weight        pgtype.Numeric
-	FetchInterval pgtype.Interval
-	TextPolicy    *TextPolicy
-	TermsUrl      *string
+	Key             string
+	Name            string
+	Kind            SourceKind
+	Market          string
+	Url             string
+	Parser          string
+	Weight          pgtype.Numeric
+	FetchInterval   pgtype.Interval
+	TextPolicy      *TextPolicy
+	TermsUrl        *string
+	IssuerCompanyID *int64
 }
 
 func (q *Queries) UpsertSource(ctx context.Context, arg UpsertSourceParams) (Source, error) {
@@ -231,6 +372,7 @@ func (q *Queries) UpsertSource(ctx context.Context, arg UpsertSourceParams) (Sou
 		arg.FetchInterval,
 		arg.TextPolicy,
 		arg.TermsUrl,
+		arg.IssuerCompanyID,
 	)
 	var i Source
 	err := row.Scan(
@@ -250,6 +392,7 @@ func (q *Queries) UpsertSource(ctx context.Context, arg UpsertSourceParams) (Sou
 		&i.Notes,
 		&i.CreatedAt,
 		&i.Parser,
+		&i.IssuerCompanyID,
 	)
 	return i, err
 }

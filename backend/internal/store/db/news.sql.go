@@ -72,35 +72,33 @@ func (q *Queries) ListEnabledSources(ctx context.Context) ([]ListEnabledSourcesR
 }
 
 const listNews = `-- name: ListNews :many
-WITH current_links AS (
-    SELECT DISTINCT ON (e.article_id, e.company_id) e.article_id, e.company_id, e.status
-    FROM article_entities e
-    ORDER BY e.article_id, e.company_id, e.decided_at DESC, e.id DESC
-), linked AS (
-    SELECT article_id, company_id FROM current_links WHERE status = 'linked'
+WITH linked AS (
+    SELECT m.cluster_id, l.ticker, l.id AS listing_id
+    FROM article_links k
+    JOIN articles m ON m.id = k.article_id
+    JOIN listings l ON l.company_id = k.company_id AND l.active
+    WHERE k.status = 'linked' AND m.cluster_id IS NOT NULL
 )
 SELECT a.id, a.title, a.url, a.published_at,
        s.key AS source_key, s.name AS source_name,
-       array_agg(DISTINCT l.ticker ORDER BY l.ticker)::text[] AS tickers
-FROM articles a
+       array_agg(DISTINCT k.ticker ORDER BY k.ticker)::text[] AS tickers
+FROM clusters c
+JOIN articles a ON a.id = c.representative_article_id AND a.cluster_id = c.id
 JOIN sources s  ON s.id = a.source_id
-JOIN linked k   ON k.article_id = a.id
-JOIN listings l ON l.company_id = k.company_id AND l.active
+JOIN linked k   ON k.cluster_id = c.id
 WHERE ($1::text IS NULL OR s.key = $1::text)
   AND ($2::timestamptz IS NULL OR a.published_at >= $2::timestamptz)
   AND ($3::timestamptz IS NULL OR a.published_at < $3::timestamptz)
   AND ($4::text IS NULL OR EXISTS (
         SELECT 1 FROM linked k2
-        JOIN listings l2 ON l2.company_id = k2.company_id AND l2.active
-        WHERE k2.article_id = a.id AND upper(l2.ticker) = upper($4::text)))
+        WHERE k2.cluster_id = c.id AND upper(k2.ticker) = upper($4::text)))
   AND ($5::text IS NULL OR EXISTS (
         SELECT 1 FROM linked k3
-        JOIN listings l3 ON l3.company_id = k3.company_id AND l3.active
-        JOIN index_memberships m ON m.listing_id = l3.id
-        WHERE k3.article_id = a.id
-          AND m.index_key = $5::text
-          AND m.valid_from <= current_date
-          AND (m.valid_to IS NULL OR m.valid_to > current_date)))
+        JOIN index_memberships im ON im.listing_id = k3.listing_id
+        WHERE k3.cluster_id = c.id
+          AND im.index_key = $5::text
+          AND im.valid_from <= current_date
+          AND (im.valid_to IS NULL OR im.valid_to > current_date)))
   AND ($6::timestamptz IS NULL
        OR (a.published_at, a.id) < ($6::timestamptz, $7::bigint))
 GROUP BY a.id, s.key, s.name
@@ -129,9 +127,12 @@ type ListNewsRow struct {
 	Tickers     []string
 }
 
-// Public feed: articles with at least one company whose CURRENT link state
-// (newest row in the append-only article_entities) is 'linked'.
-// Keyset pagination over (published_at, id), newest first.
+// Public feed, one item per cluster: the representative's title, link,
+// source and time, with the tickers of every member whose CURRENT link state
+// (article_links, the projection of the append-only article_entities) is
+// 'linked'. A cluster is listed when at least one member is linked.
+// Ticker/index filters match any member; source, time and the keyset cursor
+// over (published_at, id), newest first, refer to the representative.
 func (q *Queries) ListNews(ctx context.Context, arg ListNewsParams) ([]ListNewsRow, error) {
 	rows, err := q.db.Query(ctx, listNews,
 		arg.Source,

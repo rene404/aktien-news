@@ -70,6 +70,12 @@ func TestMatch(t *testing.T) {
 		{"issuer hint without legal form, umlaut folded",
 			matching.Input{Title: "x", IssuerHint: "Oesterreichische Post"},
 			[]want{{post, "issuer", 1.00}}},
+		{"source is the issuer's own channel, company not in title",
+			matching.Input{Title: "Installation of the electric arc furnace completed", IssuerCompanyID: porr},
+			[]want{{porr, "issuer", 1.00}}},
+		{"own-channel issuer plus another company in the title",
+			matching.Input{Title: "Auftrag von Erste Group Bank AG", IssuerCompanyID: porr},
+			[]want{{porr, "issuer", 1.00}, {erste, "full_name", 0.90}}},
 		{"issuer ISIN from an ad-hoc feed",
 			matching.Input{Title: "Irgendein Titel", IssuerISIN: "AT0000652011", ISINIsIssuer: true},
 			[]want{{erste, "isin", 0.98}}},
@@ -138,6 +144,86 @@ func TestMatch(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// Companies imported in bulk from the SEC ticker list are not curated: their
+// short tickers and bare names are too ambiguous for titles.
+func TestMatchUncuratedNeedsStrongSignals(t *testing.T) {
+	const (
+		agilent = iota + 100
+		onsemi
+		gartner
+		target
+		bancorp
+	)
+	us := func(id int64, name, ticker, mic string) matching.CompanyEntry {
+		return matching.CompanyEntry{ID: id, Name: name, LegalName: name, Uncurated: true,
+			Listings: []matching.Listing{{Ticker: ticker, MIC: mic}}}
+	}
+	ix := matching.NewIndex([]matching.CompanyEntry{
+		us(agilent, "Agilent Technologies, Inc.", "A", "XNYS"),
+		us(onsemi, "ON SEMICONDUCTOR CORP", "ON", "XNAS"),
+		us(bancorp, "Bancorp, Inc.", "TBBK", "XNAS"),
+		{ID: gartner, Name: "GARTNER INC", LegalName: "GARTNER INC", CIK: "749251", Uncurated: true,
+			Listings: []matching.Listing{{Ticker: "IT", MIC: "XNYS"}}},
+		{ID: target, Name: "Target", LegalName: "Target Corporation", Uncurated: true,
+			Listings: []matching.Listing{{Ticker: "TGT", MIC: "XNYS", ISIN: "US87612E1064"}}},
+	})
+	cases := []struct {
+		name string
+		in   matching.Input
+		want []want
+	}{
+		{"single-letter ticker as a word", matching.Input{Title: "Plan A for ON and IT budgets"}, nil},
+		{"ticker word", matching.Input{Title: "TGT shares rise"}, nil},
+		{"bare name without legal form", matching.Input{Title: "Target cuts outlook"}, nil},
+		{"full name with legal form", matching.Input{Title: "Agilent Technologies, Inc. Reports Q3 Results"},
+			[]want{{agilent, "full_name", 0.90}}},
+		{"full name inside a longer company name",
+			matching.Input{Title: "8-K: Monroe Federal Bancorp, Inc. – Item 5.02 Departure of Directors"}, nil},
+		{"full name inside a longer name with a suffix",
+			matching.Input{Title: "8-K: Orange County Bancorp, Inc. /DE/ – Item 2.02 Results"}, nil},
+		{"full name after a lowercase word", matching.Input{Title: "Shares of Bancorp, Inc. rise"},
+			[]want{{bancorp, "full_name", 0.90}}},
+		{"full name after a distribution prefix", matching.Input{Title: "EQS-News: Agilent Technologies, Inc. raises outlook"},
+			[]want{{agilent, "full_name", 0.90}}},
+		{"full name at the start", matching.Input{Title: "Bancorp, Inc. Reports Q3 Results"},
+			[]want{{bancorp, "full_name", 0.90}}},
+		{"title case: function word before the name", matching.Input{Title: "Shares Of Agilent Technologies, Inc. Rise After Earnings"},
+			[]want{{agilent, "full_name", 0.90}}},
+		{"title case: 'The' before the name", matching.Input{Title: "Why The Bancorp, Inc. Beat Estimates"},
+			[]want{{bancorp, "full_name", 0.90}}},
+		{"German function word before the name", matching.Input{Title: "Aktie Von Agilent Technologies, Inc. Steigt"},
+			[]want{{agilent, "full_name", 0.90}}},
+		{"cashtag", matching.Input{Title: "Why $ON is moving"}, []want{{onsemi, "cashtag", 0.95}}},
+		{"filer CIK, title without the name", matching.Input{Title: "8-K: GARTNER INC – Item 8.01 Other Events", IssuerCIK: "749251"},
+			[]want{{gartner, "issuer", 1.00}}},
+		{"unknown CIK", matching.Input{Title: "8-K: SMALLCAP WIDGETS CORP – Item 8.01 Other Events", IssuerCIK: "1999999"}, nil},
+		{"issuer hint", matching.Input{Title: "Q3 results", IssuerHint: "Gartner, Inc."}, []want{{gartner, "issuer", 1.00}}},
+		{"ISIN in title", matching.Input{Title: "US87612E1064: dividend"}, []want{{target, "isin", 0.98}}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := ix.Match(tc.in)
+			if len(got) != len(tc.want) {
+				t.Fatalf("got %+v, want %+v", got, tc.want)
+			}
+			for i, w := range tc.want {
+				if g := got[i]; g.CompanyID != w.id || g.Method != w.method || g.Confidence != w.conf {
+					t.Errorf("match %d = %+v, want %+v", i, g, w)
+				}
+			}
+		})
+	}
+}
+
+// Curated names keep matching inside longer names; the containment rule for
+// other companies' names covers them.
+func TestMatchCuratedFullNameAfterCapitalizedWord(t *testing.T) {
+	got := testIndex().Match(matching.Input{Title: "Kurs Erste Group Bank AG steigt"})
+	if len(got) != 1 || got[0].CompanyID != erste || got[0].Method != "full_name" {
+		t.Errorf("got %+v, want Erste full_name", got)
 	}
 }
 

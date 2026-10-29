@@ -32,7 +32,7 @@ Jede Aufgabe läuft auf einem eigenen `feature/phase2-*`-Branch per TDD. Für al
   Command: `docker compose --profile test run --rm backend-test go test ./internal/store/ ./internal/catalog/ ./internal/ingest/`
   Done: up → down → up ist grün. Ein Artikel ohne Firmennamen im Titel aus einer IR-Quelle ist `linked`. Ein unbekannter `issuer_slug` lässt den Seed mit Fehler abbrechen.
 
-- [ ] **4. SimHash-Clustering**
+- [x] **4. SimHash-Clustering**
   Files: `backend/internal/dedupe/simhash.go`, `backend/internal/dedupe/simhash_test.go`, `backend/internal/store/queries/clusters.sql`, `backend/internal/ingest/runner.go`, `backend/internal/ingest/runner_test.go`
   What: Jeder neue Artikel bekommt einen SimHash über den normalisierten Titel. In derselben Transaktion schließt er sich dem nächsten Cluster im 72-h-Fenster an (Hamming ≤ 3) oder gründet einen neuen. Repräsentant ist die Quelle mit dem höchsten `weight`, bei Gleichstand die früheste.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/dedupe/ ./internal/ingest/`

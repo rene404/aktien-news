@@ -146,16 +146,18 @@ func (r *Runner) runSource(ctx context.Context, src db.Source, index *matching.I
 	return res
 }
 
-// store inserts one article and its company links atomically. It reports
+// store inserts one article with its cluster and company links atomically. It reports
 // false when the article was already known.
 func (r *Runner) store(ctx context.Context, src db.Source, a RawArticle, index *matching.Index) (bool, error) {
 	canonical, err := dedupe.CanonicalURL(a.URL)
 	if err != nil {
 		return false, err
 	}
+	hash := dedupe.SimHash(a.Title)
 	inserted := false
 	err = pgx.BeginFunc(ctx, r.Pool, func(tx pgx.Tx) error {
-		art, err := db.New(tx).InsertArticle(ctx, db.InsertArticleParams{
+		q := db.New(tx)
+		art, err := q.InsertArticle(ctx, db.InsertArticleParams{
 			SourceID:     src.ID,
 			ExternalID:   a.ExternalID,
 			Url:          a.URL,
@@ -163,6 +165,7 @@ func (r *Runner) store(ctx context.Context, src db.Source, a RawArticle, index *
 			Title:        a.Title,
 			PublishedAt:  a.PublishedAt,
 			ContentHash:  dedupe.TitleHash(a.Title),
+			Simhash:      ptr(int64(hash)),
 			IssuerHint:   optional(a.IssuerHint),
 			IssuerIsin:   optional(a.IssuerISIN),
 		})
@@ -173,6 +176,9 @@ func (r *Runner) store(ctx context.Context, src db.Source, a RawArticle, index *
 			return err
 		}
 		inserted = true
+		if err := cluster(ctx, q, art.ID, art.Title, art.PublishedAt, hash, r.Now()); err != nil {
+			return err
+		}
 		matches := index.Match(matching.Input{
 			Title:           a.Title,
 			IssuerHint:      a.IssuerHint,

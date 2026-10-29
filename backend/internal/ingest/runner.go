@@ -75,9 +75,7 @@ func (r *Runner) RunDue(ctx context.Context) error {
 	for _, src := range sources {
 		reason, skip := r.Skip[src.Parser]
 		if !skip {
-			if err := r.checkTDM(ctx, q, src); err != nil {
-				return fmt.Errorf("tdm %s: %w", src.Key, err)
-			}
+			r.checkTDM(ctx, q, src)
 		}
 		started := r.Now()
 		runID, err := q.StartRun(ctx, db.StartRunParams{SourceID: src.ID, StartedAt: started})
@@ -104,11 +102,12 @@ func (r *Runner) RunDue(ctx context.Context) error {
 
 // checkTDM refreshes the source's TDM reservation once per TDMCheckInterval.
 // A failed check keeps the previous state and is retried on the next run;
-// only database errors are returned.
-func (r *Runner) checkTDM(ctx context.Context, q *db.Queries, src db.Source) error {
+// a source that was never checked successfully counts as reserved meanwhile.
+// Failures only log: they never stop the source or the others.
+func (r *Runner) checkTDM(ctx context.Context, q *db.Queries, src db.Source) {
 	now := r.Now()
 	if r.TDM == nil || (src.TdmCheckedAt != nil && now.Sub(*src.TdmCheckedAt) < TDMCheckInterval) {
-		return nil
+		return
 	}
 	checker := r.TDM
 	if c, ok := r.Fetchers[src.Parser].(TDMChecker); ok {
@@ -117,12 +116,19 @@ func (r *Runner) checkTDM(ctx context.Context, q *db.Queries, src db.Source) err
 	reserved, err := checker.CheckTDM(ctx, src.Url)
 	if err != nil {
 		slog.Warn("tdm check failed", "source", src.Key, "err", err)
-		return nil
+		if src.TdmCheckedAt == nil && !src.TdmReserved {
+			if err := q.MarkTDMReserved(ctx, src.ID); err != nil {
+				slog.Warn("tdm state not saved", "source", src.Key, "err", err)
+			}
+		}
+		return
 	}
 	if reserved != src.TdmReserved {
 		slog.Info("tdm reservation changed", "source", src.Key, "reserved", reserved)
 	}
-	return q.SetTDM(ctx, db.SetTDMParams{ID: src.ID, TdmReserved: reserved, TdmCheckedAt: &now})
+	if err := q.SetTDM(ctx, db.SetTDMParams{ID: src.ID, TdmReserved: reserved, TdmCheckedAt: &now}); err != nil {
+		slog.Warn("tdm state not saved", "source", src.Key, "err", err)
+	}
 }
 
 func (r *Runner) runSource(ctx context.Context, src db.Source, index *matching.Index) (res result) {

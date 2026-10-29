@@ -433,6 +433,43 @@ func TestRunDueChecksTDMAtMostDaily(t *testing.T) {
 	}
 }
 
+// A source never checked successfully counts as reserved while its check
+// fails: unknown is not "no reservation".
+func TestRunDueTreatsUncheckedSourceAsReservedWhenCheckFails(t *testing.T) {
+	r, pool, _, _ := newRunner(t)
+	r.TDM = &fakeTDM{errs: map[string]error{urlAdhoc: errors.New("timeout")}, calls: map[string]int{}}
+	if err := r.RunDue(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if got := tdmState(t, pool, "fn_adhoc"); !got.reserved || got.checkedAt != nil {
+		t.Errorf("fn_adhoc = %+v, want reserved and still unchecked", got)
+	}
+}
+
+// A database error while recording one source's TDM state must not stop
+// the other sources.
+func TestRunDueContinuesWhenRecordingTDMFails(t *testing.T) {
+	r, pool, _, _ := newRunner(t)
+	ctx := context.Background()
+	r.TDM = &fakeTDM{calls: map[string]int{}}
+	if _, err := pool.Exec(ctx, `
+		CREATE FUNCTION fail_tdm() RETURNS trigger LANGUAGE plpgsql AS $$
+		BEGIN RAISE EXCEPTION 'boom'; END $$;
+		CREATE TRIGGER fail_tdm BEFORE UPDATE OF tdm_checked_at ON sources
+		FOR EACH ROW WHEN (OLD.key = 'fn_adhoc') EXECUTE FUNCTION fail_tdm();`); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.RunDue(ctx); err != nil {
+		t.Fatalf("RunDue: %v", err)
+	}
+	got := runs(t, pool)
+	for _, key := range []string{"fn_adhoc", "fn_dax", "ots_finanzen", "prn_all"} {
+		if len(got[key]) != 1 {
+			t.Errorf("%s: %d runs, want 1", key, len(got[key]))
+		}
+	}
+}
+
 func TestRunDueKeepsTDMStateWhenCheckFails(t *testing.T) {
 	r, pool, _, _ := newRunner(t)
 	ctx := context.Background()

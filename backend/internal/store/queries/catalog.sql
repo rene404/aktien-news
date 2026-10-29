@@ -23,7 +23,9 @@ INSERT INTO companies (slug, name, legal_name, country, lei, cik)
 VALUES (@slug, @name, sqlc.narg('legal_name'), @country, sqlc.narg('lei'), sqlc.narg('cik'))
 ON CONFLICT (slug) DO UPDATE
 SET name = EXCLUDED.name, legal_name = EXCLUDED.legal_name, country = EXCLUDED.country,
-    lei = EXCLUDED.lei, cik = EXCLUDED.cik
+    lei = EXCLUDED.lei,
+    -- A CIK filled in by the SEC import survives a seed row without one.
+    cik = COALESCE(EXCLUDED.cik, companies.cik)
 RETURNING id;
 
 -- name: UpsertListing :one
@@ -53,3 +55,23 @@ WHERE l.isin = @isin;
 SELECT c.* FROM companies c
 JOIN listings l ON l.company_id = c.id
 WHERE l.mic = @mic AND l.ticker = @ticker;
+
+-- name: CompanyByCIK :one
+SELECT id, curated FROM companies WHERE cik = @cik;
+
+-- name: CompanyByListing :one
+SELECT c.id, c.curated, c.cik FROM listings l JOIN companies c ON c.id = l.company_id
+WHERE l.mic = @mic AND l.ticker = @ticker;
+
+-- name: FillCompanyCIK :exec
+UPDATE companies SET cik = @cik WHERE id = @id AND cik IS NULL;
+
+-- name: InsertUncuratedCompany :one
+INSERT INTO companies (slug, name, legal_name, country, cik, curated)
+VALUES (@slug, @name, @name, 'US', @cik, false)
+RETURNING id;
+
+-- name: InsertListingIfAbsent :exec
+INSERT INTO listings (company_id, ticker, mic, currency)
+VALUES (@company_id, @ticker, @mic, 'USD')
+ON CONFLICT (mic, ticker) DO NOTHING;

@@ -11,8 +11,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const companyByCIK = `-- name: CompanyByCIK :one
+SELECT id, curated FROM companies WHERE cik = $1
+`
+
+type CompanyByCIKRow struct {
+	ID      int64
+	Curated bool
+}
+
+func (q *Queries) CompanyByCIK(ctx context.Context, cik *string) (CompanyByCIKRow, error) {
+	row := q.db.QueryRow(ctx, companyByCIK, cik)
+	var i CompanyByCIKRow
+	err := row.Scan(&i.ID, &i.Curated)
+	return i, err
+}
+
 const companyByISIN = `-- name: CompanyByISIN :one
-SELECT DISTINCT c.id, c.name, c.legal_name, c.lei, c.cik, c.country, c.created_at, c.slug FROM companies c
+SELECT DISTINCT c.id, c.name, c.legal_name, c.lei, c.cik, c.country, c.created_at, c.slug, c.curated FROM companies c
 JOIN listings l ON l.company_id = c.id
 WHERE l.isin = $1
 `
@@ -29,12 +45,36 @@ func (q *Queries) CompanyByISIN(ctx context.Context, isin *string) (Company, err
 		&i.Country,
 		&i.CreatedAt,
 		&i.Slug,
+		&i.Curated,
 	)
 	return i, err
 }
 
+const companyByListing = `-- name: CompanyByListing :one
+SELECT c.id, c.curated, c.cik FROM listings l JOIN companies c ON c.id = l.company_id
+WHERE l.mic = $1 AND l.ticker = $2
+`
+
+type CompanyByListingParams struct {
+	Mic    string
+	Ticker string
+}
+
+type CompanyByListingRow struct {
+	ID      int64
+	Curated bool
+	Cik     *string
+}
+
+func (q *Queries) CompanyByListing(ctx context.Context, arg CompanyByListingParams) (CompanyByListingRow, error) {
+	row := q.db.QueryRow(ctx, companyByListing, arg.Mic, arg.Ticker)
+	var i CompanyByListingRow
+	err := row.Scan(&i.ID, &i.Curated, &i.Cik)
+	return i, err
+}
+
 const companyByTicker = `-- name: CompanyByTicker :one
-SELECT c.id, c.name, c.legal_name, c.lei, c.cik, c.country, c.created_at, c.slug FROM companies c
+SELECT c.id, c.name, c.legal_name, c.lei, c.cik, c.country, c.created_at, c.slug, c.curated FROM companies c
 JOIN listings l ON l.company_id = c.id
 WHERE l.mic = $1 AND l.ticker = $2
 `
@@ -56,8 +96,23 @@ func (q *Queries) CompanyByTicker(ctx context.Context, arg CompanyByTickerParams
 		&i.Country,
 		&i.CreatedAt,
 		&i.Slug,
+		&i.Curated,
 	)
 	return i, err
+}
+
+const fillCompanyCIK = `-- name: FillCompanyCIK :exec
+UPDATE companies SET cik = $1 WHERE id = $2 AND cik IS NULL
+`
+
+type FillCompanyCIKParams struct {
+	Cik *string
+	ID  int64
+}
+
+func (q *Queries) FillCompanyCIK(ctx context.Context, arg FillCompanyCIKParams) error {
+	_, err := q.db.Exec(ctx, fillCompanyCIK, arg.Cik, arg.ID)
+	return err
 }
 
 const getSourceByKey = `-- name: GetSourceByKey :one
@@ -89,6 +144,42 @@ func (q *Queries) GetSourceByKey(ctx context.Context, key string) (Source, error
 	return i, err
 }
 
+const insertListingIfAbsent = `-- name: InsertListingIfAbsent :exec
+INSERT INTO listings (company_id, ticker, mic, currency)
+VALUES ($1, $2, $3, 'USD')
+ON CONFLICT (mic, ticker) DO NOTHING
+`
+
+type InsertListingIfAbsentParams struct {
+	CompanyID int64
+	Ticker    string
+	Mic       string
+}
+
+func (q *Queries) InsertListingIfAbsent(ctx context.Context, arg InsertListingIfAbsentParams) error {
+	_, err := q.db.Exec(ctx, insertListingIfAbsent, arg.CompanyID, arg.Ticker, arg.Mic)
+	return err
+}
+
+const insertUncuratedCompany = `-- name: InsertUncuratedCompany :one
+INSERT INTO companies (slug, name, legal_name, country, cik, curated)
+VALUES ($1, $2, $2, 'US', $3, false)
+RETURNING id
+`
+
+type InsertUncuratedCompanyParams struct {
+	Slug string
+	Name string
+	Cik  *string
+}
+
+func (q *Queries) InsertUncuratedCompany(ctx context.Context, arg InsertUncuratedCompanyParams) (int64, error) {
+	row := q.db.QueryRow(ctx, insertUncuratedCompany, arg.Slug, arg.Name, arg.Cik)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const upsertAlias = `-- name: UpsertAlias :exec
 INSERT INTO company_aliases (company_id, alias, kind)
 SELECT c.id, $1, $2 FROM companies c WHERE c.slug = $3
@@ -111,7 +202,9 @@ INSERT INTO companies (slug, name, legal_name, country, lei, cik)
 VALUES ($1, $2, $3, $4, $5, $6)
 ON CONFLICT (slug) DO UPDATE
 SET name = EXCLUDED.name, legal_name = EXCLUDED.legal_name, country = EXCLUDED.country,
-    lei = EXCLUDED.lei, cik = EXCLUDED.cik
+    lei = EXCLUDED.lei,
+    -- A CIK filled in by the SEC import survives a seed row without one.
+    cik = COALESCE(EXCLUDED.cik, companies.cik)
 RETURNING id
 `
 

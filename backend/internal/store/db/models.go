@@ -358,6 +358,7 @@ type Company struct {
 	Country   string
 	CreatedAt time.Time
 	Slug      string
+	Curated   bool
 }
 
 type CompanyAlias struct {

@@ -29,7 +29,7 @@ func LoadIndex(ctx context.Context, conn db.DBTX) (*Index, error) {
 	byID := make(map[int64]*CompanyEntry, len(companies))
 	entries := make([]CompanyEntry, len(companies))
 	for i, c := range companies {
-		entries[i] = CompanyEntry{ID: c.ID, Name: c.Name, LegalName: deref(c.LegalName)}
+		entries[i] = CompanyEntry{ID: c.ID, Name: c.Name, LegalName: deref(c.LegalName), Uncurated: !c.Curated}
 		byID[c.ID] = &entries[i]
 	}
 	for _, a := range aliases {

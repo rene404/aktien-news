@@ -14,7 +14,7 @@ VALUES (@article_id, @company_id, sqlc.arg('confidence')::float8, @method, @stat
 SELECT pg_advisory_xact_lock(@article_id::bigint);
 
 -- name: IndexCompanies :many
-SELECT id, name, legal_name FROM companies ORDER BY id;
+SELECT id, name, legal_name, curated FROM companies ORDER BY id;
 
 -- name: IndexAliases :many
 SELECT company_id, alias, kind FROM company_aliases ORDER BY company_id, id;

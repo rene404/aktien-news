@@ -41,13 +41,14 @@ func (q *Queries) IndexAliases(ctx context.Context) ([]IndexAliasesRow, error) {
 }
 
 const indexCompanies = `-- name: IndexCompanies :many
-SELECT id, name, legal_name FROM companies ORDER BY id
+SELECT id, name, legal_name, curated FROM companies ORDER BY id
 `
 
 type IndexCompaniesRow struct {
 	ID        int64
 	Name      string
 	LegalName *string
+	Curated   bool
 }
 
 func (q *Queries) IndexCompanies(ctx context.Context) ([]IndexCompaniesRow, error) {
@@ -59,7 +60,12 @@ func (q *Queries) IndexCompanies(ctx context.Context) ([]IndexCompaniesRow, erro
 	var items []IndexCompaniesRow
 	for rows.Next() {
 		var i IndexCompaniesRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.LegalName); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.LegalName,
+			&i.Curated,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

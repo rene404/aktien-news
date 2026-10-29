@@ -44,7 +44,7 @@ Jede Aufgabe läuft auf einem eigenen `feature/phase2-*`-Branch per TDD. Für al
   Command: `docker compose --profile test run --rm backend-test go test ./internal/service/ ./internal/httpapi/`
   Done: Zwei Artikel eines Clusters ergeben einen Eintrag. Der Ticker-Filter findet den Cluster auch dann, wenn nur das Nicht-Repräsentanten-Mitglied verlinkt ist. Die Pagination bleibt ohne Duplikate. Der DTO-Rechtstest bleibt unverändert grün.
 
-- [ ] **6. US-Stammdaten aus SEC `company_tickers_exchange.json`**
+- [x] **6. US-Stammdaten aus SEC `company_tickers_exchange.json`**
   Files: `backend/internal/store/migrations/00006_company_cik.sql`, `backend/internal/catalog/sec.go`, `backend/internal/catalog/sec_test.go`, `backend/internal/catalog/testdata/company_tickers_exchange.json`, `backend/cmd/seed/main.go`, `backend/internal/matching/match.go`, `backend/internal/matching/match_test.go`
   What: `companies` bekommt `cik` (unique, nullable) und `curated` (Default true). `seed -sec-file <pfad>` ergänzt bestehende US-Firmen um den CIK und legt fehlende NYSE-/Nasdaq-Titel als `curated = false` an. Für nicht kuratierte Firmen nutzt der Matcher nur starke Signale: Emittent/CIK, ISIN, Cashtag, vollen Namen mit Rechtsform. Ticker als Wort und Kernname zählen dort nicht.
   Command: `docker compose --profile test run --rm backend-test go test ./internal/store/ ./internal/catalog/ ./internal/matching/`

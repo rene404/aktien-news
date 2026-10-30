@@ -20,6 +20,9 @@ export const RANGES = [
   { key: "all", label: "Alle", hours: 0 },
 ] as const;
 
+/** Range of the start page when the URL names none. */
+export const DEFAULT_RANGE = "7d";
+
 export type Filters = { section: string; source: string; range: string; cursor: string };
 
 export type SearchParams = Record<string, string | string[] | undefined>;
@@ -31,7 +34,7 @@ function first(v: string | string[] | undefined): string {
 }
 
 /** Reads the URL's filter params; anything unexpected falls back to the default. */
-export function parseFilters(sp: SearchParams, defaultRange = "7d"): Filters {
+export function parseFilters(sp: SearchParams, defaultRange = DEFAULT_RANGE): Filters {
   const section = first(sp.section) || first(sp.index); // ?index= is the pre-section URL
   const source = first(sp.source);
   const range = first(sp.range);
@@ -63,7 +66,7 @@ export function filterHref(path: string, f: Filters, opts: { cursor?: boolean; d
   const qs = new URLSearchParams();
   if (f.section) qs.set("section", f.section);
   if (f.source) qs.set("source", f.source);
-  if (f.range !== (opts.defaultRange ?? "7d")) qs.set("range", f.range);
+  if (f.range !== (opts.defaultRange ?? DEFAULT_RANGE)) qs.set("range", f.range);
   if (opts.cursor && f.cursor) qs.set("cursor", f.cursor);
   const s = qs.toString();
   return s ? `${path}?${s}` : path;

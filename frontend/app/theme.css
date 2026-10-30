@@ -1,0 +1,63 @@
+/*
+ * Design tokens: the one place to change the look of the site.
+ * globals.css only uses these variables, it defines no colours, fonts or sizes of its own.
+ *
+ * Font: change --font-sans. For a web font, load it with next/font in
+ * app/layout.tsx (e.g. `variable: "--font-brand"`, class on <html>) and set
+ * --font-sans: var(--font-brand), system-ui, sans-serif;
+ *
+ * Dark mode: the second block overrides the colours only.
+ */
+:root {
+  /* Typography */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-size: 16px;
+  --line-height: 1.5;
+  --text-xs: 0.7rem;   /* badges */
+  --text-sm: 0.8rem;   /* meta line, chips, day headings */
+  --text-md: 0.9rem;   /* filters, times, footer */
+  --text-lg: 1.15rem;  /* brand */
+  --text-xl: 1.4rem;   /* page title */
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Shape and layout */
+  --content-width: 860px;
+  --gutter: 16px;
+  --radius: 8px;
+  --radius-sm: 4px;
+  --time-column: 3.25rem;
+
+  /* Colours */
+  --bg: #ffffff;
+  --surface: #f6f7f9;
+  --text: #16181d;
+  --muted: #5d6573;
+  --border: #e3e6eb;
+  --accent: #0b5cad;
+  --on-accent: #ffffff;
+  --chip-bg: #e8f0fa;
+  --chip-text: #0b4a8c;
+  --adhoc: #b42318;
+  --adhoc-bg: #fdecea;
+  --skeleton: #e9ecf0;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1115;
+    --surface: #171a21;
+    --text: #e7e9ee;
+    --muted: #9aa3b2;
+    --border: #2a2f3a;
+    --accent: #6aa8ff;
+    --on-accent: #0f1115;
+    --chip-bg: #1d2a3d;
+    --chip-text: #a9c9ff;
+    --adhoc: #ff8a80;
+    --adhoc-bg: #3a1d1d;
+    --skeleton: #222733;
+    color-scheme: dark;
+  }
+}

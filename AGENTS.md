@@ -33,7 +33,7 @@ backend/
     ingest/fetch/ # live HTTP fetching, robots/TDM checks
     dedupe/ matching/ classify/ catalog/
   seed/           # CSV master data
-frontend/         # Next.js App Router (SSR)
+frontend/         # Next.js App Router (SSR); look & feel only in app/theme.css
 docs/             # design, research, plans
 ```
 

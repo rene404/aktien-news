@@ -15,9 +15,18 @@ a { color: var(--accent); }
 
 .wrap { max-width: var(--content-width); margin: 0 auto; padding: 0 var(--gutter); }
 
+/* Sticky; SiteHeader hides it while scrolling down (data-hidden) and adds a
+   shadow once it floats over the list (data-floating). */
 header.site {
+  position: sticky; top: 0; z-index: 10;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+  transition: transform var(--header-transition), box-shadow var(--header-transition);
+}
+header.site[data-floating] { box-shadow: var(--header-shadow); }
+header.site[data-hidden] { transform: translateY(-100%); box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+  header.site, form.search { transition: none; }
 }
 header.site .wrap {
   display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
@@ -26,7 +35,12 @@ header.site .wrap {
 .brand { font-weight: var(--weight-bold); font-size: var(--text-lg); color: var(--text); text-decoration: none; }
 .brand span { color: var(--accent); }
 
-form.search { display: flex; gap: 6px; flex: 1 1 260px; max-width: 360px; }
+form.search {
+  display: flex; gap: 6px; flex: 1 1 260px; max-width: var(--search-width);
+  transition: max-width var(--header-transition);
+}
+/* The search grows while it is in use. */
+form.search:focus-within { max-width: var(--search-width-focus); }
 form.search input {
   flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid var(--border);
   border-radius: var(--radius); background: var(--bg); color: var(--text); font: inherit;

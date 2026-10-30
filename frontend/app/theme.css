@@ -6,7 +6,7 @@
  * app/layout.tsx (e.g. `variable: "--font-brand"`, class on <html>) and set
  * --font-sans: var(--font-brand), system-ui, sans-serif;
  *
- * Dark mode: the second block overrides the colours only.
+ * Dark mode: the second block overrides the colours (and the shadow) only.
  */
 :root {
   /* Typography */
@@ -27,6 +27,10 @@
   --radius: 8px;
   --radius-sm: 4px;
   --time-column: 3.25rem;
+
+  /* Sticky header: slide in/out, shadow while it floats over the list */
+  --header-transition: 200ms ease-out;
+  --header-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
 
   /* Colours */
   --bg: #ffffff;
@@ -58,6 +62,7 @@
     --adhoc: #ff8a80;
     --adhoc-bg: #3a1d1d;
     --skeleton: #222733;
+    --header-shadow: 0 2px 8px rgb(0 0 0 / 0.5);
     color-scheme: dark;
   }
 }

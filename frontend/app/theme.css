@@ -32,6 +32,10 @@
   --header-transition: 200ms ease-out;
   --header-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
 
+  /* Search in the header: width at rest and while typing */
+  --search-width: 360px;
+  --search-width-focus: 600px;
+
   /* Colours */
   --bg: #ffffff;
   --surface: #f6f7f9;

@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import Filters from "@/components/Filters";
-import InfiniteNews from "@/components/InfiniteNews";
-import { getInstrument, getNews, getSources } from "@/lib/api";
-import { feedQuery, STOCK_DEFAULT_RANGE, stockNewsParams } from "@/lib/feed";
-import { filterHref, parseFilters, type SearchParams } from "@/lib/filters";
+import NewsFeed from "@/components/NewsFeed";
+import NewsSkeleton from "@/components/NewsSkeleton";
+import { getInstrument, getSources } from "@/lib/api";
+import { feedQuery, STOCK_DEFAULT_RANGE } from "@/lib/feed";
+import { parseFilters, type SearchParams } from "@/lib/filters";
 
 type Props = { params: Promise<{ ticker: string }>; searchParams: Promise<SearchParams> };
 
@@ -27,13 +29,8 @@ export default async function StockPage({ params, searchParams }: Props) {
   if (!inst) notFound();
 
   const filters = { ...parseFilters(await searchParams, STOCK_DEFAULT_RANGE), section: "" };
-  const now = new Date();
-  const [page, sources] = await Promise.all([
-    getNews(stockNewsParams(filters, inst.ticker, now)),
-    getSources(),
-  ]);
+  const sources = await getSources();
   const path = `/aktie/${encodeURIComponent(inst.ticker)}`;
-  const query = feedQuery(filters, inst.ticker);
 
   return (
     <>
@@ -43,16 +40,10 @@ export default async function StockPage({ params, searchParams }: Props) {
       <p className="sub">
         {[inst.isin, MARKETS[inst.mic] ?? inst.mic, ...inst.indices].filter(Boolean).join(" · ")}
       </p>
-      <Filters sources={sources} value={filters} />
-      <InfiniteNews
-        key={`${query}:${page.next_cursor}`}
-        items={page.items}
-        nextCursor={page.next_cursor}
-        query={query}
-        moreHref={filterHref(path, { ...filters, cursor: page.next_cursor ?? "" }, { cursor: true, defaultRange: STOCK_DEFAULT_RANGE })}
-        hideTicker={inst.ticker}
-        now={now.toISOString()}
-      />
+      <Filters path={path} sources={sources} value={filters} />
+      <Suspense key={feedQuery(filters, inst.ticker)} fallback={<NewsSkeleton />}>
+        <NewsFeed filters={filters} path={path} ticker={inst.ticker} />
+      </Suspense>
     </>
   );
 }

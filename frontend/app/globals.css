@@ -11,7 +11,8 @@ body {
   line-height: var(--line-height);
 }
 
-a { color: var(--accent); }
+a { color: var(--link); }
+a:hover { color: var(--link-hover); }
 
 .wrap { max-width: var(--content-width); margin: 0 auto; padding: 0 var(--gutter); }
 
@@ -19,8 +20,8 @@ a { color: var(--accent); }
    shadow once it floats over the list (data-floating). */
 header.site {
   position: sticky; top: 0; z-index: 10;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--header-bg);
+  color: var(--header-text);
   transition: transform var(--header-transition), box-shadow var(--header-transition);
 }
 header.site[data-floating] { box-shadow: var(--header-shadow); }
@@ -32,8 +33,12 @@ header.site .wrap {
   display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
   padding-top: 12px; padding-bottom: 12px;
 }
-.brand { font-weight: var(--weight-bold); font-size: var(--text-lg); color: var(--text); text-decoration: none; }
-.brand span { color: var(--accent); }
+.brand {
+  font-weight: var(--weight-normal); font-size: var(--text-lg); letter-spacing: 0.02em;
+  color: var(--header-text); text-decoration: none;
+}
+.brand:hover { color: var(--header-text); }
+.brand span { color: var(--header-muted); }
 
 form.search {
   display: flex; gap: 6px; flex: 1 1 260px; max-width: var(--search-width);
@@ -47,9 +52,14 @@ form.search input {
 }
 
 button {
-  padding: 7px 14px; border: 1px solid var(--accent); border-radius: var(--radius);
-  background: var(--accent); color: var(--on-accent); font: inherit; cursor: pointer;
+  padding: 7px 14px; border: 1px solid var(--brand); border-radius: var(--radius);
+  background: var(--brand); color: var(--on-brand); font: inherit; cursor: pointer;
 }
+button:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
+
+/* On the blue header the button is outlined, not filled. */
+header.site button { background: transparent; border-color: var(--header-text); color: var(--header-text); }
+header.site button:hover { background: var(--header-hover); }
 
 main { padding: 20px 0 40px; }
 h1 { font-size: var(--text-xl); margin: 0 0 4px; }
@@ -70,7 +80,7 @@ nav.tabs a {
   border-bottom: 2px solid transparent; margin-bottom: -1px;
 }
 nav.tabs a:hover { color: var(--text); }
-nav.tabs a[aria-current="page"] { color: var(--accent); border-bottom-color: var(--accent); }
+nav.tabs a[aria-current="page"] { color: var(--link); border-bottom-color: var(--link); }
 
 form.filters {
   display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center;
@@ -96,7 +106,7 @@ ol.news li,
 }
 ol.news time { color: var(--muted); font-size: var(--text-md); font-variant-numeric: tabular-nums; padding-top: 1px; }
 ol.news .title { color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
-ol.news .title:hover { color: var(--accent); text-decoration: underline; }
+ol.news .title:hover { color: var(--link); text-decoration: underline; }
 ol.news li.adhoc .title { font-weight: var(--weight-semibold); }
 ol.news .ext { font-size: 0.75em; color: var(--muted); }
 .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 2px; font-size: var(--text-sm); color: var(--muted); }
@@ -111,6 +121,7 @@ ol.news .ext { font-size: 0.75em; color: var(--muted); }
   display: inline-block; padding: 0 8px; border-radius: 999px;
   background: var(--chip-bg); color: var(--chip-text); font-weight: var(--weight-semibold); font-size: var(--text-sm); text-decoration: none;
 }
+a.chip:hover { background: var(--chip-bg-hover); color: var(--chip-text); }
 
 .more { display: inline-block; margin-top: 20px; }
 .empty { color: var(--muted); padding: 24px 0; }

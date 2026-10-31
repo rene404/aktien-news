@@ -52,14 +52,10 @@ form.search input {
 }
 
 button {
-  padding: 7px 14px; border: 1px solid var(--brand); border-radius: var(--radius);
-  background: var(--brand); color: var(--on-brand); font: inherit; cursor: pointer;
+  padding: 7px 14px; border: 1px solid var(--button-bg); border-radius: var(--radius);
+  background: var(--button-bg); color: var(--on-brand); font: inherit; cursor: pointer;
 }
-button:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
-
-/* On the blue header the button is outlined, not filled. */
-header.site button { background: transparent; border-color: var(--header-text); color: var(--header-text); }
-header.site button:hover { background: var(--header-hover); }
+button:hover { background: var(--button-hover); border-color: var(--button-hover); }
 
 main { padding: 20px 0 40px; }
 h1 { font-size: var(--text-xl); margin: 0 0 4px; }

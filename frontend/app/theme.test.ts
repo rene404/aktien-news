@@ -23,12 +23,13 @@ describe("theme", () => {
   });
 });
 
-// Text/background pairs that must stay readable (WCAG AA, 4.5:1) in both colour schemes.
+// Text/background pairs that must stay readable (WCAG AA, 4.5:1) in every colour scheme theme.css defines.
 const PAIRS = [
   ["--text", "--bg"],
   ["--muted", "--bg"],
   ["--link", "--bg"],
   ["--on-brand", "--brand"],
+  ["--on-brand", "--button-bg"],
   ["--chip-text", "--chip-bg"],
   ["--header-text", "--header-bg"],
   ["--header-muted", "--header-bg"],
@@ -38,10 +39,11 @@ const PAIRS = [
 describe("theme contrast", () => {
   const theme = readFileSync(new URL("./theme.css", import.meta.url), "utf8");
   const split = theme.indexOf("@media (prefers-color-scheme: dark)");
-  const light = tokens(theme.slice(0, split));
-  const dark = { ...light, ...tokens(theme.slice(split)) };
+  const light = tokens(split < 0 ? theme : theme.slice(0, split));
+  const schemes: [string, Record<string, string>][] = [["light", light]];
+  if (split >= 0) schemes.push(["dark", { ...light, ...tokens(theme.slice(split)) }]);
 
-  for (const [scheme, t] of [["light", light], ["dark", dark]] as const) {
+  for (const [scheme, t] of schemes) {
     it.each(PAIRS)(`${scheme}: %s on %s`, (fg, bg) => {
       expect(contrast(resolve(t, fg), resolve(t, bg))).toBeGreaterThanOrEqual(4.5);
     });

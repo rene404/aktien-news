@@ -6,12 +6,13 @@
  * app/layout.tsx (e.g. `variable: "--font-brand"`, class on <html>) and set
  * --font-sans: var(--font-brand), system-ui, sans-serif;
  *
- * Dark mode: the second block overrides the colours (and the shadow) only;
- * header, chips and buttons keep the brand blue, links get a lighter blue.
+ * Colour scheme: always light, also when the system is set to dark mode
+ * (white content, dark blue header).
  */
 :root {
   /* Typography */
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Helvetica where installed (macOS/iOS), its look-alikes elsewhere */
+  --font-sans: "Helvetica Neue", Helvetica, Arial, "Nimbus Sans", "Liberation Sans", sans-serif;
   --font-size: 16px;
   --line-height: 1.5;
   --text-xs: 0.7rem;   /* badges */
@@ -43,6 +44,9 @@
   --brand: #0b2a55;
   --brand-hover: #14407d;
   --on-brand: #ffffff;
+  /* Buttons: a shade darker than the brand blue, also on the header */
+  --button-bg: #051733;
+  --button-hover: var(--brand-hover);
 
   /* Colours */
   --bg: #ffffff;
@@ -62,22 +66,6 @@
   --header-bg: var(--brand);
   --header-text: #ffffff;
   --header-muted: #b6bfcc;
-  --header-hover: var(--brand-hover);
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f1115;
-    --text: #e7e9ee;
-    --muted: #9aa3b2;
-    --border: #2a2f3a;
-    --link: #8cb8ff;
-    --link-hover: #b5d0ff;
-    --adhoc: #ff8a80;
-    --adhoc-bg: #3a1d1d;
-    --skeleton: #222733;
-    --header-shadow: 0 2px 8px rgb(0 0 0 / 0.5);
-    color-scheme: dark;
-  }
-}

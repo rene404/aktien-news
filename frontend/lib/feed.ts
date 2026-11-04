@@ -1,5 +1,5 @@
 import type { NewsParams } from "./api";
-import { parseFilters, toNewsParams, type Filters } from "./filters";
+import { parseFilters, SECTIONS, toNewsParams, type Filters } from "./filters";
 
 // Single stocks have few headlines, so the stock page shows all of them by
 // default, filings included.
@@ -31,4 +31,22 @@ export function feedParams(sp: URLSearchParams, now: Date): NewsParams | null {
   if (ticker === null) return toNewsParams(parseFilters(raw), now);
   if (!tickerPattern.test(ticker)) return null;
   return stockNewsParams(parseFilters(raw, STOCK_DEFAULT_RANGE), ticker, now);
+}
+
+/** now − hours, to the minute, so requests within a minute share the API cache. */
+export function since(now: Date, hours: number): string {
+  const t = new Date(now.getTime() - hours * 3600_000);
+  t.setUTCSeconds(0, 0);
+  return t.toISOString();
+}
+
+/** "Heute im Gespräch": the ten most-mentioned stocks of a section in the last 24 hours. */
+export function trendingParams(section: string, now: Date): { index?: string; kind: string; from: string; limit: number } {
+  const s = SECTIONS.find((x) => x.key === section) ?? SECTIONS[0];
+  return {
+    ...("index" in s ? { index: s.index } : {}),
+    kind: s.kinds.join(","),
+    from: since(now, 24),
+    limit: 10,
+  };
 }

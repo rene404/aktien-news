@@ -137,6 +137,14 @@ ul.tickers { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex
 .tchip.zero { color: var(--muted); }
 .tchip.zero .tchip-count { background: var(--count-zero-bg); color: var(--muted); }
 
+/* "Heute im Gespräch": label, then one row of compact chips that swipes sideways. */
+.trending { display: flex; align-items: center; gap: 10px; margin: 4px 0 0; }
+.trending-label { flex: none; font-size: var(--text-sm); font-weight: var(--weight-bold); color: var(--muted); }
+.trending .scroll-row { flex: 1; min-width: 0; }
+ul.tickers.compact { flex-wrap: nowrap; margin: 0; padding: 2px 0; gap: 6px; }
+ul.tickers.compact li { flex: none; }
+ul.tickers.compact .tchip { padding-left: 8px; font-size: var(--text-sm); }
+
 section.day h2 {
   margin: 16px 0 0; padding: 6px 0; font-size: var(--text-sm); font-weight: var(--weight-bold); letter-spacing: 0.04em;
   text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border);

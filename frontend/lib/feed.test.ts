@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { feedParams, feedQuery } from "./feed";
+import { feedParams, feedQuery, trendingParams } from "./feed";
 
 const now = new Date("2026-10-28T12:00:00Z");
 
@@ -28,5 +28,23 @@ describe("feedParams", () => {
 
   it("rejects a malformed ticker", () => {
     expect(feedParams(new URLSearchParams("ticker=%27%3B--"), now)).toBeNull();
+  });
+});
+
+describe("trendingParams", () => {
+  const now = new Date("2026-11-04T12:34:56.789Z");
+
+  it("counts the last 24 hours of the section, to the minute", () => {
+    expect(trendingParams("ATX", now)).toEqual({
+      index: "ATX",
+      kind: "adhoc,press_release,news_api,ir",
+      from: "2026-11-03T12:34:00.000Z",
+      limit: 10,
+    });
+  });
+
+  it("has no index for sections without one", () => {
+    expect(trendingParams("filings", now)).toEqual({ kind: "filing", from: "2026-11-03T12:34:00.000Z", limit: 10 });
+    expect(trendingParams("", now).index).toBeUndefined();
   });
 });

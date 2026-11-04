@@ -37,7 +37,7 @@ export default async function StockPage({ params, searchParams }: Props) {
       <p className="sub">
         {[inst.isin, EXCHANGES[inst.mic]?.name ?? inst.mic, ...inst.indices].filter(Boolean).join(" · ")}
       </p>
-      <Filters path={path} sources={sources} value={filters} />
+      <Filters path={path} sources={sources} value={filters} showAdhoc />
       <Suspense key={feedQuery(filters, inst.ticker)} fallback={<NewsSkeleton />}>
         <NewsFeed filters={filters} path={path} ticker={inst.ticker} />
       </Suspense>

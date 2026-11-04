@@ -11,6 +11,7 @@ const tickerPattern = /^[A-Za-z0-9.-]{1,12}$/;
 export function stockNewsParams(f: Filters, ticker: string, now: Date): NewsParams {
   const params = toNewsParams({ ...f, section: "" }, now);
   delete params.kind;
+  if (f.adhoc) params.kind = "adhoc";
   return { ...params, ticker };
 }
 
@@ -20,6 +21,7 @@ export function feedQuery(f: Filters, ticker?: string): string {
   if (f.section) qs.set("section", f.section);
   if (f.source) qs.set("source", f.source);
   qs.set("range", f.range);
+  if (f.adhoc) qs.set("adhoc", "1");
   if (ticker) qs.set("ticker", ticker);
   return qs.toString();
 }

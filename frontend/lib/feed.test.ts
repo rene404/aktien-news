@@ -48,3 +48,20 @@ describe("trendingParams", () => {
     expect(trendingParams("", now).index).toBeUndefined();
   });
 });
+
+describe("adhoc only", () => {
+  it("limits the stock page to ad-hoc news, also when loading more", () => {
+    const q = feedQuery({ section: "", source: "", range: "all", cursor: "", adhoc: true }, "VOE");
+    expect(q).toBe("range=all&adhoc=1&ticker=VOE");
+    expect(feedParams(new URLSearchParams(q + "&cursor=c2"), now)).toEqual({ ticker: "VOE", kind: "adhoc", cursor: "c2", limit: 25 });
+  });
+
+  it("keeps a picked source as well (the API ANDs both)", () => {
+    expect(feedParams(new URLSearchParams("ticker=VOE&adhoc=1&source=fn_adhoc&range=all"), now)).toEqual({
+      ticker: "VOE",
+      source: "fn_adhoc",
+      kind: "adhoc",
+      limit: 25,
+    });
+  });
+});

@@ -54,7 +54,8 @@ export const RANGES = [
 /** Range of the start page when the URL names none. */
 export const DEFAULT_RANGE = "7d";
 
-export type Filters = { section: string; source: string; range: string; cursor: string };
+/** `adhoc` (stock page only): ad-hoc news only; present only when on. */
+export type Filters = { section: string; source: string; range: string; cursor: string; adhoc?: boolean };
 
 export type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -75,6 +76,7 @@ export function parseFilters(sp: SearchParams, defaultRange = DEFAULT_RANGE): Fi
     source: /^[a-z0-9_]{1,32}$/.test(source) ? source : "",
     range: RANGES.some((r) => r.key === range) ? range : defaultRange,
     cursor: /^[A-Za-z0-9_-]{1,200}$/.test(cursor) ? cursor : "",
+    ...(first(sp.adhoc) === "1" ? { adhoc: true } : {}),
   };
 }
 
@@ -98,6 +100,7 @@ export function filterHref(path: string, f: Filters, opts: { cursor?: boolean; d
   if (f.section) qs.set("section", f.section);
   if (f.source) qs.set("source", f.source);
   if (f.range !== (opts.defaultRange ?? DEFAULT_RANGE)) qs.set("range", f.range);
+  if (f.adhoc) qs.set("adhoc", "1");
   if (opts.cursor && f.cursor) qs.set("cursor", f.cursor);
   const s = qs.toString();
   return s ? `${path}?${s}` : path;

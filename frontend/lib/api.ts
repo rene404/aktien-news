@@ -20,6 +20,9 @@ export type InstrumentDetail = Instrument & { country: string; indices: string[]
 
 export type Source = { key: string; name: string; market: string; kind: SourceKind };
 
+/** A stock with the number of news items it appears in. */
+export type TickerCount = { ticker: string; name: string; count: number };
+
 export type NewsParams = {
   ticker?: string;
   index?: string;
@@ -37,13 +40,18 @@ const API_URL = process.env.API_URL ?? "http://localhost:8090";
 // Mirrors the API's own Cache-Control (60 s).
 const REVALIDATE = 60;
 
-export function newsUrl(base: string, params: NewsParams): string {
+/** "?a=1&b=2" for the set parameters, "" when none is set. */
+function query(params: Record<string, string | number | undefined>): string {
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== "") qs.set(k, String(v));
   }
   const s = qs.toString();
-  return `${base}/api/v1/news${s ? `?${s}` : ""}`;
+  return s ? `?${s}` : "";
+}
+
+export function newsUrl(base: string, params: NewsParams): string {
+  return `${base}/api/v1/news${query(params)}`;
 }
 
 async function getJSON<T>(url: string): Promise<{ status: number; body: T | null }> {
@@ -73,4 +81,25 @@ export async function searchInstruments(q: string): Promise<Instrument[]> {
 export async function getSources(): Promise<Source[]> {
   const { body } = await getJSON<{ items: Source[] }>(`${API_URL}/api/v1/sources`);
   return body?.items ?? [];
+}
+
+/**
+ * The most-mentioned stocks for the feed's filters. Empty on any error: the
+ * row only decorates the page and must never break it.
+ */
+export async function getTopTickers(params: { index?: string; kind?: string; from: string; limit?: number }): Promise<TickerCount[]> {
+  try {
+    const { body } = await getJSON<{ items: TickerCount[] }>(`${API_URL}/api/v1/tickers/top${query(params)}`);
+    return body?.items ?? [];
+  } catch {
+    return [];
+  }
+}
+
+/** Every member of an index with its count; null for an unknown index. */
+export async function getIndexInstruments(index: string, params: { from?: string; kind?: string }): Promise<TickerCount[] | null> {
+  const { body } = await getJSON<{ items: TickerCount[] }>(
+    `${API_URL}/api/v1/indices/${encodeURIComponent(index)}/instruments${query(params)}`,
+  );
+  return body?.items ?? null;
 }

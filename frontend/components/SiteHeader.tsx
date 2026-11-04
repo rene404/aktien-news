@@ -44,9 +44,14 @@ export default function SiteHeader() {
       onFocusCapture={() => setHidden(false)}
     >
       <div className="wrap">
-        <Link className="brand" href="/">
-          aktien-news<span>.at</span>
-        </Link>
+        <div className="site-start">
+          <Link className="brand" href="/">
+            aktien-news<span>.at</span>
+          </Link>
+          <nav className="site-nav" aria-label="Hauptnavigation">
+            <Link href="/aktien">Aktien</Link>
+          </nav>
+        </div>
         <form className="search" action="/suche" method="get" role="search">
           <input name="q" type="search" placeholder="Aktie, Ticker oder ISIN" aria-label="Aktie suchen" required maxLength={64} />
           <button type="submit">Suchen</button>

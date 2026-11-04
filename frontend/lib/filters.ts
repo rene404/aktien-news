@@ -2,7 +2,7 @@ import type { NewsParams, Source } from "./api";
 
 // Source kinds of the API. Filings (SEC 8-K/6-K) come in by the hundred and
 // would bury everything else, so they get a section of their own.
-const NEWS_KINDS = ["adhoc", "press_release", "news_api", "ir"];
+export const NEWS_KINDS = ["adhoc", "press_release", "news_api", "ir"];
 
 export const SECTIONS = [
   { key: "", label: "Alle", kinds: NEWS_KINDS },

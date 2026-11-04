@@ -66,16 +66,32 @@ h1 { font-size: var(--text-xl); margin: 0 0 4px; }
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
 
-/* Sections as tabs: plain links, swipe sideways on narrow screens (no visible
-   scrollbar). The base line is an inset shadow, not a border, so the active
-   tab's underline covers it without a negative margin; that margin overflowed
-   by 1px and gave the bar a vertical scrollbar. */
+/* A row that swipes sideways on narrow screens, without a visible scrollbar.
+   useScrollRow sets data-more-start/-end; those edges fade out as a hint. */
+.scroll-row {
+  position: relative; /* offsetLeft of the items counts from the row */
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+}
+.scroll-row::-webkit-scrollbar { display: none; }
+.scroll-row[data-more-end]:not([data-more-start]) {
+  mask-image: linear-gradient(to right, var(--mask-solid) calc(100% - var(--fade-width)), transparent);
+}
+.scroll-row[data-more-start]:not([data-more-end]) {
+  mask-image: linear-gradient(to left, var(--mask-solid) calc(100% - var(--fade-width)), transparent);
+}
+.scroll-row[data-more-start][data-more-end] {
+  mask-image: linear-gradient(to right, transparent, var(--mask-solid) var(--fade-width),
+    var(--mask-solid) calc(100% - var(--fade-width)), transparent);
+}
+
+/* Sections as tabs: plain links in a scroll row. The base line is an inset
+   shadow, not a border, so the active tab's underline covers it without a
+   negative margin; that margin overflowed by 1px and gave the bar a vertical
+   scrollbar. */
 nav.tabs {
   display: flex; gap: 4px; margin-bottom: 12px;
-  overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
   box-shadow: inset 0 -1px 0 var(--border);
 }
-nav.tabs::-webkit-scrollbar { display: none; }
 nav.tabs a {
   flex: none; padding: 8px 12px; color: var(--muted); text-decoration: none; font-weight: var(--weight-semibold);
   border-bottom: 2px solid transparent;

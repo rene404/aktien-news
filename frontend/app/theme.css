@@ -31,6 +31,11 @@
   --radius-sm: 4px;
   --time-column: 3.25rem;
 
+  /* Rows that swipe sideways (tabs, chips): width of the faded edge.
+     --mask-solid is the opaque part of that mask, not a visible colour. */
+  --fade-width: 32px;
+  --mask-solid: #000;
+
   /* Sticky header: slide in/out, shadow while it floats over the list */
   --header-transition: 200ms ease-out;
   --header-shadow: 0 2px 8px rgb(0 0 0 / 0.08);

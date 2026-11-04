@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import SearchBox from "./SearchBox";
 
 /** How long the page must rest before the header slides back in. */
 export const SCROLL_IDLE_MS = 200;
@@ -52,10 +53,7 @@ export default function SiteHeader() {
             <Link href="/aktien">Aktien</Link>
           </nav>
         </div>
-        <form className="search" action="/suche" method="get" role="search">
-          <input name="q" type="search" placeholder="Aktie, Ticker oder ISIN" aria-label="Aktie suchen" required maxLength={64} />
-          <button type="submit">Suchen</button>
-        </form>
+        <SearchBox />
       </div>
     </header>
   );

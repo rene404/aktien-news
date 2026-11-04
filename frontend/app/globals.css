@@ -49,6 +49,17 @@ form.search {
 }
 /* The search grows while it is in use. */
 form.search:focus-within { max-width: var(--search-width-focus); }
+/* Suggestions drop down below the field (SearchBox). */
+.suggest { position: relative; flex: 1; min-width: 0; display: flex; }
+ul.suggestions {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
+  list-style: none; margin: 0; padding: 4px 0; max-height: 60vh; overflow-y: auto;
+  background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--header-shadow);
+}
+ul.suggestions li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 6px 10px; cursor: pointer; }
+ul.suggestions li:hover, ul.suggestions li[aria-selected="true"] { background: var(--count-zero-bg); }
+.suggest-ticker { font-size: var(--text-sm); font-weight: var(--weight-bold); color: var(--link); }
 form.search input {
   flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid var(--border);
   border-radius: var(--radius); background: var(--bg); color: var(--text); font: inherit;

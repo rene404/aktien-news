@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import TabNav from "@/components/TabNav";
 import TickerChips from "@/components/TickerChips";
 import { getIndexInstruments } from "@/lib/api";
+import { since } from "@/lib/feed";
 import { NEWS_KINDS, type SearchParams } from "@/lib/filters";
 import { LIST_INDICES, LIST_RANGES, LIST_SORTS, parseStockList, sortTickers, stockListHref, type StockList } from "@/lib/stocklist";
 
@@ -20,7 +21,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 export default async function StocksPage({ searchParams }: Props) {
   const list = parseStockList(await searchParams);
   const hours = LIST_RANGES.find((r) => r.key === list.range)!.hours;
-  const items = await getIndexInstruments(list.index, { from: since(hours), kind: NEWS_KINDS.join(",") });
+  const items = await getIndexInstruments(list.index, { from: since(new Date(), hours), kind: NEWS_KINDS.join(",") });
   if (!items) notFound();
   const label = indexLabel(list.index);
 
@@ -61,11 +62,4 @@ function Segmented({ label, list, field, options }: {
 
 function indexLabel(key: string): string {
   return LIST_INDICES.find((i) => i.key === key)?.label ?? key;
-}
-
-/** Start of the range, to the minute, so the API cache can be reused. */
-function since(hours: number): string {
-  const t = new Date(Date.now() - hours * 3600_000);
-  t.setUTCSeconds(0, 0);
-  return t.toISOString();
 }

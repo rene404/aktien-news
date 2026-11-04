@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import SiteHeader, { SCROLL_IDLE_MS } from "./SiteHeader";
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+
 const HEADER_HEIGHT = 60;
 
 function scrollTo(y: number) {
@@ -82,7 +84,7 @@ describe("SiteHeader", () => {
   it("stays while the search has focus and comes back when it gets focus", () => {
     render(<SiteHeader />);
     scrollTo(400);
-    act(() => screen.getByRole("searchbox").focus());
+    act(() => screen.getByRole("combobox", { name: "Aktie suchen" }).focus());
     expect(header()).not.toHaveAttribute("data-hidden");
     scrollTo(600);
     expect(header()).not.toHaveAttribute("data-hidden");

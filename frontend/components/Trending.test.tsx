@@ -19,6 +19,13 @@ describe("Trending", () => {
     expect(Array.from(list.querySelectorAll("a")).map((a) => a.getAttribute("href"))).toEqual(["/aktie/OMV", "/aktie/EBS"]);
   });
 
+  // Regression: in a sideways-scrolling row the last chips were cut off by the faded edge.
+  it("wraps instead of scrolling, so every chip is visible", async () => {
+    top.mockResolvedValue([{ ticker: "OMV", name: "OMV", count: 5 }]);
+    render(await Trending({ section: "" }));
+    expect(screen.getByRole("list", { name: "Heute im Gespräch" }).closest(".scroll-row")).toBeNull();
+  });
+
   it("renders nothing without mentions", async () => {
     top.mockResolvedValue([]);
     expect(await Trending({ section: "" })).toBeNull();

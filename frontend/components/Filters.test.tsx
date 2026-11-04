@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { Source } from "@/lib/api";
 import Filters from "./Filters";
@@ -14,7 +15,7 @@ describe("Filters", () => {
     const form = container.querySelector("form")!;
     expect(form).toHaveAttribute("action", "/aktie/EBS");
     expect(form.method).toBe("get");
-    expect(screen.getByRole("button", { name: /filtern/i })).toHaveAttribute("type", "submit");
+    expect(form.querySelector("button")).toHaveAttribute("type", "submit");
   });
 
   it("applies a changed select at once", () => {
@@ -41,5 +42,13 @@ describe("Filters", () => {
   it("never carries the pagination cursor into a new filter", () => {
     const { container } = render(<Filters path="/" sources={sources} value={{ section: "", source: "", range: "7d", cursor: "abc" }} />);
     expect(container.querySelector('input[name="cursor"]')).toBeNull();
+  });
+
+  it("shows the submit button only without JavaScript", () => {
+    const value = { section: "", source: "", range: "7d", cursor: "" };
+    const html = renderToString(<Filters path="/" sources={sources} value={value} />);
+    expect(html).toMatch(/<button(?![^>]*hidden)[^>]*type="submit"/);
+    render(<Filters path="/" sources={sources} value={value} />);
+    expect(screen.queryByRole("button", { name: /filtern/i })).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import Form from "next/form";
+import { useSyncExternalStore } from "react";
 import type { Source } from "@/lib/api";
 import { RANGES, type Filters as FilterValues } from "@/lib/filters";
 
@@ -14,7 +15,10 @@ type Props = {
 // A GET form: keeps filters in the URL and works without JavaScript. With
 // JavaScript, next/form navigates client-side and a changed select applies at once.
 // The section rides along hidden; the pagination cursor is deliberately not carried over.
+// The submit button is only for browsers without JavaScript: the server renders
+// it, the client hides it once hydrated.
 export default function Filters({ path, sources, value }: Props) {
+  const hydrated = useSyncExternalStore(noop, () => true, () => false);
   const submit = (e: React.ChangeEvent<HTMLSelectElement>) => e.currentTarget.form?.requestSubmit();
   return (
     <Form className="filters" action={path}>
@@ -40,7 +44,11 @@ export default function Filters({ path, sources, value }: Props) {
           ))}
         </select>
       </label>
-      <button type="submit">Filtern</button>
+      <button type="submit" hidden={hydrated}>
+        Filtern
+      </button>
     </Form>
   );
 }
+
+const noop = () => () => {};

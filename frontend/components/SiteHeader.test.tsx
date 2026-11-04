@@ -28,6 +28,11 @@ afterEach(() => {
 });
 
 describe("SiteHeader", () => {
+  it("links the stock list", () => {
+    render(<SiteHeader />);
+    expect(screen.getByRole("link", { name: "Aktien" })).toHaveAttribute("href", "/aktien");
+  });
+
   it("keeps the search form", () => {
     render(<SiteHeader />);
     expect(screen.getByRole("search")).toHaveAttribute("action", "/suche");

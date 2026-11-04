@@ -34,6 +34,7 @@ const PAIRS = [
   ["--header-text", "--header-bg"],
   ["--header-muted", "--header-bg"],
   ["--adhoc", "--adhoc-bg"],
+  ["--muted", "--count-zero-bg"],
 ] as const;
 
 describe("theme contrast", () => {

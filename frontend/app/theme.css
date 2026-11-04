@@ -66,6 +66,7 @@
   --adhoc: #b42318;
   --adhoc-bg: #fdecea;
   --skeleton: #e9ecf0;
+  --count-zero-bg: #eef0f3; /* count badge of a stock without news */
 
   /* Header: white on the brand blue */
   --header-bg: var(--brand);

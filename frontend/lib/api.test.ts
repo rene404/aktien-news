@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getInstrument, getNews, newsUrl } from "./api";
+import { getIndexInstruments, getInstrument, getNews, getTopTickers, newsUrl } from "./api";
 
 function mockFetch(status: number, body: unknown) {
   const fn = vi.fn<(input: string) => Promise<Response>>(async () =>
@@ -55,5 +55,35 @@ describe("getInstrument", () => {
     const fn = mockFetch(200, { ticker: "BRK.B", mic: "XNYS", name: "Berkshire", country: "US", indices: [] });
     await getInstrument("BRK.B");
     expect(String(fn.mock.calls[0][0])).toMatch(/\/api\/v1\/instruments\/BRK\.B$/);
+  });
+});
+
+describe("getTopTickers", () => {
+  it("asks for the most-mentioned tickers with the feed's filters", async () => {
+    const fn = mockFetch(200, { items: [{ ticker: "EBS", name: "Erste Group", count: 3 }] });
+    await expect(getTopTickers({ index: "ATX", kind: "adhoc,ir", from: "2026-11-03T12:00:00.000Z", limit: 10 })).resolves.toEqual([
+      { ticker: "EBS", name: "Erste Group", count: 3 },
+    ]);
+    expect(String(fn.mock.calls[0][0])).toMatch(
+      /\/api\/v1\/tickers\/top\?index=ATX&kind=adhoc%2Cir&from=2026-11-03T12%3A00%3A00.000Z&limit=10$/,
+    );
+  });
+
+  it("is empty instead of failing, it only decorates the page", async () => {
+    mockFetch(500, { error: "internal error" });
+    await expect(getTopTickers({ from: "2026-11-03T12:00:00Z" })).resolves.toEqual([]);
+  });
+});
+
+describe("getIndexInstruments", () => {
+  it("lists the members of an index", async () => {
+    const fn = mockFetch(200, { items: [{ ticker: "POST", name: "Österreichische Post", count: 0 }] });
+    await expect(getIndexInstruments("ATX", { from: "2026-11-03T12:00:00Z" })).resolves.toHaveLength(1);
+    expect(String(fn.mock.calls[0][0])).toMatch(/\/api\/v1\/indices\/ATX\/instruments\?from=2026-11-03T12%3A00%3A00Z$/);
+  });
+
+  it("returns null for an unknown index", async () => {
+    mockFetch(404, { error: "not found" });
+    await expect(getIndexInstruments("NIKKEI", {})).resolves.toBeNull();
   });
 });

@@ -17,7 +17,7 @@ Rahmen, der für alle Aufgaben gilt:
 
 ## A. Review-Fixes (nur Frontend)
 
-- [ ] **1. Quellen-Liste passt zum Bereich** — `fix/web-sources-per-section`
+- [x] **1. Quellen-Liste passt zum Bereich** — `fix/web-sources-per-section`
   Files: `frontend/lib/filters.ts`, `frontend/lib/filters.test.ts`, `frontend/app/page.tsx`, `frontend/app/aktie/[ticker]/page.tsx`
   What: Jeder Bereich in `SECTIONS` bekommt `markets` (ATX → `AT`, DAX → `DE`, S&P 500 → `US`, jeweils plus `MULTI`;
   Alle/Ad-hoc/SEC-Filings ohne Einschränkung). `sourcesFor(section, sources)` liefert nur Quellen, deren `market`
@@ -27,13 +27,13 @@ Rahmen, der für alle Aufgaben gilt:
   Done: Im ATX-Tab stehen weder SEC- noch PR-Newswire-Quellen; im SEC-Filings-Tab nur die beiden SEC-Quellen;
   auf `/aktie/VOE` keine US-Quellen. Tabellentest für `sourcesFor`.
 
-- [ ] **2. „Filtern“-Button nur ohne JavaScript** — `fix/web-filter-button`
+- [x] **2. „Filtern“-Button nur ohne JavaScript** — `fix/web-filter-button`
   Files: `frontend/components/Filters.tsx`, `frontend/components/Filters.test.tsx`
   What: Der Button wird gerendert (Fallback ohne JS) und nach dem Mounten per `hidden` ausgeblendet, weil eine
   Änderung im Select ohnehin sofort greift.
   Done: Test: nach dem Render ist der Button nicht sichtbar; im Server-HTML ist er vorhanden.
 
-- [ ] **3. Hinweis auf weitere Tabs** — `fix/web-tabs-hint`
+- [x] **3. Hinweis auf weitere Tabs** — `fix/web-tabs-hint`
   Files: `frontend/components/SectionTabs.tsx`, `frontend/components/SectionTabs.test.tsx`, `frontend/app/globals.css`, `frontend/app/theme.css`
   What: Hat die Tab-Leiste rechts noch Inhalt, blendet ein Verlauf (`mask-image`) den Rand aus; links ebenso,
   sobald gescrollt wurde. Gesteuert über `data-more-start`/`data-more-end`, gesetzt von einem kleinen Scroll-Listener.
@@ -42,7 +42,7 @@ Rahmen, der für alle Aufgaben gilt:
   Done: Test: Attribute folgen `scrollLeft`/`scrollWidth`. Live auf 375 px Breite geprüft: Verlauf rechts,
   nach dem Wischen auch links, auf Desktop keiner.
 
-- [ ] **4. „Gestern“ am Tag der Zeitumstellung** — `fix/web-yesterday-dst`
+- [x] **4. „Gestern“ am Tag der Zeitumstellung** — `fix/web-yesterday-dst`
   Files: `frontend/lib/format.ts`, `frontend/lib/format.test.ts`
   What: `dayLabel` rechnet „Gestern“ über den Kalendertag (Tag von `now` in Wien minus ein Kalendertag,
   Mittag UTC) statt über `now − 24 h`.
@@ -51,7 +51,7 @@ Rahmen, der für alle Aufgaben gilt:
 
 ## B. Aktienliste mit Chips
 
-- [ ] **5. API: Ticker mit Meldungszahl** — `feature/api-ticker-counts`
+- [x] **5. API: Ticker mit Meldungszahl** — `feature/api-ticker-counts`
   Files: `backend/internal/store/queries/news.sql`, `backend/internal/store/db/*` (sqlc), `backend/internal/service/tickers.go`,
   `backend/internal/service/tickers_test.go`, `backend/internal/httpapi/tickers.go`, `backend/internal/httpapi/tickers_test.go`,
   `backend/internal/httpapi/dto.go`, `backend/internal/httpapi/dto_test.go`, `backend/internal/httpapi/router.go`
@@ -67,7 +67,7 @@ Rahmen, der für alle Aufgaben gilt:
   ein ausgeschiedenes Index-Mitglied fehlt; Werte ohne Meldung erscheinen mit 0. Store-Tests laufen up → down → up
   (keine Migration nötig; falls ein Index für die Zählung fehlt, eigene goose-Datei).
 
-- [ ] **6. Seite `/aktien`** — `feature/web-stock-list`
+- [x] **6. Seite `/aktien`** — `feature/web-stock-list`
   Files: `frontend/app/aktien/page.tsx`, `frontend/lib/api.ts`, `frontend/lib/api.test.ts`, `frontend/components/TickerChips.tsx`,
   `frontend/components/TickerChips.test.tsx`, `frontend/components/SiteHeader.tsx`, `frontend/app/globals.css`
   What: Tabs ATX · DAX · S&P 500 (`?index=`), Zeitraum 24 Stunden / 7 Tage (`?range=`), Sortierung „Meiste Meldungen“
@@ -77,7 +77,7 @@ Rahmen, der für alle Aufgaben gilt:
   Done: Komponententest für Chips (Link, Anzahl, 0-Darstellung). Live: `/aktien?index=ATX` zeigt alle ATX-Werte,
   S&P 500 bleibt bei ~500 Chips flüssig.
 
-- [ ] **7. „Heute im Gespräch“ über dem Feed** — `feature/web-trending`
+- [x] **7. „Heute im Gespräch“ über dem Feed** — `feature/web-trending`
   Files: `frontend/components/Trending.tsx`, `frontend/components/Trending.test.tsx`, `frontend/app/page.tsx`, `frontend/app/globals.css`
   What: Eine Zeile Chips mit den 10 meistgenannten Tickern der letzten 24 h, passend zum gewählten Bereich
   (Index und Quellenarten wie der Feed). Eigenes `Suspense`, damit der Feed nicht wartet. Ohne Treffer wird
@@ -86,7 +86,7 @@ Rahmen, der für alle Aufgaben gilt:
 
 ## C. Für Leser
 
-- [ ] **8. Suchvorschläge im Header** — `feature/web-search-suggest`
+- [x] **8. Suchvorschläge im Header** — `feature/web-search-suggest`
   Files: `frontend/app/suggest/route.ts`, `frontend/components/SearchBox.tsx`, `frontend/components/SearchBox.test.tsx`,
   `frontend/components/SiteHeader.tsx`, `frontend/app/globals.css`
   What: Next-Route `/suggest?q=` reicht `searchInstruments` durch (max. 10, `Cache-Control` 60 s). Das Suchfeld wird
@@ -96,7 +96,7 @@ Rahmen, der für alle Aufgaben gilt:
   Done: Tests: Debounce, Tastatursteuerung, Enter ohne Auswahl schickt das Formular ab, alte Antwort überschreibt neue nicht.
   Live mit Tastatur und auf dem Handy geprüft.
 
-- [ ] **9. Hinweis „N neue Meldungen“** — `feature/web-new-items`
+- [x] **9. Hinweis „N neue Meldungen“** — `feature/web-new-items`
   Files: `frontend/components/InfiniteNews.tsx`, `frontend/components/InfiniteNews.test.tsx`, `frontend/app/globals.css`
   What: Solange der Tab sichtbar ist (`visibilitychange`), holt der Feed alle 60 s die erste Seite über `/feed`
   (gleiche Query, ohne Cursor; das deckt sich mit dem 60-s-Cache). Neu ist, was noch nicht in der Liste steht.
@@ -106,7 +106,7 @@ Rahmen, der für alle Aufgaben gilt:
   Done: Tests mit Fake-Timern: kein Abruf bei verstecktem Tab; doppelte IDs zählen nicht; Klick fügt ein und
   setzt den Zähler zurück; nachträglich eingetroffene ältere Meldung landet an der richtigen Stelle.
 
-- [ ] **10. Schalter „Nur Ad-hoc“ auf der Aktienseite** — `feature/web-adhoc-only`
+- [x] **10. Schalter „Nur Ad-hoc“ auf der Aktienseite** — `feature/web-adhoc-only`
   Files: `frontend/lib/filters.ts`, `frontend/lib/filters.test.ts`, `frontend/lib/feed.ts`, `frontend/lib/feed.test.ts`,
   `frontend/components/Filters.tsx`, `frontend/components/Filters.test.tsx`, `frontend/app/aktie/[ticker]/page.tsx`
   What: `Filters` bekommt `adhoc: boolean` (`?adhoc=1`). `stockNewsParams` setzt dann `kind=adhoc`; eine zusätzlich
@@ -115,6 +115,13 @@ Rahmen, der für alle Aufgaben gilt:
   Nachladen dieselbe Auswahl liefert.
   Done: Tests: `?adhoc=1` → `kind=adhoc`, fehlt im URL wenn aus, Nachladen über `/feed` behält ihn.
   Live: `/aktie/VOE?adhoc=1` zeigt nur Ad-hoc-Meldungen.
+
+Umsetzungsnotizen (2026-11-04, alle zehn Aufgaben gemergt):
+- Die Live-Prüfung zu 8 zeigte, dass „ers“ Erste Group nicht unter den 10 Treffern fand (Tausende SEC-Firmen,
+  alphabetisch). `SearchInstruments` sortiert jetzt: exakter Ticker, Namensanfang, aktuelle Index-Werte,
+  Ticker-Anfang, Name (mit Regressionstest).
+- 9: Der Button schwebt unten mittig statt oben, damit er nicht mit dem einblendenden Header kollidiert.
+- 3 und 7 teilen sich `useScrollRow` (Verlauf an den Rändern, aktueller Eintrag im Blick); Tabs über `TabNav`.
 
 ## Reihenfolge
 

@@ -240,6 +240,10 @@ Migrationen: goose, jede mit `up` und `down`. Die CI testet up → down → up g
 
 `GET /api/v1/sources` → 200 `{ items: [{ key, name, market }] }`
 
+`GET /api/v1/tickers/top?from=&index?=&kind?=&limit?=` → 200 `{ items: [{ ticker, name, count }] }`
+(meistgenannt seit `from`, `limit` 1–20). `GET /api/v1/indices/{index}/instruments?from?=&kind?=` → 200 dasselbe
+für alle aktuellen Index-Werte, auch mit `count` 0; 404 für einen unbekannten Index. Gezählt werden Cluster wie im Feed.
+
 `GET /healthz` → 200 `{ status: "ok" }`
 
 Rate-Limit pro IP am Reverse Proxy, Antwort 429.

@@ -1,4 +1,4 @@
-import type { NewsParams } from "./api";
+import type { NewsParams, Source } from "./api";
 
 // Source kinds of the API. Filings (SEC 8-K/6-K) come in by the hundred and
 // would bury everything else, so they get a section of their own.
@@ -6,12 +6,43 @@ const NEWS_KINDS = ["adhoc", "press_release", "news_api", "ir"];
 
 export const SECTIONS = [
   { key: "", label: "Alle", kinds: NEWS_KINDS },
-  { key: "ATX", label: "ATX", index: "ATX", kinds: NEWS_KINDS },
-  { key: "DAX", label: "DAX", index: "DAX", kinds: NEWS_KINDS },
-  { key: "SP500", label: "S&P 500", index: "SP500", kinds: NEWS_KINDS },
+  { key: "ATX", label: "ATX", index: "ATX", kinds: NEWS_KINDS, market: "AT" },
+  { key: "DAX", label: "DAX", index: "DAX", kinds: NEWS_KINDS, market: "DE" },
+  { key: "SP500", label: "S&P 500", index: "SP500", kinds: NEWS_KINDS, market: "US" },
   { key: "adhoc", label: "Ad-hoc", kinds: ["adhoc"] },
   { key: "filings", label: "SEC-Filings", kinds: ["filing"] },
-] as const satisfies readonly { key: string; label: string; index?: string; kinds: readonly string[] }[];
+] as const satisfies readonly { key: string; label: string; index?: string; kinds: readonly string[]; market?: string }[];
+
+/** Exchanges (MIC) as readers know them, and the source market they belong to. */
+export const EXCHANGES: Record<string, { name: string; market: string }> = {
+  XWBO: { name: "Wiener Börse", market: "AT" },
+  XETR: { name: "Xetra", market: "DE" },
+  XNYS: { name: "NYSE", market: "US" },
+  XNAS: { name: "Nasdaq", market: "US" },
+};
+
+/**
+ * The sources worth offering: those of the section's kinds and market (a
+ * section page) or of the exchange's market (a stock page). Sources covering
+ * several markets ("MULTI") always fit a market. A source already picked in the
+ * URL stays in the list, so the select shows what is filtered.
+ */
+export function sourcesFor(sources: Source[], opts: { section?: string; mic?: string; selected?: string }): Source[] {
+  let kinds: readonly string[] | undefined;
+  let market: string | undefined;
+  if (opts.mic !== undefined) {
+    market = EXCHANGES[opts.mic]?.market;
+  } else {
+    const section = SECTIONS.find((s) => s.key === (opts.section ?? "")) ?? SECTIONS[0];
+    kinds = section.kinds;
+    market = "market" in section ? section.market : undefined;
+  }
+  return sources.filter(
+    (s) =>
+      s.key === opts.selected ||
+      ((!kinds || kinds.includes(s.kind)) && (!market || s.market === market || s.market === "MULTI")),
+  );
+}
 
 export const RANGES = [
   { key: "24h", label: "24 Stunden", hours: 24 },

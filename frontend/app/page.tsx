@@ -5,11 +5,11 @@ import NewsSkeleton from "@/components/NewsSkeleton";
 import SectionTabs from "@/components/SectionTabs";
 import { getSources } from "@/lib/api";
 import { feedQuery } from "@/lib/feed";
-import { parseFilters, type SearchParams } from "@/lib/filters";
+import { parseFilters, sourcesFor, type SearchParams } from "@/lib/filters";
 
 export default async function Home({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const filters = parseFilters(await searchParams);
-  const sources = await getSources();
+  const sources = sourcesFor(await getSources(), { section: filters.section, selected: filters.source });
 
   return (
     <>

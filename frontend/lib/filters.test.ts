@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { filterHref, parseFilters, toNewsParams } from "./filters";
+import type { Source, SourceKind } from "./api";
+import { filterHref, parseFilters, sourcesFor, toNewsParams } from "./filters";
 
 const now = new Date("2026-10-28T12:00:00Z");
 const NEWS_KINDS = "adhoc,press_release,news_api,ir";
@@ -75,5 +76,41 @@ describe("filterHref", () => {
     expect(filterHref("/aktie/EBS", { section: "", source: "fn_atx", range: "all", cursor: "c2" }, { cursor: true, defaultRange: "all" })).toBe(
       "/aktie/EBS?source=fn_atx&cursor=c2",
     );
+  });
+});
+
+describe("sourcesFor", () => {
+  const src = (key: string, market: string, kind: SourceKind): Source => ({ key, name: key, market, kind });
+  const all = [
+    src("fn_adhoc", "MULTI", "adhoc"),
+    src("fn_atx", "AT", "news_api"),
+    src("fn_dax", "DE", "news_api"),
+    src("prn_all", "US", "press_release"),
+    src("sec_8k", "US", "filing"),
+  ];
+  const keys = (s: Source[]) => s.map((x) => x.key);
+
+  it.each([
+    ["", ["fn_adhoc", "fn_atx", "fn_dax", "prn_all"]],
+    ["ATX", ["fn_adhoc", "fn_atx"]],
+    ["DAX", ["fn_adhoc", "fn_dax"]],
+    ["SP500", ["fn_adhoc", "prn_all"]],
+    ["adhoc", ["fn_adhoc"]],
+    ["filings", ["sec_8k"]],
+  ])("section %j offers %j", (section, want) => {
+    expect(keys(sourcesFor(all, { section }))).toEqual(want);
+  });
+
+  it("limits a stock page to the market of its exchange", () => {
+    expect(keys(sourcesFor(all, { mic: "XWBO" }))).toEqual(["fn_adhoc", "fn_atx"]);
+    expect(keys(sourcesFor(all, { mic: "XNAS" }))).toEqual(["fn_adhoc", "prn_all", "sec_8k"]);
+  });
+
+  it("offers every source for an unknown exchange", () => {
+    expect(sourcesFor(all, { mic: "XLON" })).toHaveLength(all.length);
+  });
+
+  it("keeps a source picked by URL even if it does not fit", () => {
+    expect(keys(sourcesFor(all, { section: "ATX", selected: "sec_8k" }))).toEqual(["fn_adhoc", "fn_atx", "sec_8k"]);
   });
 });

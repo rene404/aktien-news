@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NewsItem, NewsPage } from "@/lib/api";
-import InfiniteNews from "./InfiniteNews";
+import InfiniteNews, { NEW_ITEMS_POLL_MS } from "./InfiniteNews";
 
 const now = "2026-10-28T12:00:00Z";
 
@@ -93,5 +93,77 @@ describe("InfiniteNews", () => {
     renderList(null);
     expect(screen.queryByRole("link", { name: /ältere meldungen/i })).not.toBeInTheDocument();
     expect(fn).not.toHaveBeenCalled();
+  });
+});
+
+describe("InfiniteNews: new items", () => {
+  const top = item(1, "2026-10-28T10:00:00Z");
+  const newer = (id: number) => item(id, `2026-10-28T11:${String(id).padStart(2, "0")}:00Z`);
+
+  function setVisibility(state: DocumentVisibilityState) {
+    Object.defineProperty(document, "visibilityState", { value: state, configurable: true });
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    setVisibility("visible");
+  });
+  afterEach(() => vi.useRealTimers());
+
+  async function tick() {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(NEW_ITEMS_POLL_MS);
+    });
+  }
+
+  it("asks for the first page every minute and offers what is new", async () => {
+    const fn = mockFetch({ items: [newer(3), newer(2), top], next_cursor: "c1" });
+    render(<InfiniteNews items={[top]} nextCursor={null} query="section=ATX&range=7d" moreHref="/" now={now} />);
+    expect(screen.queryByRole("button", { name: /neue meldung/i })).toBeNull();
+    await tick();
+    expect(fn).toHaveBeenCalledWith("/feed?section=ATX&range=7d");
+    expect(screen.getByRole("button", { name: "2 neue Meldungen" })).toBeInTheDocument();
+    expect(screen.queryByText("Meldung 3")).toBeNull();
+  });
+
+  it("singular, and 25+ for a full page", async () => {
+    mockFetch(
+      { items: [newer(2), top], next_cursor: null },
+      { items: Array.from({ length: 25 }, (_, i) => newer(i + 10)), next_cursor: "c" },
+    );
+    render(<InfiniteNews items={[top]} nextCursor={null} query="q=1" moreHref="/" now={now} />);
+    await tick();
+    expect(screen.getByRole("button", { name: "1 neue Meldung" })).toBeInTheDocument();
+    await tick();
+    expect(screen.getByRole("button", { name: "25+ neue Meldungen" })).toBeInTheDocument();
+  });
+
+  it("a click puts them into the list and scrolls up", async () => {
+    mockFetch({ items: [newer(3), newer(2), top], next_cursor: null });
+    const scroll = vi.fn();
+    vi.stubGlobal("scrollTo", scroll);
+    render(<InfiniteNews items={[top]} nextCursor={null} query="q=1" moreHref="/" now={now} />);
+    await tick();
+    fireEvent.click(screen.getByRole("button", { name: /neue meldungen/i }));
+    const titles = screen.getAllByRole("link").map((l) => l.textContent);
+    expect(titles.slice(0, 3).map((t) => t?.match(/Meldung \d+/)?.[0])).toEqual(["Meldung 3", "Meldung 2", "Meldung 1"]);
+    expect(screen.queryByRole("button", { name: /neue meldung/i })).toBeNull();
+    expect(scroll).toHaveBeenCalled();
+  });
+
+  it("does not ask while the tab is hidden", async () => {
+    const fn = mockFetch({ items: [newer(2), top], next_cursor: null });
+    setVisibility("hidden");
+    render(<InfiniteNews items={[top]} nextCursor={null} query="q=1" moreHref="/" now={now} />);
+    await tick();
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("stays quiet when asking fails", async () => {
+    mockFetch(502);
+    render(<InfiniteNews items={[top]} nextCursor={null} query="q=1" moreHref="/" now={now} />);
+    await tick();
+    expect(screen.queryByRole("button", { name: /neue meldung/i })).toBeNull();
+    expect(screen.queryByText(/fehlgeschlagen/)).toBeNull();
   });
 });

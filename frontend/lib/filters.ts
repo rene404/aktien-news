@@ -58,7 +58,7 @@ export type Filters = { section: string; source: string; range: string; cursor: 
 
 export type SearchParams = Record<string, string | string[] | undefined>;
 
-const PAGE_SIZE = 25;
+export const PAGE_SIZE = 25;
 
 function first(v: string | string[] | undefined): string {
   return (Array.isArray(v) ? v[0] : v) ?? "";

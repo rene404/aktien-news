@@ -187,6 +187,12 @@ ol.news .ext { font-size: 0.75em; color: var(--muted); }
 a.chip:hover { background: var(--chip-bg-hover); color: var(--chip-text); }
 
 .more { display: inline-block; margin-top: 20px; }
+
+/* "3 neue Meldungen": floats at the bottom, clear of the sliding header. */
+button.new-items {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 15;
+  padding: 8px 16px; border-radius: 999px; box-shadow: var(--header-shadow); font-weight: var(--weight-semibold);
+}
 .empty { color: var(--muted); padding: 24px 0; }
 
 /* Placeholder rows while the news list loads; same grid as ol.news li. */

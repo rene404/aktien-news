@@ -20,6 +20,8 @@ func NewRouter(svc *service.Service) http.Handler {
 	mux.HandleFunc("GET /api/v1/instruments", h.searchInstruments)
 	mux.HandleFunc("GET /api/v1/instruments/{ticker}", h.instrument)
 	mux.HandleFunc("GET /api/v1/sources", h.sources)
+	mux.HandleFunc("GET /api/v1/tickers/top", h.topTickers)
+	mux.HandleFunc("GET /api/v1/indices/{index}/instruments", h.indexInstruments)
 	return mux
 }
 

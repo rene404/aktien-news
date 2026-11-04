@@ -9,7 +9,7 @@ import (
 // Public response contracts. Legal invariant: no body text, snippets,
 // sentiment or event types — enforced by TestPublicDTOsCarryNoTextOrScores.
 // Every new public DTO must be added to publicDTOs.
-var publicDTOs = []any{newsPageDTO{}, instrumentListDTO{}, instrumentDetailDTO{}, sourceListDTO{}, errorDTO{}}
+var publicDTOs = []any{newsPageDTO{}, instrumentListDTO{}, instrumentDetailDTO{}, sourceListDTO{}, tickerCountListDTO{}, errorDTO{}}
 
 type newsPageDTO struct {
 	Items      []newsItemDTO `json:"items"`
@@ -57,6 +57,17 @@ type sourceDTO struct {
 
 type sourceListDTO struct {
 	Items []sourceDTO `json:"items"`
+}
+
+// A ticker with the number of news items (clusters) it appears in.
+type tickerCountDTO struct {
+	Ticker string `json:"ticker"`
+	Name   string `json:"name"`
+	Count  int    `json:"count"`
+}
+
+type tickerCountListDTO struct {
+	Items []tickerCountDTO `json:"items"`
 }
 
 type errorDTO struct {

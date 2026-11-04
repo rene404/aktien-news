@@ -115,6 +115,108 @@ Viele dieser Seiten rendern per JavaScript oder blocken Bots; das ist kein Bewei
 Die eigenen Bedingungen („Trade Halt RSS Feed Terms and Conditions“) verbieten keine kommerzielle Nutzung, aber „editing, modifying,
 misrepresenting“. Die Items haben **keinen Link** → wir müssten auf die Halts-Seite verlinken. ⚠️ vor Nutzung bei Nasdaq nachfragen.
 
+## Nachtrag 2026-11-04: 3. Runde
+
+In dieser Runde ging es um vier Fragen: Welche Pflichtmeldungen gibt es offiziell? Welche Emittenten haben eigene Feeds? Welche Lizenzbedingungen haben News-APIs? Welche Presseverteiler gibt es?
+Was mit [V] markiert ist, haben wir am 2026-11-04 selbst abgerufen. Bei Lizenzen bedeutet [V], dass wir die Klausel auf der Seite des Anbieters gelesen haben.
+
+### Wichtigster Fund: OeKB OAM hat einen öffentlichen JSON-Endpunkt [V]
+
+`GET https://my.oekb.at/issuer-info/rest/public/meldedaten/iic?startPosition=0&offset=50`
+
+Der Endpunkt braucht kein Login. Er liefert `{"anzahlTreffer": 54956, "dokumente": [...]}`, die neuesten Meldungen zuerst. Die jüngste Meldung war vom selben Tag.
+
+- **Felder je Meldung:**
+  - `emittent.name` und `emittent.lei`;
+  - `isinBezug`, z. B. `["AT0000741301 (Aktie),"]` (muss bereinigt werden);
+  - `meldetypCode`, `titel`, `uploadzeitpunkt` (in ms) und `sprachcode`;
+  - `dateien[].id` (PDF über `…/iic/download?id=`).
+- **Meldetypen:**
+  - `EP_AD_HOC` (Ad-hoc-Meldungen);
+  - `EP_EIGENGESCHAEFT_VON_FUEHRUNGSKRAFT` (Directors' Dealings);
+  - `EP_AEND_WESENTL_STIMMRECHTSSCHWELLEN` (Stimmrechte);
+  - `EP_JFB`, `EP_HJFB`, `EP_QUARTALBER` (Berichte);
+  - `EP_HV_*` (Hauptversammlung);
+  - `EP_BEKANNTGABEN_ZU_RUECKKAUFPROGRAMMEN` (Rückkäufe).
+- **Sprache:** Meldungen kommen oft doppelt, auf Deutsch und auf Englisch. Wir deduplizieren deshalb über Emittent, Typ und Zeitpunkt.
+- **Filter:** Nach Meldetyp filtert der Server nicht, das machen wir selbst.
+- **Nutzung:** Laut *OeKB-OAM-Nutzungsgrundlagen V5.2* ist die Abfrage für Endnutzer „unentgeltlich“, und die Dokumente sind „an Dritte ohne Einschränkung“ weiterzugeben.
+- **Einschränkung:** Die API ist **nicht dokumentiert**. Eine `robots.txt` gibt es nicht.
+- **Konsequenz:** Die offene OeKB-Anfrage (siehe unten) bezieht sich jetzt konkret auf diesen Endpunkt.
+- **Bewertung: hoch.** Das ist die offizielle Quelle für AT-Pflichtmeldungen mit ISIN. Sie schließt die Lücke, die die Wiener Börse lässt.
+- **Umsetzung:** Wir brauchen einen eigenen Parser (JSON → RawArticle). Die Quelle bekommt `kind = adhoc` bzw. `filing`, damit gilt die ISIN als Emittenten-Signal.
+- **Link:** Ein Deep Link auf die einzelne Meldung muss noch geklärt werden. Bis dahin verlinken wir auf das PDF.
+
+### Behörden und Pflichtmeldungen
+
+| Quelle | URL | Kennung | Lizenz | Wert |
+|---|---|---|---|---|
+| BaFin RSS (neue URLs) [V] | `bafin.de/DE/service/rss/_function/rssnewsfeed.xml?nn=150166`, außerdem `RSS_Presse`, `RSS_Massnahmen`, `RSS_Aufsicht` | Name im Titel | Weitergabe mit deutlicher Quellenangabe erlaubt; Links in neuem Fenster, keine Frames | mittel: `RSS_Massnahmen` nennt Firmen (meist Banken und Versicherer); generischer RSS-Parser |
+| BaFin Directors' Dealings (CSV-Export) [V] | `portal.mvp.bafin.de/database/DealingsInfo/` | ISIN | ❌ robots.txt `Disallow: /` | hoch, aber nur mit Genehmigung der BaFin |
+| Netto-Leerverkaufspositionen DE (Bundesanzeiger) [V] | `bundesanzeiger.de/pub/de/nlp` | ISIN | ❌ robots.txt `Disallow: /nlp` | nur mit Genehmigung |
+| Unternehmensregister / Bundesanzeiger | – | – | ❌ keine API, robots.txt sperrt | nicht nutzbar, auf ESAP warten (EU, ca. 2027) [U] |
+| filings.xbrl.org (ESEF) [V] | `filings.xbrl.org/api/filings?filter[country]=AT&sort=-date_added` | LEI | „no restrictions on the ways that the data can be used“ | niedrig: 601 AT-Filings, **keine deutschen**, Wochen Verzug; eher für Kennzahlen |
+| FMA Leerverkäufe | fma.gv.at | – | Cloudflare-Challenge (403) | bei der FMA anfragen |
+| OeNB RSS | – | – | – | nicht mehr vorhanden |
+| SEC Press Releases [V] | `sec.gov/news/pressreleases.rss` | Name | gemeinfrei | mittel: Enforcement gegen Firmen |
+| SEC Litigation, Admin. Proceedings, Trading Suspensions [V] | `sec.gov/enforcement-litigation/{litigation-releases,administrative-proceedings,trading-suspensions}/rss` | Name | gemeinfrei | niedrig: meist Einzelpersonen und Micro-Caps |
+| SEC XBRL RSS [V] | `sec.gov/Archives/edgar/xbrlrss.all.xml` | CIK | gemeinfrei | niedrig: doppelt zu `getcurrent` 10-K/10-Q |
+| FTC Competition [V] | `ftc.gov/feeds/press-release-competition.xml` | Name | gemeinfrei | mittel: Fusionsklagen gegen gelistete Firmen |
+| NYSE Trade Halts [V] | `nyse.com/api/trade-halts/current` (JSON) | Ticker | ToS nicht geprüft | niedrig; Nasdaq Trade Halts (siehe oben) bevorzugen. Dort nur nachrichtenbezogene Codes (T1, T2, H10) nehmen, keine LULD-Pausen |
+| EU-Kommission Wettbewerb, EMA, Federal Register, DOJ, CFTC [V] | – | Name | Weiterverwendung erlaubt bzw. gemeinfrei | niedrig: selten börsenrelevant oder ohne Firmennamen im Titel |
+
+### Emittenten-Feeds, 2. Scan [V]
+
+Geprüft wurden alle ATX- und DAX-Werte: die Seiten auf `rel=alternate` und RSS-Links abgesucht und 33 übliche Pfade abgefragt. Bei keinem der Treffer gibt es `tdmrep.json` oder eine Sperre für KI-Bots, sofern nicht anders vermerkt.
+
+| Emittent | Feed | Neuester Eintrag | Art | Hinweis |
+|---|---|---|---|---|
+| Continental | `continental.com/en/general/rss/investors/`, `…/rss/press-releases/` | 2026-11-04 | IR + Presse | ✅ eigener IR-Feed |
+| Fresenius | `fresenius.com/news/rss?type=investor`, `?type=media` (`/de/…` für Deutsch) | 2026-11-04 | IR + Presse | ✅ wird als `text/html` ausgeliefert, ist aber gültiges RSS |
+| Heidelberg Materials | `heidelbergmaterials.com/en/rss/press-release` (auch `/de/`) | 2026-11-04 | Presse inkl. Ergebnisse | ✅ `/rss.xml` ist veraltet |
+| BMW | `newsroom.bmwgroup.com/feed/` | 2026-11-04 | Presse + IR | ✅ |
+| Volkswagen Konzern | `volkswagen-group.com/en/feeds/press-releases` | 2026-10-29 | Presse inkl. Ergebnisse | ✅ |
+| Siemens | `press.siemens.com/global/en/rss.xml` | 2026-11-02 | Presse global | ✅ |
+| adidas | `adidas-group.com/en/rss/news`, `/en/rss/publications` (auch `/de/`) | 2026-10-29 | Presse + IR | ✅ |
+| Airbus | `airbus.com/en/generate-rss-feeds?type=all-press-releases` | 2026-11-02 | Presse | ✅ `pubDate` hat das Format `Mon, 11/02/2026 - 13:28` → Datumsparser erweitern |
+| Qiagen | `corporate.qiagen.com/rss/pressrelease.aspx` (IR-Anbieter Q4) | 2026-10-21 | IR | ✅ |
+| Infineon | `presseagentur.com/infineon/feed.php?lang=de` (RSS 1.0) | 2026-11-04 | Presse | ⚠️ auf der Domain der PR-Agentur, nicht auf infineon.com verlinkt; vorher bestätigen lassen |
+| Covestro | `covestro.com/press//tagfeed/en/tags/corporate__news` | 2026-11-04 | Corporate News | ⚠️ robots.txt sperrt `/tagfeed/*`; dem Sinn nach nicht nutzen |
+| CPI Europe (ex-Immofinanz) | `cpi-europe.com/de/rss.xml` | 2026-08-28 | IR | ✅ einziger brauchbarer ATX-Feed; Datum im JS-Format `Date.toString()` |
+| Mayr-Melnhof | `mm.group/de/feed/` | 2026-11-04 | Blog/Stories | niedrig, kein IR |
+| A1 Group | `a1.group/de/feed/` | 2025-12-16 | Presse | ❌ veraltet |
+
+- **Ohne Feed:**
+  - ATX: OMV, RBI, BAWAG, Wienerberger, Lenzing, Strabag, CA Immo, Palfinger, SBO, Porr, Uniqa, AT&S, Post, Erste, Verbund, Andritz.
+  - DAX: Siemens Energy, Siemens Healthineers, Munich Re, Hannover Rück, BASF, Porsche, Daimler Truck, Deutsche Bank, Commerzbank, Beiersdorf, Brenntag, FMC, MTU, Rheinmetall, Sartorius, Vonovia, Zalando, Scout24, GEA, Deutsche Börse.
+- **Bot-Schutz (403):** Allianz, Bayer, E.ON, RWE, Merck KGaA, Mercedes-Benz. Wer automatisierte Abrufe blockt, wird nicht gepollt.
+- **Nicht prüfbar:** VIG, EVN, DHL.
+- **Fazit:** Für ATX-Pflichtmeldungen führt der Weg über OeKB OAM, nicht über Emittenten-Feeds.
+
+### News-APIs und Presseverteiler (Lizenz)
+
+| Quelle | Preis | Ticker | Kommerzielle Anzeige? | Empfehlung |
+|---|---|---|---|---|
+| **Stock News API** Premium [V] | 49,99 $/Monat (Basic nur nicht-kommerziell) | US-Ticker; enthält PR Newswire, GlobeNewswire, Business Wire, Accesswire, Newsfile | **ja**: FAQ „Can I display the news on my site/app? Yes, as long as you are in compliance with the terms … of the news source“; Links in neuem Fenster, nur Text | ✅ beste günstige US-Option, umgeht den 403 von GlobeNewswire |
+| **Marketaux** [V] | 29–199 $/Monat | Entities mit Symbol und Börse; Länderfilter de, at, us; deutsche Artikel | unklar: Es gibt nur Website-AGB („no commercial endeavors except … approved by us“) | ⏳ schriftlich anfragen; technisch die beste Lösung für DE/AT |
+| **pressetext** (pta = Kapitalmarktmeldungen) [V] | Weiterverwendung gratis; XML-Feed 990 €/Jahr je Paket, kein freies RSS | ISIN in OAM | „Übernahme und Verwendung von Presse- und Kapitalmarktmitteilungen (pts, ptp, pta) ist kostenfrei“ | ✅ optional; die pta-Meldungen kommen gratis über OeKB OAM |
+| **GDELT DOC 2.0** [V] | gratis | keine (Matcher) | GDELT-Daten: „unlimited and unrestricted use … commercial“ mit Zitat und Link; Schlagzeilen bleiben bei den Verlagen (EU-Ausnahme für Links und sehr kurze Auszüge) | ⚠️ Discovery für DE/AT-Medien; rechtlich vorher klären |
+| GNews (49,99 €) / Mediastack (24,99 $) [V] | – | keine | kommerziell erlaubt, aber „no rights in third-party content“ | niedrig |
+| NewsData.io [V] | ab ca. 200 $ | keine | erlaubt, auf eigenes Risiko, Credit „Powered by NewsData.io“ | niedrig |
+| Event Registry / NewsAPI.ai | 90 $/Monat | Entities | Anzeigebedingungen nicht gelesen [U] | ⏳ prüfen |
+| EQS News (DGAP) | Vertrag | ISIN | keine öffentlichen Bedingungen | ⏳ Angebot anfragen; größte DE-Ad-hoc-Lücke |
+| Finnhub paid, Alpaca, Tiingo, EODHD, FMP, Intrinio, Massive [V] | 50–3.500 $ | US | Anzeige nur mit Enterprise- oder Display-Lizenz bzw. Freigabe; Alpaca und Finnhub verbieten Weitergabe | ❌ |
+| Google News RSS [U], Bing News API | – | – | Google: nur persönlich; Bing: am 2025-08-11 eingestellt | ❌ |
+| IRW-Press, Common Crawl News | – | – | keine Nutzungsrechte bzw. eigenes Risiko | ❌ |
+
+### Empfohlene Reihenfolge
+
+1. **OeKB OAM** (AT-Pflichtmeldungen mit ISIN). Neuer JSON-Parser; parallel die Anfrage bei der OeKB.
+2. **Emittenten-Feeds DAX**: Continental, Fresenius, Heidelberg Materials, BMW, VW, Siemens, adidas, Qiagen, Airbus. Dafür reicht der vorhandene `pressrss`-Parser mit `issuer_slug`; für Airbus und CPI Europe muss der Datumsparser erweitert werden.
+3. **BaFin `RSS_Massnahmen`/`RSS_Presse`, FTC Competition, SEC Press Releases.** Generischer Parser; Meldungen ohne Firma im Titel landen im Bereich „Markt & Politik“.
+4. **Stock News API Premium** (49,99 $/Monat) für die US-Breite inkl. GlobeNewswire. Sentiment des Anbieters nur intern verwenden.
+5. Anfragen: Marketaux (DE/AT), EQS (DE-Ad-hoc), BaFin (Directors' Dealings CSV).
+
 ## Stammdaten
 
 | Quelle | Inhalt | Lizenz | Status |
@@ -133,7 +235,11 @@ misrepresenting“. Die Items haben **keinen Link** → wir müssten auf die Hal
 ## Schriftlich zu klären (vor dem Livegang)
 
 - APA-Comm: Lizenz für OTS-Text für TDM/LLM bzw. eine API.
-- OeKB: maschinenlesbarer Bezug der OAM-Daten.
+- OeKB: maschinenlesbarer Bezug der OAM-Daten, konkret die Nutzung von `my.oekb.at/issuer-info/rest/public/meldedaten/iic` und Deep Links auf einzelne Meldungen.
+- BaFin: automatisierter Bezug der Directors'-Dealings-Datenbank (robots.txt sperrt das Portal).
+- Marketaux: kommerzielle Anzeige von Schlagzeile + Link und interne LLM-Verarbeitung.
+- EQS: Lizenzangebot für den News-Feed (DE-Ad-hoc).
+- Infineon: ob der Feed auf presseagentur.com offiziell ist.
 - FinanzNachrichten: ob die Übernahme ausdrücklich auch ein kommerzielles Portal abdeckt (kein tdmrep, geprüft 2026-10-29).
 - Alpha Vantage: interne kommerzielle Nutzung als Baseline.
 - Business Wire / PR Newswire: Nutzungsbedingungen für die Anzeige auf einem kommerziellen Portal.

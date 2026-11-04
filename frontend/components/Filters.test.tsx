@@ -51,4 +51,21 @@ describe("Filters", () => {
     render(<Filters path="/" sources={sources} value={value} />);
     expect(screen.queryByRole("button", { name: /filtern/i })).toBeNull();
   });
+
+  it("offers 'Nur Ad-hoc' only where asked, applied at once", () => {
+    const value = { section: "", source: "", range: "all", cursor: "" };
+    const { unmount } = render(<Filters path="/" sources={sources} value={value} />);
+    expect(screen.queryByLabelText("Nur Ad-hoc")).toBeNull();
+    unmount();
+
+    const { container } = render(<Filters path="/aktie/VOE" sources={sources} value={{ ...value, adhoc: true }} showAdhoc />);
+    const box = screen.getByLabelText("Nur Ad-hoc");
+    expect(box).toBeChecked();
+    expect(box).toHaveAttribute("name", "adhoc");
+    expect(box).toHaveAttribute("value", "1");
+    const onSubmit = vi.fn((e: Event) => e.preventDefault());
+    container.querySelector("form")!.addEventListener("submit", onSubmit);
+    fireEvent.click(box);
+    expect(onSubmit).toHaveBeenCalledOnce();
+  });
 });

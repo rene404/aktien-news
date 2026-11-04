@@ -114,3 +114,17 @@ describe("sourcesFor", () => {
     expect(keys(sourcesFor(all, { section: "ATX", selected: "sec_8k" }))).toEqual(["fn_adhoc", "fn_atx", "sec_8k"]);
   });
 });
+
+describe("adhoc only (stock page)", () => {
+  it("is read from ?adhoc=1 and absent otherwise", () => {
+    expect(parseFilters({ adhoc: "1" }).adhoc).toBe(true);
+    expect(parseFilters({ adhoc: "yes" })).not.toHaveProperty("adhoc");
+    expect(parseFilters({})).not.toHaveProperty("adhoc");
+  });
+
+  it("is in the URL only when on", () => {
+    const f = { section: "", source: "", range: "all", cursor: "" };
+    expect(filterHref("/aktie/VOE", { ...f, adhoc: true }, { defaultRange: "all" })).toBe("/aktie/VOE?adhoc=1");
+    expect(filterHref("/aktie/VOE", { ...f, adhoc: false }, { defaultRange: "all" })).toBe("/aktie/VOE");
+  });
+});

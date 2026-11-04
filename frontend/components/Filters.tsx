@@ -10,6 +10,8 @@ type Props = {
   path: string;
   sources: Source[];
   value: FilterValues;
+  /** Offer "Nur Ad-hoc" (stock page). */
+  showAdhoc?: boolean;
 };
 
 // A GET form: keeps filters in the URL and works without JavaScript. With
@@ -17,9 +19,9 @@ type Props = {
 // The section rides along hidden; the pagination cursor is deliberately not carried over.
 // The submit button is only for browsers without JavaScript: the server renders
 // it, the client hides it once hydrated.
-export default function Filters({ path, sources, value }: Props) {
+export default function Filters({ path, sources, value, showAdhoc }: Props) {
   const hydrated = useSyncExternalStore(noop, () => true, () => false);
-  const submit = (e: React.ChangeEvent<HTMLSelectElement>) => e.currentTarget.form?.requestSubmit();
+  const submit = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => e.currentTarget.form?.requestSubmit();
   return (
     <Form className="filters" action={path}>
       {value.section && <input type="hidden" name="section" value={value.section} />}
@@ -44,6 +46,12 @@ export default function Filters({ path, sources, value }: Props) {
           ))}
         </select>
       </label>
+      {showAdhoc && (
+        <label className="check">
+          <input type="checkbox" name="adhoc" value="1" defaultChecked={value.adhoc} onChange={submit} />
+          Nur Ad-hoc
+        </label>
+      )}
       <button type="submit" hidden={hydrated}>
         Filtern
       </button>

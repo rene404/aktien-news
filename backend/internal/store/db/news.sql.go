@@ -215,7 +215,14 @@ WHERE l.active
   AND (upper(l.ticker) LIKE upper($1::text) || '%'
        OR c.name ILIKE '%' || $1::text || '%'
        OR l.isin = upper($1::text))
-ORDER BY (upper(l.ticker) = upper($1::text)) DESC, c.name, l.mic
+ORDER BY (upper(l.ticker) = upper($1::text)) DESC,
+         (c.name ILIKE $1::text || '%') DESC,
+         EXISTS (SELECT 1 FROM index_memberships im
+                 WHERE im.listing_id = l.id
+                   AND im.valid_from <= current_date
+                   AND (im.valid_to IS NULL OR im.valid_to > current_date)) DESC,
+         (upper(l.ticker) LIKE upper($1::text) || '%') DESC,
+         c.name, l.mic
 LIMIT 10
 `
 
@@ -226,6 +233,9 @@ type SearchInstrumentsRow struct {
 	Isin   *string
 }
 
+// Best first: exact ticker, then name starts with q, then current index
+// members (the curated stocks) before the long tail of SEC issuers, then
+// ticker starts with q; then by name.
 func (q *Queries) SearchInstruments(ctx context.Context, q_ string) ([]SearchInstrumentsRow, error) {
 	rows, err := q.db.Query(ctx, searchInstruments, q_)
 	if err != nil {

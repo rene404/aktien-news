@@ -46,7 +46,17 @@ WHERE l.active
   AND (upper(l.ticker) LIKE upper(sqlc.arg('q')::text) || '%'
        OR c.name ILIKE '%' || sqlc.arg('q')::text || '%'
        OR l.isin = upper(sqlc.arg('q')::text))
-ORDER BY (upper(l.ticker) = upper(sqlc.arg('q')::text)) DESC, c.name, l.mic
+-- Best first: exact ticker, then name starts with q, then current index
+-- members (the curated stocks) before the long tail of SEC issuers, then
+-- ticker starts with q; then by name.
+ORDER BY (upper(l.ticker) = upper(sqlc.arg('q')::text)) DESC,
+         (c.name ILIKE sqlc.arg('q')::text || '%') DESC,
+         EXISTS (SELECT 1 FROM index_memberships im
+                 WHERE im.listing_id = l.id
+                   AND im.valid_from <= current_date
+                   AND (im.valid_to IS NULL OR im.valid_to > current_date)) DESC,
+         (upper(l.ticker) LIKE upper(sqlc.arg('q')::text) || '%') DESC,
+         c.name, l.mic
 LIMIT 10;
 
 -- name: InstrumentByTicker :one

@@ -338,6 +338,45 @@ func TestInstruments(t *testing.T) {
 	}
 }
 
+// Regression: with thousands of SEC issuers, a name substring matched
+// alphabetically pushed the index stocks out of the ten suggestions.
+func TestSearchInstrumentsRanking(t *testing.T) {
+	w := newWorld(t)
+	ctx := context.Background()
+	for i := range 12 {
+		if _, err := w.pool.Exec(ctx, `
+			WITH c AS (INSERT INTO companies (slug, name, country) VALUES ($2, $1, 'US') RETURNING id)
+			INSERT INTO listings (company_id, ticker, mic) SELECT id, $2, 'XNYS' FROM c`,
+			fmt.Sprintf("A Flowers %02d Inc", i), fmt.Sprintf("FL%02d", i)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := w.pool.Exec(ctx, `
+		WITH c AS (INSERT INTO companies (slug, name, country) VALUES ('ersatzteil', 'Ersatzteil Corp', 'US') RETURNING id)
+		INSERT INTO listings (company_id, ticker, mic) SELECT id, 'ERSZ', 'XNYS' FROM c`); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := w.svc.SearchInstruments(ctx, "ers")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var tickers []string
+	for _, g := range got {
+		tickers = append(tickers, g.Ticker)
+	}
+	// Name prefix first, index members before the rest; then the substring hits.
+	if len(tickers) != 10 || tickers[0] != "EBS" || tickers[1] != "ERSZ" {
+		t.Fatalf("search ers = %v, want EBS, ERSZ, then substring hits", tickers)
+	}
+
+	// An exact ticker still wins over everything.
+	got, _ = w.svc.SearchInstruments(ctx, "fl03")
+	if len(got) == 0 || got[0].Ticker != "FL03" {
+		t.Fatalf("search fl03 = %+v", got)
+	}
+}
+
 func TestSources(t *testing.T) {
 	w := newWorld(t)
 	if _, err := w.pool.Exec(context.Background(), `UPDATE sources SET enabled = false WHERE key = 'fn_usa'`); err != nil {

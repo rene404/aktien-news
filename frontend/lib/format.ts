@@ -31,7 +31,10 @@ export function dayKey(d: Date | string): string {
 /** "Heute", "Gestern" or "Montag, 26.10.2026" for a dayKey. */
 export function dayLabel(key: string, now: Date): string {
   if (key === dayKey(now)) return "Heute";
-  if (key === dayKey(new Date(now.getTime() - 24 * 3600_000))) return "Gestern";
-  // Noon UTC lies on the same calendar day in Vienna.
+  // Calendar arithmetic on noon UTC, which lies on the same day in Vienna;
+  // now − 24 h would miss on the days the clocks change.
+  const yesterday = new Date(`${dayKey(now)}T12:00:00Z`);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  if (key === dayKey(yesterday)) return "Gestern";
   return longDay.format(new Date(`${key}T12:00:00Z`));
 }

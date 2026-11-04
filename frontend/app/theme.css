@@ -6,11 +6,13 @@
  * app/layout.tsx (e.g. `variable: "--font-brand"`, class on <html>) and set
  * --font-sans: var(--font-brand), system-ui, sans-serif;
  *
- * Dark mode: the second block overrides the colours (and the shadow) only.
+ * Colour scheme: always light, also when the system is set to dark mode
+ * (white content, dark blue header).
  */
 :root {
   /* Typography */
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Helvetica where installed (macOS/iOS), its look-alikes elsewhere */
+  --font-sans: "Helvetica Neue", Helvetica, Arial, "Nimbus Sans", "Liberation Sans", sans-serif;
   --font-size: 16px;
   --line-height: 1.5;
   --text-xs: 0.7rem;   /* badges */
@@ -18,6 +20,7 @@
   --text-md: 0.9rem;   /* filters, times, footer */
   --text-lg: 1.15rem;  /* brand */
   --text-xl: 1.4rem;   /* page title */
+  --weight-normal: 400;
   --weight-semibold: 600;
   --weight-bold: 700;
 
@@ -36,37 +39,33 @@
   --search-width: 360px;
   --search-width-focus: 600px;
 
+  /* Brand: the dark blue of the header, links, chips and buttons.
+     To change the blue, change --brand (and --brand-hover, --link*). */
+  --brand: #0b2a55;
+  --brand-hover: #14407d;
+  --on-brand: #ffffff;
+  /* Buttons: a shade darker than the brand blue, also on the header */
+  --button-bg: #051733;
+  --button-hover: var(--brand-hover);
+
   /* Colours */
   --bg: #ffffff;
-  --surface: #f6f7f9;
   --text: #16181d;
-  --muted: #5d6573;
+  --muted: #4a505a;
   --border: #e3e6eb;
-  --accent: #0b5cad;
-  --on-accent: #ffffff;
-  --chip-bg: #e8f0fa;
-  --chip-text: #0b4a8c;
+  --link: var(--brand);
+  --link-hover: var(--brand-hover);
+  --chip-bg: var(--brand);
+  --chip-bg-hover: var(--brand-hover);
+  --chip-text: var(--on-brand);
   --adhoc: #b42318;
   --adhoc-bg: #fdecea;
   --skeleton: #e9ecf0;
+
+  /* Header: white on the brand blue */
+  --header-bg: var(--brand);
+  --header-text: #ffffff;
+  --header-muted: #b6bfcc;
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f1115;
-    --surface: #171a21;
-    --text: #e7e9ee;
-    --muted: #9aa3b2;
-    --border: #2a2f3a;
-    --accent: #6aa8ff;
-    --on-accent: #0f1115;
-    --chip-bg: #1d2a3d;
-    --chip-text: #a9c9ff;
-    --adhoc: #ff8a80;
-    --adhoc-bg: #3a1d1d;
-    --skeleton: #222733;
-    --header-shadow: 0 2px 8px rgb(0 0 0 / 0.5);
-    color-scheme: dark;
-  }
-}

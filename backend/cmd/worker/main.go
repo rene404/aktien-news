@@ -16,9 +16,7 @@ import (
 	"github.com/rene404/aktien-news/backend/internal/config"
 	"github.com/rene404/aktien-news/backend/internal/ingest"
 	"github.com/rene404/aktien-news/backend/internal/ingest/fetch"
-	"github.com/rene404/aktien-news/backend/internal/ingest/finanznachrichten"
-	"github.com/rene404/aktien-news/backend/internal/ingest/pressrss"
-	"github.com/rene404/aktien-news/backend/internal/ingest/sec"
+	"github.com/rene404/aktien-news/backend/internal/ingest/parsers"
 	"github.com/rene404/aktien-news/backend/internal/store"
 )
 
@@ -51,13 +49,9 @@ func run(ctx context.Context) error {
 	runner := &ingest.Runner{
 		Pool:    pool,
 		Fetcher: fetcher,
-		Parsers: map[string]ingest.Parser{
-			"finanznachrichten": finanznachrichten.Parse,
-			"pressrss":          pressrss.Parse,
-			"sec":               sec.Parse,
-		},
-		TDM: fetcher,
-		Now: time.Now,
+		Parsers: parsers.All(),
+		TDM:     fetcher,
+		Now:     time.Now,
 	}
 	if cfg.SECUserAgent == "" {
 		runner.Skip = map[string]string{"sec": "SEC_USER_AGENT not set"}

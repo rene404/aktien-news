@@ -36,6 +36,7 @@
   --radius: 8px;
   --radius-sm: 4px;
   --time-column: 3.25rem;
+  --icon-size: 14px;    /* source icons in the meta line */
 
   /* Rows that swipe sideways (tabs, chips): width of the faded edge.
      --mask-solid is the opaque part of that mask, not a visible colour. */

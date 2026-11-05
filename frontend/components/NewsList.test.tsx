@@ -63,6 +63,13 @@ describe("NewsList", () => {
     expect(time).toHaveAttribute("dateTime", "2026-10-28T09:30:00Z");
   });
 
+  it("shows the source's icon before its name", () => {
+    render(<NewsList items={items} now={now} />);
+    const [adhoc, , filing] = screen.getAllByRole("listitem");
+    expect(adhoc.querySelector(".meta img")).toHaveAttribute("src", "/sources/fn.png");
+    expect(filing.querySelector(".meta img")).toHaveAttribute("src", "/sources/sec.png");
+  });
+
   it("badges ad-hoc releases and filings, not plain news", () => {
     render(<NewsList items={items} now={now} />);
     const [adhoc, news, filing] = screen.getAllByRole("listitem");

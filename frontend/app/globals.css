@@ -179,6 +179,15 @@ ol.news li.adhoc .title { font-weight: var(--weight-semibold); }
 ol.news .ext { font-size: 0.75em; color: var(--muted); }
 .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 2px; font-size: var(--text-sm); color: var(--muted); }
 
+/* Source: the publisher's icon, or its first letter when we have none (SourceIcon). */
+.src { display: inline-flex; align-items: center; gap: 5px; }
+.src-icon { flex: none; width: var(--icon-size); height: var(--icon-size); border-radius: var(--radius-sm); }
+span.src-icon {
+  display: inline-grid; place-items: center; background: var(--count-zero-bg); color: var(--muted);
+  font-family: var(--font-mono); font-size: var(--micro-size); font-weight: var(--weight-bold);
+}
+span.src-icon::before { content: attr(data-letter); }
+
 .badge {
   display: inline-block; padding: 0 6px; border-radius: var(--radius-sm); border: 1px solid var(--border);
   font-family: var(--font-mono); font-size: var(--micro-size); font-weight: var(--weight-bold);

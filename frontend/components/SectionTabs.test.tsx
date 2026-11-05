@@ -11,4 +11,9 @@ describe("SectionTabs", () => {
     expect(screen.getByRole("link", { name: "Alle" })).not.toHaveAttribute("aria-current");
     expect(screen.getByRole("link", { name: "SEC-Filings" })).toHaveAttribute("href", "/?section=filings&range=24h");
   });
+
+  it("can link the sections of another page", () => {
+    render(<SectionTabs path="/quellen" value={{ section: "", source: "", range: "7d", cursor: "" }} />);
+    expect(screen.getByRole("link", { name: "DAX" })).toHaveAttribute("href", "/quellen?section=DAX");
+  });
 });

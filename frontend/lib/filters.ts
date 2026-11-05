@@ -99,6 +99,15 @@ export function toNewsParams(f: Filters, now: Date): NewsParams {
   return params;
 }
 
+/** News per tile in the view by source (/quellen). */
+export const TILE_SIZE = 5;
+
+/** The newest few news of one source, within the section's index and the range. */
+export function tileParams(f: Filters, sourceKey: string, now: Date): NewsParams {
+  const { index, from } = toNewsParams({ ...f, source: sourceKey, cursor: "" }, now);
+  return { ...(index ? { index } : {}), source: sourceKey, ...(from ? { from } : {}), limit: TILE_SIZE };
+}
+
 /** A link to `path` with these filters; defaults are left out of the URL. */
 export function filterHref(path: string, f: Filters, opts: { cursor?: boolean; defaultRange?: string } = {}): string {
   const qs = new URLSearchParams();

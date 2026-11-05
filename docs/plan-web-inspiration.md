@@ -101,13 +101,18 @@ Nachrichtenquellen (EU-Plan, weitere Newsfeeds) spürbar etwas.
 
 ## B. Ansichten und Bedienung
 
-- [ ] **6. Ansicht „Nach Quelle“** — `feature/web-by-source`
+- [x] **6. Ansicht „Nach Quelle“** — `feature/web-by-source`
   Files: `frontend/app/quellen/page.tsx`, `frontend/components/SourceGrid.tsx` (+ Test), `frontend/components/SiteHeader.tsx`
   What: Wie das Raster von Upstract: eine Kachel je Quelle des gewählten Bereichs mit den 5 neuesten Titeln,
   „Mehr“ führt auf den Feed mit `?source=<key>`. Bereichs-Tabs wie auf der Startseite. Der bestehende Feed
   bleibt die Standardansicht (bei Upstract „Wire“). Erst mit der vorhandenen API (eine Anfrage je Quelle,
   serverseitig parallel); ein gebündelter Endpunkt nur, wenn das messbar zu langsam ist.
   Done: Test: je Quelle eine Kachel, leere Quellen ausgeblendet; Umschalter Feed/Quellen im Kopf.
+  Umsetzungsnotiz: `/quellen` mit Bereichs-Tabs, Umschalter „Feed | Nach Quelle“ (`ViewSwitch`, unter den Tabs,
+  Bereich und Zeitraum bleiben), Aktualitätszeile und Kacheln (`SourceGrid`, `tileParams`: 5 Meldungen je Quelle,
+  Index und Zeitraum des Bereichs). Eine fehlerhafte Quelle zeigt nur keine Kachel. Weil Tagesköpfe fehlen,
+  zeigen Kacheln für ältere Tage das Datum („04.11.“) statt der Uhrzeit. `j`/`k` laufen auch durch die Kacheln.
+  Live: 100–560 ms je Seite (eine API-Anfrage je Quelle, parallel), daher vorerst kein gebündelter Endpunkt.
 
 - [x] **7. Tastenkürzel** — `feature/web-shortcuts`
   Files: `frontend/components/Shortcuts.tsx` (+ Test), `frontend/app/layout.tsx`

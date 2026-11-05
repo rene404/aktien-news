@@ -11,7 +11,7 @@ const KEYS: [string, string][] = [
 ];
 
 const noop = () => () => {};
-const titles = () => [...document.querySelectorAll<HTMLAnchorElement>("ol.news a.title")];
+const titles = () => [...document.querySelectorAll<HTMLAnchorElement>("ol.news a.title, .tile a.title")];
 
 function typing(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;

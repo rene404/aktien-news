@@ -5,6 +5,7 @@ import NewsFeed from "@/components/NewsFeed";
 import NewsSkeleton from "@/components/NewsSkeleton";
 import SectionTabs from "@/components/SectionTabs";
 import Trending from "@/components/Trending";
+import ViewSwitch from "@/components/ViewSwitch";
 import { getSources } from "@/lib/api";
 import { feedQuery } from "@/lib/feed";
 import { parseFilters, shownSources, sourcesFor, type SearchParams } from "@/lib/filters";
@@ -18,6 +19,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       <h1>Aktuelle Meldungen</h1>
       <p className="sub">Ad-hoc-Mitteilungen und Nachrichten zu ATX-, DAX- und US-Aktien.</p>
       <SectionTabs value={filters} />
+      <ViewSwitch current="feed" value={filters} />
       <Filters path="/" sources={sources} value={filters} />
       <FreshnessLine sources={shownSources(sources, filters.source)} />
       {/* Own boundary: the feed never waits for the chips. */}

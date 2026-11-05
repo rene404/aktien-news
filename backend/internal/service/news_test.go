@@ -175,6 +175,66 @@ func TestListNewsOneItemPerCluster(t *testing.T) {
 	}
 }
 
+// "Auch bei": the other sources of a cluster, one member each (the earliest),
+// never the representative's own source, oldest first.
+func TestListNewsAlsoAt(t *testing.T) {
+	w := newWorld(t)
+	ctx := context.Background()
+	third, err := w.q.UpsertSource(ctx, db.UpsertSourceParams{Key: "ots_finanzen", Name: "APA-OTS Finanzen", Kind: db.SourceKindPressRelease, Market: "AT", Url: "https://example.com/ots", Parser: "ots"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rep := w.article(t, w.adhoc, 10, "Erste: Dividende", link{w.erste, "linked"})
+	sameSource := w.article(t, w.adhoc, 11, "Erste: Dividende (again)")
+	usaLate := w.article(t, w.other, 9, "Erste dividend, later copy")
+	usaEarly := w.article(t, w.other, 5, "Erste dividend")
+	ots := w.article(t, third.ID, 7, "Erste Group: Dividende beschlossen")
+	w.cluster(t, rep, sameSource, usaLate, usaEarly, ots)
+	w.article(t, w.adhoc, 20, "alone", link{w.apple, "linked"})
+
+	page, err := w.svc.ListNews(ctx, service.NewsQuery{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := len(page.Items[0].Also); n != 0 {
+		t.Errorf("alone: also = %+v, want none", page.Items[0].Also)
+	}
+	also := page.Items[1].Also
+	var got []string
+	for _, a := range also {
+		got = append(got, a.SourceKey+": "+a.Title)
+	}
+	want := []string{"fn_usa: Erste dividend", "ots_finanzen: Erste Group: Dividende beschlossen"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("also = %v, want %v", got, want)
+	}
+	if a := also[1]; a.ID != ots || a.SourceName != "APA-OTS Finanzen" || a.URL == "" || a.PublishedAt.IsZero() {
+		t.Errorf("also[1] = %+v", a)
+	}
+}
+
+func TestListNewsAlsoAtAtMostFive(t *testing.T) {
+	w := newWorld(t)
+	ctx := context.Background()
+	rep := w.article(t, w.adhoc, 30, "rep", link{w.erste, "linked"})
+	var members []int64
+	for i := range 7 {
+		src, err := w.q.UpsertSource(ctx, db.UpsertSourceParams{Key: fmt.Sprintf("src_%d", i), Name: fmt.Sprintf("Source %d", i), Kind: db.SourceKindNewsApi, Market: "AT", Url: fmt.Sprintf("https://example.com/s%d", i), Parser: "x"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		members = append(members, w.article(t, src.ID, i, fmt.Sprintf("copy %d", i)))
+	}
+	w.cluster(t, rep, members...)
+	page, err := w.svc.ListNews(ctx, service.NewsQuery{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := len(page.Items[0].Also); n != service.MaxAlso {
+		t.Errorf("also has %d entries, want %d", n, service.MaxAlso)
+	}
+}
+
 func TestListNewsClusterFilters(t *testing.T) {
 	w := newWorld(t)
 	// Only the non-representative member is linked, and to Post.

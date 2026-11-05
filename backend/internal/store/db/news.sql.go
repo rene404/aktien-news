@@ -41,6 +41,60 @@ func (q *Queries) InstrumentByTicker(ctx context.Context, ticker string) (Instru
 	return i, err
 }
 
+const listAlsoAt = `-- name: ListAlsoAt :many
+SELECT DISTINCT ON (r.id, m.source_id)
+       r.id AS representative_id, m.id, m.title, m.url, m.published_at,
+       s.key AS source_key, s.name AS source_name, s.kind AS source_kind
+FROM articles r
+JOIN articles m ON m.cluster_id = r.cluster_id AND m.source_id <> r.source_id
+JOIN sources s  ON s.id = m.source_id
+WHERE r.id = ANY($1::bigint[])
+ORDER BY r.id, m.source_id, m.published_at, m.id
+`
+
+type ListAlsoAtRow struct {
+	RepresentativeID int64
+	ID               int64
+	Title            string
+	Url              string
+	PublishedAt      time.Time
+	SourceKey        string
+	SourceName       string
+	SourceKind       SourceKind
+}
+
+// "Auch bei": for each given representative, the earliest member of every
+// OTHER source in its cluster (title, link, source, time — public fields only).
+// The service sorts them by time and caps the list.
+func (q *Queries) ListAlsoAt(ctx context.Context, representativeIds []int64) ([]ListAlsoAtRow, error) {
+	rows, err := q.db.Query(ctx, listAlsoAt, representativeIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAlsoAtRow
+	for rows.Next() {
+		var i ListAlsoAtRow
+		if err := rows.Scan(
+			&i.RepresentativeID,
+			&i.ID,
+			&i.Title,
+			&i.Url,
+			&i.PublishedAt,
+			&i.SourceKey,
+			&i.SourceName,
+			&i.SourceKind,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listEnabledSources = `-- name: ListEnabledSources :many
 SELECT s.key, s.name, s.market, s.kind, r.finished_at AS last_ok_at
 FROM sources s

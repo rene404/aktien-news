@@ -135,7 +135,7 @@ Nachrichtenquellen (EU-Plan, weitere Newsfeeds) spürbar etwas.
 
 ## C. Cluster sichtbar machen (später)
 
-- [ ] **9. „Auch bei …“** — `feature/news-cluster-sources`
+- [x] **9. „Auch bei …“** — `feature/news-cluster-sources`
   Files: `backend/internal/store/queries/news.sql`, sqlc, `backend/internal/service/news.go`,
   `backend/internal/httpapi/dto.go`, `frontend/components/NewsList.tsx`
   What: `ListNews` liefert je Cluster zusätzlich die anderen Mitglieder (Quelle, Titel, Link), höchstens 5.
@@ -144,6 +144,11 @@ Nachrichtenquellen (EU-Plan, weitere Newsfeeds) spürbar etwas.
   Zahl der Quellen, ohne Wertung.
   Wann: sobald mehr Cluster mehrere Quellen haben (nach dem EU-Plan oder weiteren Newsfeeds).
   Done: DTO-Test grün; Store-Test mit einem Cluster aus 3 Quellen.
+  Umsetzungsnotiz: vorgezogen (Freigabe 2026-11-05). Eine zweite Query `ListAlsoAt` für alle Einträge einer Seite
+  (je andere Quelle das früheste Mitglied, nie die Quelle des Repräsentanten), der Service sortiert nach Zeit und
+  kappt bei 5. Die Website zeigt nur „Auch bei: Quelle · Quelle“, verlinkt auf die Kopien (neues Fenster, Titel als
+  Tooltip); auf „· N Quellen“ und „Meistberichtet heute“ verzichtet, solange Überschneidungen selten sind.
+  Live: `/aktie/LNZ` zeigt bei 4 Meldungen „Auch bei: OeKB OAM Pflichtmeldungen“ (APA-OTS + OeKB + FN ATX).
 
 ## Bewusst nicht übernommen
 

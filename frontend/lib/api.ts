@@ -10,7 +10,11 @@ export type NewsItem = {
   source: { key: string; name: string; kind: SourceKind };
   published_at: string;
   tickers: string[];
+  /** The same news at other sources, oldest first (API: at most 5). */
+  also?: AlsoAt[];
 };
+
+export type AlsoAt = { title: string; url: string; source: { key: string; name: string; kind: SourceKind }; published_at: string };
 
 export type NewsPage = { items: NewsItem[]; next_cursor: string | null };
 

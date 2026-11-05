@@ -77,6 +77,25 @@ describe("NewsList", () => {
     expect(first.querySelector("button.share")).toHaveAttribute("aria-label", `Teilen: ${items[0].title}`);
   });
 
+  it("names the other sources of the same news, linked to their copies in a new window", () => {
+    const withAlso: NewsItem = {
+      ...items[0],
+      also: [
+        { title: "Lenzing hebt Prognose an", url: "https://www.ots.at/1", source: { key: "ots_finanzen", name: "APA-OTS Finanzen", kind: "press_release" }, published_at: "2026-10-28T09:35:00Z" },
+        { title: "Lenzing raises guidance", url: "https://example.com/usa", source: { key: "fn_usa", name: "FinanzNachrichten USA", kind: "news_api" }, published_at: "2026-10-28T09:40:00Z" },
+      ],
+    };
+    render(<NewsList items={[withAlso, items[1]]} now={now} />);
+    const [first, second] = screen.getAllByRole("listitem");
+    const also = within(first).getByText(/auch bei/i).closest(".also")!;
+    const links = within(also as HTMLElement).getAllByRole("link");
+    expect(links.map((l) => l.textContent)).toEqual(["APA-OTS Finanzen (öffnet in neuem Fenster)", "FinanzNachrichten USA (öffnet in neuem Fenster)"]);
+    expect(links[0]).toHaveAttribute("href", "https://www.ots.at/1");
+    expect(links[0]).toHaveAttribute("target", "_blank");
+    expect(links[0]).toHaveAttribute("title", "Lenzing hebt Prognose an");
+    expect(second.querySelector(".also")).toBeNull();
+  });
+
   it("badges ad-hoc releases and filings, not plain news", () => {
     render(<NewsList items={items} now={now} />);
     const [adhoc, news, filing] = screen.getAllByRole("listitem");

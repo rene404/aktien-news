@@ -23,6 +23,15 @@ type newsItemDTO struct {
 	Source      sourceRef `json:"source"`
 	PublishedAt time.Time `json:"published_at"`
 	Tickers     []string  `json:"tickers"`
+	// The same news at other sources: title, link, source and time only.
+	Also []alsoDTO `json:"also"`
+}
+
+type alsoDTO struct {
+	Title       string    `json:"title"`
+	URL         string    `json:"url"`
+	Source      sourceRef `json:"source"`
+	PublishedAt time.Time `json:"published_at"`
 }
 
 type sourceRef struct {
@@ -86,7 +95,14 @@ func toNewsPage(p service.NewsPage) newsPageDTO {
 		out.Items[i] = newsItemDTO{
 			ID: it.ID, Title: it.Title, URL: it.URL,
 			Source:      sourceRef{Key: it.SourceKey, Name: it.SourceName, Kind: it.SourceKind},
-			PublishedAt: it.PublishedAt, Tickers: tickers,
+			PublishedAt: it.PublishedAt, Tickers: tickers, Also: make([]alsoDTO, len(it.Also)),
+		}
+		for j, a := range it.Also {
+			out.Items[i].Also[j] = alsoDTO{
+				Title: a.Title, URL: a.URL,
+				Source:      sourceRef{Key: a.SourceKey, Name: a.SourceName, Kind: a.SourceKind},
+				PublishedAt: a.PublishedAt,
+			}
 		}
 	}
 	if p.NextCursor != "" {

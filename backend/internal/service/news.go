@@ -22,6 +22,8 @@ import (
 const (
 	DefaultLimit = 25
 	MaxLimit     = 100
+	// MaxAlso caps "Auch bei": the other sources listed per news item.
+	MaxAlso = 5
 )
 
 var ErrNotFound = errors.New("not found")
@@ -65,6 +67,19 @@ type NewsItem struct {
 	SourceKind  string
 	PublishedAt time.Time
 	Tickers     []string
+	// The same news at other sources (same cluster), oldest first; at most MaxAlso.
+	Also []AlsoAt
+}
+
+// AlsoAt is one other source's copy of a news item.
+type AlsoAt struct {
+	ID          int64
+	Title       string
+	URL         string
+	SourceKey   string
+	SourceName  string
+	SourceKind  string
+	PublishedAt time.Time
 }
 
 type NewsPage struct {
@@ -133,7 +148,46 @@ func (s *Service) ListNews(ctx context.Context, nq NewsQuery) (NewsPage, error) 
 			PublishedAt: r.PublishedAt.UTC(), Tickers: r.Tickers,
 		})
 	}
+	if err := s.attachAlso(ctx, page.Items); err != nil {
+		return NewsPage{}, err
+	}
 	return page, nil
+}
+
+// attachAlso fills Also for the items of one page with a single query.
+func (s *Service) attachAlso(ctx context.Context, items []NewsItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+	ids := make([]int64, len(items))
+	for i, it := range items {
+		ids[i] = it.ID
+	}
+	rows, err := s.q.ListAlsoAt(ctx, ids)
+	if err != nil {
+		return err
+	}
+	byRep := map[int64][]AlsoAt{}
+	for _, r := range rows {
+		byRep[r.RepresentativeID] = append(byRep[r.RepresentativeID], AlsoAt{
+			ID: r.ID, Title: r.Title, URL: r.Url, SourceKey: r.SourceKey, SourceName: r.SourceName,
+			SourceKind: string(r.SourceKind), PublishedAt: r.PublishedAt.UTC(),
+		})
+	}
+	for i := range items {
+		also := byRep[items[i].ID]
+		slices.SortFunc(also, func(a, b AlsoAt) int {
+			if c := a.PublishedAt.Compare(b.PublishedAt); c != 0 {
+				return c
+			}
+			return int(a.ID - b.ID)
+		})
+		if len(also) > MaxAlso {
+			also = also[:MaxAlso]
+		}
+		items[i].Also = also
+	}
+	return nil
 }
 
 // The cursor is opaque to clients: base64("<unix nanos>:<id>").

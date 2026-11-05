@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"strings"
+	"time"
 )
 
 type Instrument struct {
@@ -22,6 +23,9 @@ type Source struct {
 	Key    string
 	Name   string
 	Market string
+	Kind   string
+	// End of the newest run that brought data; nil before the first.
+	LastOKAt *time.Time
 }
 
 // SearchInstruments matches ticker prefix, name substring or exact ISIN.
@@ -71,14 +75,7 @@ func (s *Service) Sources(ctx context.Context) ([]Source, error) {
 	}
 	out := make([]Source, len(rows))
 	for i, r := range rows {
-		out[i] = Source{Key: r.Key, Name: r.Name, Market: r.Market}
+		out[i] = Source{Key: r.Key, Name: r.Name, Market: r.Market, Kind: string(r.Kind), LastOKAt: r.LastOkAt}
 	}
 	return out, nil
-}
-
-func deref(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }

@@ -5,7 +5,12 @@ import (
 	"time"
 )
 
-var feedDateLayouts = []string{time.RFC3339, time.RFC1123Z, time.RFC1123}
+// RFC 1123 layouts with a one- or two-digit day: RFC 822 allows "5 Oct".
+var feedDateLayouts = []string{
+	time.RFC3339,
+	"Mon, 2 Jan 2006 15:04:05 -0700",
+	"Mon, 2 Jan 2006 15:04:05 MST",
+}
 
 // ParseFeedDate parses an RSS pubDate or Atom timestamp into UTC.
 func ParseFeedDate(s string) (time.Time, bool) {

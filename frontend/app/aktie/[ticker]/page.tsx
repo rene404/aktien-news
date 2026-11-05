@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import Filters from "@/components/Filters";
-import MoreLink from "@/components/MoreLink";
-import NewsList from "@/components/NewsList";
-import { getInstrument, getNews, getSources } from "@/lib/api";
-import { parseFilters, toNewsParams, type SearchParams } from "@/lib/filters";
+import FreshnessLine from "@/components/FreshnessLine";
+import NewsFeed from "@/components/NewsFeed";
+import NewsSkeleton from "@/components/NewsSkeleton";
+import { getInstrument, getSources } from "@/lib/api";
+import { feedQuery, STOCK_DEFAULT_RANGE } from "@/lib/feed";
+import { EXCHANGES, parseFilters, shownSources, sourcesFor, type SearchParams } from "@/lib/filters";
 
 type Props = { params: Promise<{ ticker: string }>; searchParams: Promise<SearchParams> };
 
@@ -23,11 +26,9 @@ export default async function StockPage({ params, searchParams }: Props) {
   const inst = await getInstrument(decodeURIComponent(ticker));
   if (!inst) notFound();
 
-  const filters = { ...parseFilters(await searchParams), index: "" };
-  const [page, sources] = await Promise.all([
-    getNews({ ...toNewsParams(filters, new Date()), ticker: inst.ticker }),
-    getSources(),
-  ]);
+  const filters = { ...parseFilters(await searchParams, STOCK_DEFAULT_RANGE), section: "" };
+  const sources = sourcesFor(await getSources(), { mic: inst.mic, selected: filters.source });
+  const path = `/aktie/${encodeURIComponent(inst.ticker)}`;
 
   return (
     <>
@@ -35,11 +36,13 @@ export default async function StockPage({ params, searchParams }: Props) {
         {inst.name} <span className="chip">{inst.ticker}</span>
       </h1>
       <p className="sub">
-        {[inst.isin, inst.mic, ...inst.indices].filter(Boolean).join(" · ")}
+        {[inst.isin, EXCHANGES[inst.mic]?.name ?? inst.mic, ...inst.indices].filter(Boolean).join(" · ")}
       </p>
-      <Filters sources={sources} value={filters} showIndex={false} />
-      <NewsList items={page.items} hideTicker={inst.ticker} />
-      <MoreLink path={`/aktie/${encodeURIComponent(inst.ticker)}`} filters={filters} cursor={page.next_cursor} />
+      <Filters path={path} sources={sources} value={filters} showAdhoc />
+      <FreshnessLine sources={shownSources(sources, filters.source)} />
+      <Suspense key={feedQuery(filters, inst.ticker)} fallback={<NewsSkeleton />}>
+        <NewsFeed filters={filters} path={path} ticker={inst.ticker} />
+      </Suspense>
     </>
   );
 }

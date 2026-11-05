@@ -232,13 +232,18 @@ Migrationen: goose, jede mit `up` und `down`. Die CI testet up → down → up g
 `GET /api/v1/news`
 - Query: `ticker?` (string), `index?` (ATX|DAX|…), `source?` (key), `from?`/`to?` (RFC 3339),
   `cursor?` (opak), `limit?` (1–100, Default 25)
-- 200: `{ items: [{ id, title, url, source: {key, name}, published_at, tickers: [string] }], next_cursor }`
+- 200: `{ items: [{ id, title, url, source: {key, name, kind}, published_at, tickers: [string], also: [{ title, url, source, published_at }] }], next_cursor }`
+  (`also`: je andere Quelle im Cluster das früheste Mitglied, älteste zuerst, höchstens 5; nie die Quelle des Repräsentanten)
 - 400: ungültiger Parameter. Ein unbekannter Ticker ist kein Fehler und liefert eine leere Liste.
 - Der Response-Typ enthält **keine** Felder für Text, Snippet, Sentiment oder Event-Typ (Rechts-Invariante).
 
 `GET /api/v1/instruments?q=` → 200 `{ items: [{ ticker, mic, name, isin }] }` (Autocomplete, max. 10)
 
-`GET /api/v1/sources` → 200 `{ items: [{ key, name, market }] }`
+`GET /api/v1/sources` → 200 `{ items: [{ key, name, market, kind, last_ok_at }] }` (`last_ok_at`: Ende des letzten Laufs mit Status `ok`/`partial`, sonst `null`)
+
+`GET /api/v1/tickers/top?from=&index?=&kind?=&limit?=` → 200 `{ items: [{ ticker, name, count }] }`
+(meistgenannt seit `from`, `limit` 1–20). `GET /api/v1/indices/{index}/instruments?from?=&kind?=` → 200 dasselbe
+für alle aktuellen Index-Werte, auch mit `count` 0; 404 für einen unbekannten Index. Gezählt werden Cluster wie im Feed.
 
 `GET /healthz` → 200 `{ status: "ok" }`
 

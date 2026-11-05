@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rene404/aktien-news/backend/internal/service"
@@ -22,6 +23,9 @@ func (h handlers) news(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	nq := service.NewsQuery{
 		Ticker: q.Get("ticker"), Index: q.Get("index"), Source: q.Get("source"), Cursor: q.Get("cursor"),
+	}
+	if k := q.Get("kind"); k != "" {
+		nq.Kinds = strings.Split(k, ",")
 	}
 	var err error
 	if nq.From, err = optTime(q.Get("from")); err != nil {
@@ -80,7 +84,7 @@ func (h handlers) sources(w http.ResponseWriter, r *http.Request) {
 	}
 	out := sourceListDTO{Items: make([]sourceDTO, len(items))}
 	for i, s := range items {
-		out.Items[i] = sourceDTO{Key: s.Key, Name: s.Name, Market: s.Market}
+		out.Items[i] = sourceDTO{Key: s.Key, Name: s.Name, Market: s.Market, Kind: s.Kind, LastOKAt: utc(s.LastOKAt)}
 	}
 	w.Header().Set("Cache-Control", publicCache)
 	writeJSON(w, http.StatusOK, out)
@@ -112,4 +116,12 @@ func writeServiceError(w http.ResponseWriter, err error) {
 
 func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, errorDTO{Error: msg})
+}
+
+func utc(t *time.Time) *time.Time {
+	if t == nil {
+		return nil
+	}
+	u := t.UTC()
+	return &u
 }

@@ -15,9 +15,7 @@ import (
 
 	"github.com/rene404/aktien-news/backend/internal/catalog"
 	"github.com/rene404/aktien-news/backend/internal/ingest"
-	"github.com/rene404/aktien-news/backend/internal/ingest/finanznachrichten"
-	"github.com/rene404/aktien-news/backend/internal/ingest/pressrss"
-	"github.com/rene404/aktien-news/backend/internal/ingest/sec"
+	"github.com/rene404/aktien-news/backend/internal/ingest/parsers"
 	"github.com/rene404/aktien-news/backend/internal/store/testdb"
 	"github.com/rene404/aktien-news/backend/seed"
 )
@@ -89,12 +87,8 @@ func newRunner(t *testing.T) (*ingest.Runner, *pgxpool.Pool, *fakeFetcher, *cloc
 	r := &ingest.Runner{
 		Pool:    pool,
 		Fetcher: f,
-		Parsers: map[string]ingest.Parser{
-			"finanznachrichten": finanznachrichten.Parse,
-			"pressrss":          pressrss.Parse,
-			"sec":               sec.Parse,
-		},
-		Now: c.Now,
+		Parsers: parsers.All(),
+		Now:     c.Now,
 	}
 	return r, pool, f, c
 }

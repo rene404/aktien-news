@@ -175,6 +175,66 @@ func TestListNewsOneItemPerCluster(t *testing.T) {
 	}
 }
 
+// "Auch bei": the other sources of a cluster, one member each (the earliest),
+// never the representative's own source, oldest first.
+func TestListNewsAlsoAt(t *testing.T) {
+	w := newWorld(t)
+	ctx := context.Background()
+	third, err := w.q.UpsertSource(ctx, db.UpsertSourceParams{Key: "ots_finanzen", Name: "APA-OTS Finanzen", Kind: db.SourceKindPressRelease, Market: "AT", Url: "https://example.com/ots", Parser: "ots"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rep := w.article(t, w.adhoc, 10, "Erste: Dividende", link{w.erste, "linked"})
+	sameSource := w.article(t, w.adhoc, 11, "Erste: Dividende (again)")
+	usaLate := w.article(t, w.other, 9, "Erste dividend, later copy")
+	usaEarly := w.article(t, w.other, 5, "Erste dividend")
+	ots := w.article(t, third.ID, 7, "Erste Group: Dividende beschlossen")
+	w.cluster(t, rep, sameSource, usaLate, usaEarly, ots)
+	w.article(t, w.adhoc, 20, "alone", link{w.apple, "linked"})
+
+	page, err := w.svc.ListNews(ctx, service.NewsQuery{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := len(page.Items[0].Also); n != 0 {
+		t.Errorf("alone: also = %+v, want none", page.Items[0].Also)
+	}
+	also := page.Items[1].Also
+	var got []string
+	for _, a := range also {
+		got = append(got, a.SourceKey+": "+a.Title)
+	}
+	want := []string{"fn_usa: Erste dividend", "ots_finanzen: Erste Group: Dividende beschlossen"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("also = %v, want %v", got, want)
+	}
+	if a := also[1]; a.ID != ots || a.SourceName != "APA-OTS Finanzen" || a.URL == "" || a.PublishedAt.IsZero() {
+		t.Errorf("also[1] = %+v", a)
+	}
+}
+
+func TestListNewsAlsoAtAtMostFive(t *testing.T) {
+	w := newWorld(t)
+	ctx := context.Background()
+	rep := w.article(t, w.adhoc, 30, "rep", link{w.erste, "linked"})
+	var members []int64
+	for i := range 7 {
+		src, err := w.q.UpsertSource(ctx, db.UpsertSourceParams{Key: fmt.Sprintf("src_%d", i), Name: fmt.Sprintf("Source %d", i), Kind: db.SourceKindNewsApi, Market: "AT", Url: fmt.Sprintf("https://example.com/s%d", i), Parser: "x"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		members = append(members, w.article(t, src.ID, i, fmt.Sprintf("copy %d", i)))
+	}
+	w.cluster(t, rep, members...)
+	page, err := w.svc.ListNews(ctx, service.NewsQuery{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := len(page.Items[0].Also); n != service.MaxAlso {
+		t.Errorf("also has %d entries, want %d", n, service.MaxAlso)
+	}
+}
+
 func TestListNewsClusterFilters(t *testing.T) {
 	w := newWorld(t)
 	// Only the non-representative member is linked, and to Post.
@@ -228,6 +288,8 @@ func TestListNewsFilters(t *testing.T) {
 		{"index", service.NewsQuery{Index: "ATX"}, []string{"post", "erste"}},
 		{"index sp500", service.NewsQuery{Index: "SP500"}, []string{"apple"}},
 		{"source", service.NewsQuery{Source: "fn_usa"}, []string{"apple"}},
+		{"kind", service.NewsQuery{Kinds: []string{"news_api"}}, []string{"apple"}},
+		{"several kinds", service.NewsQuery{Kinds: []string{"adhoc", "filing"}}, []string{"post", "erste"}},
 		{"from/to inclusive from, exclusive to", service.NewsQuery{From: &from, To: &to}, []string{"post"}},
 	}
 	for _, tc := range cases {
@@ -291,6 +353,7 @@ func TestListNewsValidation(t *testing.T) {
 		"bad cursor":      {Cursor: "not-a-cursor"},
 		"bad ticker":      {Ticker: "DROP TABLE"},
 		"bad index":       {Index: "atx; --"},
+		"unknown kind":    {Kinds: []string{"gossip"}},
 	} {
 		_, err := w.svc.ListNews(context.Background(), q)
 		var verr *service.ValidationError
@@ -335,6 +398,45 @@ func TestInstruments(t *testing.T) {
 	}
 }
 
+// Regression: with thousands of SEC issuers, a name substring matched
+// alphabetically pushed the index stocks out of the ten suggestions.
+func TestSearchInstrumentsRanking(t *testing.T) {
+	w := newWorld(t)
+	ctx := context.Background()
+	for i := range 12 {
+		if _, err := w.pool.Exec(ctx, `
+			WITH c AS (INSERT INTO companies (slug, name, country) VALUES ($2, $1, 'US') RETURNING id)
+			INSERT INTO listings (company_id, ticker, mic) SELECT id, $2, 'XNYS' FROM c`,
+			fmt.Sprintf("A Flowers %02d Inc", i), fmt.Sprintf("FL%02d", i)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := w.pool.Exec(ctx, `
+		WITH c AS (INSERT INTO companies (slug, name, country) VALUES ('ersatzteil', 'Ersatzteil Corp', 'US') RETURNING id)
+		INSERT INTO listings (company_id, ticker, mic) SELECT id, 'ERSZ', 'XNYS' FROM c`); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := w.svc.SearchInstruments(ctx, "ers")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var tickers []string
+	for _, g := range got {
+		tickers = append(tickers, g.Ticker)
+	}
+	// Name prefix first, index members before the rest; then the substring hits.
+	if len(tickers) != 10 || tickers[0] != "EBS" || tickers[1] != "ERSZ" {
+		t.Fatalf("search ers = %v, want EBS, ERSZ, then substring hits", tickers)
+	}
+
+	// An exact ticker still wins over everything.
+	got, _ = w.svc.SearchInstruments(ctx, "fl03")
+	if len(got) == 0 || got[0].Ticker != "FL03" {
+		t.Fatalf("search fl03 = %+v", got)
+	}
+}
+
 func TestSources(t *testing.T) {
 	w := newWorld(t)
 	if _, err := w.pool.Exec(context.Background(), `UPDATE sources SET enabled = false WHERE key = 'fn_usa'`); err != nil {
@@ -346,5 +448,43 @@ func TestSources(t *testing.T) {
 	}
 	if len(got) != 1 || got[0].Key != "fn_adhoc" || got[0].Market != "MULTI" {
 		t.Errorf("sources = %+v", got)
+	}
+}
+
+// last_ok_at: the end of the newest run that brought data (ok or partial);
+// failed and skipped runs, and runs still going, do not count.
+func TestSourcesLastOK(t *testing.T) {
+	w := newWorld(t)
+	ctx := context.Background()
+	run := func(source int64, finished *time.Time, status string) {
+		t.Helper()
+		if _, err := w.pool.Exec(ctx, `INSERT INTO ingest_runs (source_id, started_at, finished_at, status)
+			VALUES ($1, $2, $3, $4::run_status)`, source, finished.Add(-30*time.Second), finished, status); err != nil {
+			t.Fatal(err)
+		}
+	}
+	at := func(min int) *time.Time { v := w.base.Add(time.Duration(min) * time.Minute); return &v }
+	run(w.adhoc, at(1), "ok")
+	run(w.adhoc, at(2), "partial")
+	run(w.adhoc, at(3), "failed")
+	run(w.adhoc, at(4), "skipped")
+	if _, err := w.pool.Exec(ctx, `INSERT INTO ingest_runs (source_id, started_at) VALUES ($1, $2)`, w.adhoc, *at(5)); err != nil {
+		t.Fatal(err) // still running: no finished_at, no status
+	}
+	run(w.other, at(1), "failed")
+
+	got, err := w.svc.Sources(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	last := map[string]*time.Time{}
+	for _, s := range got {
+		last[s.Key] = s.LastOKAt
+	}
+	if a := last["fn_adhoc"]; a == nil || !a.Equal(*at(2)) {
+		t.Errorf("fn_adhoc last ok = %v, want %v", a, *at(2))
+	}
+	if u, ok := last["fn_usa"]; !ok || u != nil {
+		t.Errorf("fn_usa last ok = %v (listed %v), want nil", u, ok)
 	}
 }

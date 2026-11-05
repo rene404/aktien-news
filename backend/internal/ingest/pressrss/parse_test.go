@@ -70,6 +70,27 @@ func TestParsePRNewswire(t *testing.T) {
 	}
 }
 
+// Deutsche Telekom's IR feed (real response of 2026-10-29). It names no
+// sender; the source's issuer_slug links every item to the company.
+func TestParseTelekomIR(t *testing.T) {
+	arts, err := parseFile(t, "telekom_ir.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(arts) != 10 {
+		t.Fatalf("got %d articles, want 10", len(arts))
+	}
+	link := "https://www.telekom.com/en/newsroom/latest-updates/media-information/2026/10/deutsche-telekom-boosts-growth-efficiency-and-quality-through-t"
+	want := ingest.RawArticle{
+		ExternalID: link, URL: link,
+		Title:       "Deutsche Telekom boosts growth, efficiency and quality through the use of AI",
+		PublishedAt: time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC),
+	}
+	if !reflect.DeepEqual(arts[0], want) {
+		t.Errorf("got\n%+v\nwant\n%+v", arts[0], want)
+	}
+}
+
 func TestParseWithoutIssuerAndIncompleteItems(t *testing.T) {
 	arts, err := parseFile(t, "no_issuer.xml")
 	if err != nil {

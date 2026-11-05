@@ -39,13 +39,33 @@ docker compose --profile test run --rm web-test       # Frontend: lint, test, bu
 
 | Endpoint | Beschreibung |
 |---|---|
-| `GET /api/v1/news?ticker=&index=&source=&from=&to=&cursor=&limit=` | Meldungen mit sicher verknüpfter Firma, neueste zuerst, ein Eintrag pro Cluster gleicher Meldungen (Titel/Link/Quelle der wichtigsten Quelle, Ticker aller Mitglieder). `source`/`from`/`to` beziehen sich auf diesen Eintrag. `from`/`to` RFC 3339, `limit` 1–100 (Default 25), `cursor` aus `next_cursor` |
-| `GET /api/v1/instruments?q=` | Suche nach Ticker, Name oder ISIN (max. 10) |
+| `GET /api/v1/news?ticker=&index=&source=&from=&to=&cursor=&limit=` | Meldungen mit sicher verknüpfter Firma, neueste zuerst, ein Eintrag pro Cluster gleicher Meldungen (Titel/Link/Quelle der wichtigsten Quelle, Ticker aller Mitglieder; `also`: dieselbe Meldung bei bis zu 5 anderen Quellen, je Titel/Link/Quelle/Zeit). `source`/`from`/`to` beziehen sich auf diesen Eintrag. `from`/`to` RFC 3339, `limit` 1–100 (Default 25), `cursor` aus `next_cursor` |
+| `GET /api/v1/instruments?q=` | Suche nach Ticker, Name oder ISIN (max. 10; exakter Ticker, dann Namensanfang, dann Index-Werte zuerst) |
 | `GET /api/v1/instruments/{ticker}` | Name, ISIN, Börse, Indizes einer Aktie (404 wenn unbekannt) |
-| `GET /api/v1/sources` | aktive Quellen |
+| `GET /api/v1/sources` | aktive Quellen mit letztem erfolgreichem Abruf (`last_ok_at`) |
+| `GET /api/v1/tickers/top?from=&index=&kind=&limit=` | meistgenannte Aktien seit `from` (Pflicht, RFC 3339): Ticker, Name, Anzahl Meldungen; `index` nur dessen Werte, `kind` Quellenarten, `limit` 1–20 (Default 10) |
+| `GET /api/v1/indices/{index}/instruments?from=&kind=` | alle aktuellen Werte eines Index mit Anzahl Meldungen (auch 0), nach Name (404 wenn unbekannt) |
 | `GET /healthz` | Health-Check |
 
-Antworten enthalten bewusst nur Titel, Quelle, Link, Zeit und Ticker – keine Textauszüge, kein Sentiment.
+Gezählt wird wie im Feed: ein Cluster pro Aktie, Zeit und Quellenart des wichtigsten Artikels.
+Antworten enthalten bewusst nur Titel, Quelle, Link, Zeit, Ticker und Zählungen – keine Textauszüge, kein Sentiment.
+
+## MCP (intern, für mcp-hub)
+
+Mit `MCP_AUTH_TOKEN` in `.env` startet die API zusätzlich einen MCP-Server (Streamable HTTP, JSON-Antworten,
+zustandslos) auf Port 8081. Er ist nicht auf den Host gemappt und verlangt `Authorization: Bearer <token>`.
+mcp-hub erreicht ihn als `http://aktien-news-api:8081/mcp` über das Netz `aktien-news-mcp`, dem nur der
+boerseonline-Client-Proxy beitritt. Dort heißen die Tools `news_search_news` und `news_ticker_sentiment`;
+der Proxy liest den Token aus `NEWS_MCP_TOKEN` (`mcp-hub/clients/boerseonline/.env`, gleicher Wert wie hier).
+aktien-news muss laufen, bevor der Client-Proxy startet, weil er das Netz als `external` erwartet.
+
+| Tool | Beschreibung |
+|---|---|
+| `search_news` | `since` (Pflicht), `until`, `ticker`, `query`, `event_type`, `min_confidence` (0.85), `as_of`, `limit` (1–50, 20). Ein Eintrag pro Artikel und verlinkter Firma |
+| `ticker_sentiment` | `ticker` (Pflicht), `window` (`1d`/`7d`/`30d`), `as_of`. Zählungen und gewichteter Score |
+
+`as_of` liefert den Wissensstand zu diesem Zeitpunkt (Links, Klassifikationen, Ingest). Solange nichts
+klassifiziert ist, sind Event-Typ, Sentiment und Scores `null`.
 
 ## Doku
 

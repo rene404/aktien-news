@@ -1,34 +1,33 @@
+"use client";
+
+import Form from "next/form";
+import { useSyncExternalStore } from "react";
 import type { Source } from "@/lib/api";
-import { INDICES, RANGES, type Filters as FilterValues } from "@/lib/filters";
+import { RANGES, type Filters as FilterValues } from "@/lib/filters";
 
 type Props = {
+  /** The page to filter, e.g. "/" or "/aktie/EBS". */
+  path: string;
   sources: Source[];
   value: FilterValues;
-  /** Hide the index select on a stock page. */
-  showIndex?: boolean;
+  /** Offer "Nur Ad-hoc" (stock page). */
+  showAdhoc?: boolean;
 };
 
-// A plain GET form: works without JavaScript and keeps filters in the URL.
-// The pagination cursor is deliberately not carried over.
-export default function Filters({ sources, value, showIndex = true }: Props) {
+// A GET form: keeps filters in the URL and works without JavaScript. With
+// JavaScript, next/form navigates client-side and a changed select applies at once.
+// The section rides along hidden; the pagination cursor is deliberately not carried over.
+// The submit button is only for browsers without JavaScript: the server renders
+// it, the client hides it once hydrated.
+export default function Filters({ path, sources, value, showAdhoc }: Props) {
+  const hydrated = useSyncExternalStore(noop, () => true, () => false);
+  const submit = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => e.currentTarget.form?.requestSubmit();
   return (
-    <form className="filters" method="get">
-      {showIndex && (
-        <label>
-          Index
-          <select name="index" defaultValue={value.index}>
-            <option value="">Alle</option>
-            {INDICES.map((i) => (
-              <option key={i.key} value={i.key}>
-                {i.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
+    <Form className="filters" action={path}>
+      {value.section && <input type="hidden" name="section" value={value.section} />}
       <label>
         Quelle
-        <select name="source" defaultValue={value.source}>
+        <select name="source" defaultValue={value.source} onChange={submit}>
           <option value="">Alle</option>
           {sources.map((s) => (
             <option key={s.key} value={s.key}>
@@ -39,7 +38,7 @@ export default function Filters({ sources, value, showIndex = true }: Props) {
       </label>
       <label>
         Zeitraum
-        <select name="range" defaultValue={value.range}>
+        <select name="range" defaultValue={value.range} onChange={submit}>
           {RANGES.map((r) => (
             <option key={r.key} value={r.key}>
               {r.label}
@@ -47,7 +46,17 @@ export default function Filters({ sources, value, showIndex = true }: Props) {
           ))}
         </select>
       </label>
-      <button type="submit">Filtern</button>
-    </form>
+      {showAdhoc && (
+        <label className="check">
+          <input type="checkbox" name="adhoc" value="1" defaultChecked={value.adhoc} onChange={submit} />
+          Nur Ad-hoc
+        </label>
+      )}
+      <button type="submit" hidden={hydrated}>
+        Filtern
+      </button>
+    </Form>
   );
 }
+
+const noop = () => () => {};

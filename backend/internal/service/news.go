@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -21,9 +22,14 @@ import (
 const (
 	DefaultLimit = 25
 	MaxLimit     = 100
+	// MaxAlso caps "Auch bei": the other sources listed per news item.
+	MaxAlso = 5
 )
 
 var ErrNotFound = errors.New("not found")
+
+// SourceKinds are the values of the source_kind enum.
+var SourceKinds = []string{"adhoc", "press_release", "news_api", "ir", "filing"}
 
 // ValidationError means the caller sent bad input (HTTP 400).
 type ValidationError struct{ Msg string }
@@ -46,6 +52,7 @@ type NewsQuery struct {
 	Ticker   string
 	Index    string
 	Source   string
+	Kinds    []string // source kinds; empty = all
 	From, To *time.Time
 	Cursor   string
 	Limit    int // 0 = DefaultLimit
@@ -57,8 +64,22 @@ type NewsItem struct {
 	URL         string
 	SourceKey   string
 	SourceName  string
+	SourceKind  string
 	PublishedAt time.Time
 	Tickers     []string
+	// The same news at other sources (same cluster), oldest first; at most MaxAlso.
+	Also []AlsoAt
+}
+
+// AlsoAt is one other source's copy of a news item.
+type AlsoAt struct {
+	ID          int64
+	Title       string
+	URL         string
+	SourceKey   string
+	SourceName  string
+	SourceKind  string
+	PublishedAt time.Time
 }
 
 type NewsPage struct {
@@ -91,9 +112,15 @@ func (s *Service) ListNews(ctx context.Context, nq NewsQuery) (NewsPage, error) 
 	if nq.Source != "" && !keyPattern.MatchString(nq.Source) {
 		return NewsPage{}, invalid("invalid source")
 	}
+	for _, k := range nq.Kinds {
+		if !slices.Contains(SourceKinds, k) {
+			return NewsPage{}, invalid("unknown source kind %q", k)
+		}
+	}
 
 	params := db.ListNewsParams{
 		Source: optional(nq.Source), Ticker: optional(nq.Ticker), IndexKey: optional(nq.Index),
+		Kinds:  nq.Kinds,
 		FromTs: nq.From, ToTs: nq.To,
 		Lim: int32(limit + 1), // one extra row tells us whether there is a next page
 	}
@@ -117,11 +144,50 @@ func (s *Service) ListNews(ctx context.Context, nq NewsQuery) (NewsPage, error) 
 			break
 		}
 		page.Items = append(page.Items, NewsItem{
-			ID: r.ID, Title: r.Title, URL: r.Url, SourceKey: r.SourceKey, SourceName: r.SourceName,
+			ID: r.ID, Title: r.Title, URL: r.Url, SourceKey: r.SourceKey, SourceName: r.SourceName, SourceKind: string(r.SourceKind),
 			PublishedAt: r.PublishedAt.UTC(), Tickers: r.Tickers,
 		})
 	}
+	if err := s.attachAlso(ctx, page.Items); err != nil {
+		return NewsPage{}, err
+	}
 	return page, nil
+}
+
+// attachAlso fills Also for the items of one page with a single query.
+func (s *Service) attachAlso(ctx context.Context, items []NewsItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+	ids := make([]int64, len(items))
+	for i, it := range items {
+		ids[i] = it.ID
+	}
+	rows, err := s.q.ListAlsoAt(ctx, ids)
+	if err != nil {
+		return err
+	}
+	byRep := map[int64][]AlsoAt{}
+	for _, r := range rows {
+		byRep[r.RepresentativeID] = append(byRep[r.RepresentativeID], AlsoAt{
+			ID: r.ID, Title: r.Title, URL: r.Url, SourceKey: r.SourceKey, SourceName: r.SourceName,
+			SourceKind: string(r.SourceKind), PublishedAt: r.PublishedAt.UTC(),
+		})
+	}
+	for i := range items {
+		also := byRep[items[i].ID]
+		slices.SortFunc(also, func(a, b AlsoAt) int {
+			if c := a.PublishedAt.Compare(b.PublishedAt); c != 0 {
+				return c
+			}
+			return int(a.ID - b.ID)
+		})
+		if len(also) > MaxAlso {
+			also = also[:MaxAlso]
+		}
+		items[i].Also = also
+	}
+	return nil
 }
 
 // The cursor is opaque to clients: base64("<unix nanos>:<id>").

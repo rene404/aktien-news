@@ -1,0 +1,54 @@
+import type { NewsParams } from "./api";
+import { parseFilters, SECTIONS, toNewsParams, type Filters } from "./filters";
+
+// Single stocks have few headlines, so the stock page shows all of them by
+// default, filings included.
+export const STOCK_DEFAULT_RANGE = "all";
+
+const tickerPattern = /^[A-Za-z0-9.-]{1,12}$/;
+
+/** API params for a stock page. */
+export function stockNewsParams(f: Filters, ticker: string, now: Date): NewsParams {
+  const params = toNewsParams({ ...f, section: "" }, now);
+  delete params.kind;
+  if (f.adhoc) params.kind = "adhoc";
+  return { ...params, ticker };
+}
+
+/** The query the client sends to /feed for further pages (cursor appended there). */
+export function feedQuery(f: Filters, ticker?: string): string {
+  const qs = new URLSearchParams();
+  if (f.section) qs.set("section", f.section);
+  if (f.source) qs.set("source", f.source);
+  qs.set("range", f.range);
+  if (f.adhoc) qs.set("adhoc", "1");
+  if (ticker) qs.set("ticker", ticker);
+  return qs.toString();
+}
+
+/** Reads a /feed query back into API params; null for a malformed ticker. */
+export function feedParams(sp: URLSearchParams, now: Date): NewsParams | null {
+  const raw = Object.fromEntries(sp);
+  const ticker = sp.get("ticker");
+  if (ticker === null) return toNewsParams(parseFilters(raw), now);
+  if (!tickerPattern.test(ticker)) return null;
+  return stockNewsParams(parseFilters(raw, STOCK_DEFAULT_RANGE), ticker, now);
+}
+
+/** now − hours, to the minute, so requests within a minute share the API cache. */
+export function since(now: Date, hours: number): string {
+  const t = new Date(now.getTime() - hours * 3600_000);
+  t.setUTCSeconds(0, 0);
+  return t.toISOString();
+}
+
+/** "Heute im Gespräch": the ten most-mentioned stocks of a section in the last 24 hours. */
+export function trendingParams(section: string, now: Date): { index?: string; kind: string; from: string; limit: number } {
+  const s = SECTIONS.find((x) => x.key === section) ?? SECTIONS[0];
+  return {
+    ...("index" in s ? { index: s.index } : {}),
+    kind: s.kinds.join(","),
+    from: since(now, 24),
+    limit: 10,
+  };
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayKey, dayLabel, formatClock, formatTime } from "./format";
+import { dayKey, dayLabel, ageMinutes, formatClock, formatTime } from "./format";
 
 describe("format", () => {
   it("shows Vienna time", () => {
@@ -25,5 +25,22 @@ describe("format", () => {
     // 2026-03-29 has 23 hours; 2026-03-30 00:30 CEST.
     expect(dayLabel("2026-03-29", new Date("2026-03-29T22:30:00Z"))).toBe("Gestern");
     expect(dayLabel("2026-03-28", new Date("2026-03-29T22:30:00Z"))).toBe("Samstag, 28.03.2026");
+  });
+
+  it("counts whole minutes for the last hour only", () => {
+    const now = new Date("2026-11-05T20:00:00Z");
+    const ago = (min: number) => new Date(now.getTime() - min * 60_000).toISOString();
+    expect(ageMinutes(ago(0), now)).toBe(0);
+    expect(ageMinutes(ago(0.9), now)).toBe(0);
+    expect(ageMinutes(ago(1), now)).toBe(1);
+    expect(ageMinutes(ago(12.7), now)).toBe(12);
+    expect(ageMinutes(ago(59.9), now)).toBe(59);
+    expect(ageMinutes(ago(60), now)).toBeNull();
+  });
+
+  it("treats a slightly future time as just now (clock skew), a far one as not fresh", () => {
+    const now = new Date("2026-11-05T20:00:00Z");
+    expect(ageMinutes("2026-11-05T20:03:00Z", now)).toBe(0);
+    expect(ageMinutes("2026-11-05T22:00:00Z", now)).toBeNull();
   });
 });

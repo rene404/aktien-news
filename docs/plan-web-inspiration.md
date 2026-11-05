@@ -53,12 +53,16 @@ Nachrichtenquellen (EU-Plan, weitere Newsfeeds) spürbar etwas.
   Segmente behalten `--border`. Live geprüft auf 1280 px und 375 px (Playwright, keine horizontale Scrollleiste).
   Done: Zeitspalte fluchtet; `theme.test.ts` prüft die neuen Tokens; Screenshot Desktop und 375 px.
 
-- [ ] **2. Relative Zeit für frische Meldungen** — `feature/web-relative-time`
-  Files: `frontend/lib/format.ts`, `frontend/lib/format.test.ts`, `frontend/components/NewsList.tsx`
+- [x] **2. Relative Zeit für frische Meldungen** — `feature/web-relative-time`
+  Files: `frontend/lib/format.ts`, `frontend/lib/format.test.ts`, `frontend/lib/useNow.ts`, `frontend/components/NewsTime.tsx` (+ Test), `frontend/components/NewsList.tsx`
   What: Unter 60 Minuten „vor 12 Min“, darüber die Uhrzeit wie bisher. `<time datetime>` mit der absoluten
   Zeit im `title`. Der Server rendert die Uhrzeit; der Client ersetzt sie nach dem Mounten und
   aktualisiert minütlich (der Feed fragt ohnehin jede Minute nach).
   Done: Tabellentest für die Grenzen (0, 59, 60 Min, Tageswechsel in Wien).
+  Umsetzungsnotiz: Angezeigt wird kompakt „jetzt“ bzw. „12 Min“, weil „vor 12 Min“ in der Zeitspalte umbrach;
+  Screenreader lesen „vor 12 Min“ (`sr-only`), der Tooltip zeigt Datum und Uhrzeit. Ein gemeinsamer Takt
+  (`useNow`, `useSyncExternalStore`, alle 30 s) für alle Zeilen; auf dem Server `null`, daher bleibt das
+  gecachte HTML gleich und es gibt keinen Hydration-Unterschied. Bis 5 Min in der Zukunft gilt als „jetzt“.
 
 - [ ] **3. Logos der Quellen** — `feature/web-source-icons`
   Files: `frontend/public/sources/<key>.png|svg`, `frontend/components/SourceIcon.tsx` (+ Test), `frontend/components/NewsList.tsx`

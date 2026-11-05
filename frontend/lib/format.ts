@@ -38,3 +38,17 @@ export function dayLabel(key: string, now: Date): string {
   if (key === dayKey(yesterday)) return "Gestern";
   return longDay.format(new Date(`${key}T12:00:00Z`));
 }
+
+const MINUTE = 60_000;
+/** Sources whose clock runs a little ahead still read "gerade eben". */
+const FUTURE_TOLERANCE = 5 * MINUTE;
+
+/**
+ * Whole minutes since iso while it is less than an hour old (0 = just now),
+ * else null: older news shows the clock time instead.
+ */
+export function ageMinutes(iso: string, now: Date): number | null {
+  const age = now.getTime() - new Date(iso).getTime();
+  if (age < -FUTURE_TOLERANCE || age >= 60 * MINUTE) return null;
+  return Math.floor(Math.max(age, 0) / MINUTE);
+}

@@ -41,12 +41,16 @@ Nachrichtenquellen (EU-Plan, weitere Newsfeeds) spürbar etwas.
 
 ## A. Darstellung
 
-- [ ] **1. Ruhigere Typografie** — `feature/web-typography`
-  Files: `frontend/app/theme.css`, `frontend/app/globals.css`, `frontend/app/layout.tsx`, `frontend/app/theme.test.ts`
+- [x] **1. Ruhigere Typografie** — `feature/web-typography`
+  Files: `frontend/app/theme.css`, `frontend/app/globals.css`, `frontend/app/theme.test.ts`
   What: Neue Tokens `--font-mono` (für Zeiten, Zählungen, Badges, mit `font-variant-numeric: tabular-nums`),
   `--hairline` (Trennlinien mit ca. 10 % Deckkraft statt `--border`), `--micro-*` für Tagesköpfe
-  („HEUTE“, „GESTERN“) in Großbuchstaben mit Sperrung. Mono-Font über `next/font` (selbst ausgeliefert).
+  („HEUTE“, „GESTERN“) in Großbuchstaben mit Sperrung. Mono-Font als System-Stack (`ui-monospace`, SF Mono, Menlo, Consolas …).
   Keine neuen Farbwerte (Entscheidung 1).
+  Umsetzungsnotiz: statt `next/font` ein System-Stack. Es wird nichts geladen, und der Build braucht keinen
+  Download von Google Fonts (der hinter der Firmen-Firewall scheitern kann). Mono bekommen Zeiten, Ticker-Chips,
+  Zählungen und Badges; Haarlinien trennen Meldungen, Tage, Suchtreffer und den Footer. Eingabefelder, Tabs und
+  Segmente behalten `--border`. Live geprüft auf 1280 px und 375 px (Playwright, keine horizontale Scrollleiste).
   Done: Zeitspalte fluchtet; `theme.test.ts` prüft die neuen Tokens; Screenshot Desktop und 375 px.
 
 - [ ] **2. Relative Zeit für frische Meldungen** — `feature/web-relative-time`

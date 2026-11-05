@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { NewsItem, SourceKind } from "@/lib/api";
-import { dayKey, dayLabel, formatClock, formatTime } from "@/lib/format";
+import { dayKey, dayLabel } from "@/lib/format";
+import NewsTime from "./NewsTime";
 
 type Props = {
   items: NewsItem[];
@@ -55,9 +56,7 @@ function NewsRow({ item, hideTicker }: { item: NewsItem; hideTicker?: string }) 
   const kind = KIND_LABELS[item.source.kind];
   return (
     <li className={item.source.kind === "adhoc" ? "adhoc" : undefined}>
-      <time dateTime={item.published_at} title={formatTime(item.published_at)}>
-        {formatClock(item.published_at)}
-      </time>
+      <NewsTime iso={item.published_at} />
       <div>
         <a className="title" href={item.url} target="_blank" rel="noopener noreferrer">
           {item.title}{" "}

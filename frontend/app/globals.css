@@ -24,6 +24,7 @@ header.site {
   color: var(--header-text);
   transition: transform var(--header-transition), box-shadow var(--header-transition);
 }
+header.site { border-bottom: 1px solid var(--hairline); }
 header.site[data-floating] { box-shadow: var(--header-shadow); }
 header.site[data-hidden] { transform: translateY(-100%); box-shadow: none; }
 @media (prefers-reduced-motion: reduce) {
@@ -34,13 +35,13 @@ header.site .wrap {
   padding-top: 12px; padding-bottom: 12px;
 }
 .brand {
-  font-weight: var(--weight-normal); font-size: var(--text-lg); letter-spacing: 0.02em;
+  font-weight: var(--weight-bold); font-size: var(--text-lg); letter-spacing: var(--title-tracking);
   color: var(--header-text); text-decoration: none;
 }
 .brand:hover { color: var(--header-text); }
-.brand span { color: var(--header-muted); }
+.brand span { color: var(--accent); }
 .site-start { display: flex; align-items: baseline; gap: 20px; }
-.site-nav a { color: var(--header-text); text-decoration: none; font-size: var(--text-md); }
+.site-nav a { color: var(--header-text); text-decoration: none; font-size: var(--text-md); font-weight: var(--title-weight); }
 .site-nav a:hover { color: var(--header-text); text-decoration: underline; }
 
 form.search {
@@ -72,7 +73,7 @@ button {
 button:hover { background: var(--button-hover); border-color: var(--button-hover); }
 
 main { padding: 20px 0 40px; }
-h1 { font-size: var(--text-xl); margin: 0 0 4px; }
+h1 { font-size: var(--text-xl); font-weight: var(--weight-bold); letter-spacing: var(--title-tracking); line-height: 1.1; margin: 4px 0 6px; }
 .sub { color: var(--muted); margin: 0 0 16px; }
 
 .sr-only {
@@ -165,7 +166,7 @@ nav.view-switch { margin-bottom: 10px; font-size: var(--text-md); }
 .tile li + li { border-top: 1px solid var(--hairline); }
 .tile time { color: var(--muted); font-family: var(--font-mono); font-size: var(--text-sm); font-variant-numeric: tabular-nums; padding-top: 2px; }
 .tile .title { color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
-.tile .title:hover { color: var(--link); text-decoration: underline; }
+.tile .title:hover { color: var(--link-hover); text-decoration: underline; }
 .tile .ext { font-size: 0.75em; color: var(--muted); }
 .tile-more { align-self: flex-end; margin-top: 6px; font-size: var(--text-sm); }
 
@@ -175,15 +176,16 @@ p.freshness { margin: 0 0 8px; font-size: var(--text-sm); color: var(--muted); }
 /* "Heute im Gespräch": label, then compact chips that wrap, so all of them stay visible. */
 .trending { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 4px 0 0; }
 .trending-label {
-  flex: none; font-size: var(--micro-size); font-weight: var(--weight-bold); letter-spacing: var(--micro-tracking);
-  text-transform: uppercase; color: var(--muted);
+  flex: none; font-size: var(--micro-size); font-weight: var(--weight-semibold); letter-spacing: var(--micro-tracking);
+  text-transform: uppercase; color: var(--accent);
 }
 ul.tickers.compact { margin: 0; gap: 6px; }
 ul.tickers.compact .tchip { padding-left: 8px; font-size: var(--text-sm); }
 
 section.day h2 {
-  margin: 16px 0 0; padding: 6px 0; font-size: var(--micro-size); font-weight: var(--weight-bold); letter-spacing: var(--micro-tracking);
-  text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--hairline);
+  display: flex; align-items: center; gap: 12px;
+  margin: 20px 0 0; padding: 6px 0; font-size: var(--micro-size); font-weight: var(--weight-semibold); letter-spacing: var(--micro-tracking);
+  text-transform: uppercase; color: var(--accent); border-bottom: 1px solid var(--hairline);
 }
 
 ol.news { list-style: none; margin: 0; padding: 0; }
@@ -195,8 +197,8 @@ ol.news li,
 ol.news time {
   color: var(--muted); font-family: var(--font-mono); font-size: var(--text-sm); font-variant-numeric: tabular-nums; padding-top: 3px;
 }
-ol.news .title { color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
-ol.news .title:hover { color: var(--link); text-decoration: underline; }
+ol.news .title { color: var(--text); font-weight: var(--title-weight); text-decoration: none; overflow-wrap: anywhere; }
+ol.news .title:hover { color: var(--link-hover); text-decoration: underline; }
 ol.news li.adhoc .title { font-weight: var(--weight-semibold); }
 ol.news .ext { font-size: 0.75em; color: var(--muted); }
 .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 2px; font-size: var(--text-sm); color: var(--muted); }
@@ -232,12 +234,13 @@ span.src-icon::before { content: attr(data-letter); }
 }
 .badge-adhoc { color: var(--adhoc); background: var(--adhoc-bg); border-color: transparent; }
 
+/* Ticker chips in the meta line: quiet, ink on a light tint; ink when hovered. */
 .chip {
-  display: inline-block; padding: 0 8px; border-radius: 999px;
-  background: var(--chip-bg); color: var(--chip-text); font-family: var(--font-mono); font-weight: var(--weight-semibold);
+  display: inline-block; padding: 0 7px; border-radius: 999px; border: 1px solid var(--hairline);
+  background: var(--count-zero-bg); color: var(--text); font-family: var(--font-mono); font-weight: var(--weight-semibold);
   font-size: var(--text-sm); text-decoration: none;
 }
-a.chip:hover { background: var(--chip-bg-hover); color: var(--chip-text); }
+a.chip:hover { background: var(--chip-bg-hover); border-color: var(--chip-bg-hover); color: var(--chip-text); }
 
 .more { display: inline-block; margin-top: 20px; }
 

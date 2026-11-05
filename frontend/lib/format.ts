@@ -18,6 +18,13 @@ export function formatTime(iso: string): string {
   return full.format(new Date(iso));
 }
 
+const shortDay = new Intl.DateTimeFormat("de-AT", { timeZone: TZ, day: "2-digit", month: "2-digit" });
+
+/** "03.11." */
+export function formatShortDay(iso: string): string {
+  return shortDay.format(new Date(iso));
+}
+
 /** "10:30" */
 export function formatClock(iso: string): string {
   return clock.format(new Date(iso));

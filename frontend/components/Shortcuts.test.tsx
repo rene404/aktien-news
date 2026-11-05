@@ -92,4 +92,19 @@ describe("Shortcuts", () => {
     fireEvent.click(button);
     expect(screen.getByRole("dialog", { name: "Tastenkürzel" })).toBeInTheDocument();
   });
+
+  it("also moves through the tiles of the view by source", () => {
+    render(
+      <>
+        <section className="tile">
+          <a className="title" href="https://example.com/a">
+            Kachel A
+          </a>
+        </section>
+        <Shortcuts />
+      </>,
+    );
+    press("j");
+    expect(focused()).toBe("Kachel A");
+  });
 });

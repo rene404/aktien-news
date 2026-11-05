@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Source, SourceKind } from "./api";
-import { filterHref, parseFilters, shownSources, sourcesFor, toNewsParams } from "./filters";
+import { filterHref, parseFilters, shownSources, sourcesFor, TILE_SIZE, tileParams, toNewsParams } from "./filters";
 
 const now = new Date("2026-10-28T12:00:00Z");
 const NEWS_KINDS = "adhoc,press_release,news_api,ir";
@@ -137,5 +137,21 @@ describe("shownSources", () => {
     expect(shownSources(list, "")).toEqual(list);
     expect(shownSources(list, "ots_finanzen")).toEqual([list[1]]);
     expect(shownSources(list, "gone")).toEqual([]);
+  });
+});
+
+describe("tileParams", () => {
+  it("asks for the newest few of one source, within the section's index and the range", () => {
+    const f = { section: "ATX", source: "", range: "24h", cursor: "c1" };
+    expect(tileParams(f, "fn_atx", now)).toEqual({
+      index: "ATX",
+      source: "fn_atx",
+      from: "2026-10-27T12:00:00.000Z",
+      limit: TILE_SIZE,
+    });
+  });
+
+  it("has no time limit for the range 'Alle'", () => {
+    expect(tileParams({ section: "", source: "", range: "all", cursor: "" }, "sec_8k", now)).toEqual({ source: "sec_8k", limit: TILE_SIZE });
   });
 });

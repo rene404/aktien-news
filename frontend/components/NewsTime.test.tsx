@@ -42,4 +42,12 @@ describe("NewsTime", () => {
     render(<NewsTime iso="2026-11-05T19:59:30Z" />);
     expect(screen.getByText("jetzt").tagName).toBe("TIME");
   });
+
+  it("can show the date instead of the clock for older days, where no day heading says it", () => {
+    const { container, rerender } = render(<NewsTime iso="2026-11-03T17:51:00Z" showDay />);
+    expect(container.querySelector("time")).toHaveTextContent(/^03\.11\.$/);
+    rerender(<NewsTime iso="2026-11-05T08:10:00Z" showDay />); // today
+    expect(container.querySelector("time")).toHaveTextContent(/^09:10$/);
+    expect(renderToString(<NewsTime iso="2026-11-03T17:51:00Z" showDay serverNow={NOW.toISOString()} />)).toContain("03.11.");
+  });
 });

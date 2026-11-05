@@ -38,6 +38,12 @@ Nachrichtenquellen (EU-Plan, weitere Newsfeeds) spürbar etwas.
 1. **Look:** Das Dunkelblau der Marke und der weiße Inhalt bleiben. Übernommen wird nur die ruhigere
    Typografie von Alltop (Haarlinien, Mono-Zahlen, kleine Labels in Großbuchstaben), keine neue Farbwelt.
 2. **Dark Mode:** ja, er folgt der Systemeinstellung. Damit entfällt „always light“ in `theme.css`.
+3. **Look geändert (2026-11-05, ersetzt Entscheidung 1):** näher an Alltop. Schriften Inter und JetBrains Mono
+   (OFL, aus Fontsource, selbst ausgeliefert über `next/font/local`, Lizenzen in `frontend/app/fonts/`),
+   Papier `#fafaf5`, Tinte `#111`, ein Akzent Rost (`--accent` `#b8361b`, dunkel `#f0714f`) für Tagesköpfe,
+   „Heute im Gespräch“, „.at“ und Link-Hover. Header hell mit Haarlinie statt Dunkelblau; Buttons, aktive
+   Segmente und Zähl-Badges in Tinte; Ticker-Chips in der Meta-Zeile leise (Tönung, Tinte beim Hover).
+   Großer, eng gesperrter Seitentitel; Meldungstitel in Inter 500. Dunkel: `#0e0e0e` mit `#f4f3ee`.
 
 ## A. Darstellung
 

@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 // The look is changed in theme.css alone: globals.css must not define colours or fonts of its own.
@@ -63,6 +63,29 @@ describe("typography", () => {
   });
 });
 
+// The faces of Alltop (Inter, JetBrains Mono), self-hosted via next/font/local
+// with their OFL licences next to the files.
+describe("fonts", () => {
+  const layout = readFileSync(new URL("./layout.tsx", import.meta.url), "utf8");
+  const theme = readFileSync(new URL("./theme.css", import.meta.url), "utf8");
+
+  it.each([
+    ["inter-latin-wght.woff2", "LICENSE-Inter.txt", "--font-inter"],
+    ["jetbrains-mono-latin-wght.woff2", "LICENSE-JetBrainsMono.txt", "--font-jetbrains-mono"],
+  ])("ships %s with its licence and uses it first in theme.css", (file, licence, variable) => {
+    expect(existsSync(new URL(`./fonts/${file}`, import.meta.url))).toBe(true);
+    expect(readFileSync(new URL(`./fonts/${licence}`, import.meta.url), "utf8")).toContain("SIL Open Font License");
+    expect(layout).toContain(`./fonts/${file}`);
+    expect(layout).toContain(`variable: "${variable}"`);
+    expect(theme).toMatch(new RegExp(`--font-(sans|mono): var\\(${variable}\\),`));
+  });
+
+  it("loads them from next/font/local, never from Google at runtime or build", () => {
+    expect(layout).toContain('from "next/font/local"');
+    expect(layout).not.toContain("next/font/google");
+  });
+});
+
 // Text/background pairs that must stay readable (WCAG AA, 4.5:1) in every colour scheme theme.css defines.
 const PAIRS = [
   ["--text", "--bg"],
@@ -79,6 +102,10 @@ const PAIRS = [
   ["--link", "--count-zero-bg"],
   ["--link-hover", "--bg"],
   ["--on-brand", "--button-hover"],
+  ["--chip-text", "--chip-bg-hover"], // hovered ticker chip
+  ["--text", "--hairline"], // quiet ticker chip (tint close to the hairline)
+  ["--accent", "--bg"], // micro labels, ".at" in the brand
+  ["--accent", "--header-bg"],
 ] as const;
 
 // Dark mode follows the system setting (docs/plan-web-inspiration.md, task 5).

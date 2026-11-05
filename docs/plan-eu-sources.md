@@ -28,17 +28,15 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
   - Frontend: `docker compose --profile test run --rm web-test`.
 - **Fixtures:** Parser-Tests laufen gegen gespeicherte Antworten in `testdata/`, nie live (AGENTS.md).
 
-## Offene Entscheidungen (vor dem Start)
+## Entscheidungen (2026-11-05)
 
-1. **Welche Indizes?**
-   - **Empfehlung:** CAC 40, IBEX 35 und AEX 25, zusammen rund 100 Firmen.
-   - Jeder bekommt einen eigenen Tab und eine Aktienliste, wie ATX und DAX.
-   - **Alternative:** Nur Euro Stoxx 50. Das wäre weniger Pflegeaufwand, aber ohne spanische Mid Caps und ohne eigene Länder-Tabs.
-2. **Personennamen in Directors' Dealings (AFM).**
-   - **Empfehlung:** Nicht in den Titel übernehmen. Der Titel lautet dann „STMicroelectronics N.V.: Eigengeschäft einer Führungskraft“.
-   - Der Name steht in der verlinkten Quelle; wir verbreiten so keine Personendaten weiter (Datenminimierung).
-3. **Nordics und UK.**
-   - **Empfehlung:** Erst einbauen, wenn Nasdaq schriftlich geantwortet hat (Nordics) bzw. die Rechtsprüfung durch ist (FCA, siehe Teil C).
+1. **Indizes:** CAC 40, IBEX 35 und AEX 25, jeder mit eigenem Tab und eigener Aktienliste.
+2. **Directors' Dealings:** Keine Personennamen im Titel, also „STMicroelectronics N.V.: Eigengeschäft einer Führungskraft“.
+3. **Nordics und UK werden mitgebaut.**
+   - Die Seite dient derzeit dem privaten Gebrauch; die Quellen werden getestet und lassen sich jederzeit abschalten (`sources.enabled`).
+   - Die Anfrage bei Nasdaq und die Rechtsprüfung der FCA müssen vor einem öffentlichen Betrieb erledigt sein.
+   - Die FCA-Quelle schicken wir trotzdem nicht ans LLM, weil die Seite einen TDM-Vorbehalt erklärt.
+4. **Frankreich:** Der Link führt auf die PDF-Datei der Meldung.
 
 ## A. Grundlagen
 
@@ -142,8 +140,7 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
     - `PublishedAt` = `INF_DAT_EMT`.
     - Kennungen: `ISO_CD_ISI` (ISIN), `ISO_CD_LEI` (LEI), `ISO_NOM_SOC` (Name als Hint).
     - Meldungen mit `INF_UPG_STS` ≠ `NEW` (Korrekturen, Rückzüge) werden vorerst übersprungen.
-  - **Link: offene Frage.** Möglich wären die PDF-URL von info-financiere.gouv.fr oder die Seite der Meldung dort.
-    Wir nehmen einen Link, der für Leser funktioniert; die Opendatasoft-FTP-URL ist nur der Notnagel.
+  - **Link:** die PDF-Datei der Meldung (Entscheidung 4). Wir prüfen, welche öffentliche URL das PDF zu `FichierDeContenu INF_FIC_NOM` ausliefert, und nehmen sie.
   - **Fertig, wenn:**
     - Fixture-Tests decken ab: Ad-hoc und Filing getrennt, ISIN und LEI gesetzt, ein kaputtes Archiv ergibt einen Fehler, und ein Archiv außerhalb der 26 Stunden wird nicht geladen.
     - Im Live-Lauf werden CAC-Werte verknüpft.
@@ -165,22 +162,22 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
     - Im Live-Lauf werden AEX-Werte über die LEI verknüpft.
     - Im UI ist „AFM“ als Quelle sichtbar.
 
-## C. Mit Vorbehalt (erst nach Klärung)
+## C. Nordics und UK (zum Testen, Entscheidung 3)
 
 - [ ] **8. Nordics: Nasdaq Nordic Company Announcements.**
-  - **Erst:** schriftliche Anfrage bei Nasdaq zur Nutzung von `api.news.eu.nasdaq.com` auf einer kommerziellen Seite.
-  - **Danach:**
+  - **Parallel:** schriftliche Anfrage bei Nasdaq zur Nutzung von `api.news.eu.nasdaq.com`; Pflicht vor einem öffentlichen Betrieb.
+  - **Umfang:**
     - Markt `NORDIC` (bzw. SE, FI, DK).
     - Katalog für OMXS30, OMXH25 und OMXC25.
     - JSON-Parser: `disclosureId`, `headline`, `company`, `releaseTime`, `messageUrl`, `cnsCategory` → adhoc/filing.
-  - **Sonst** bleibt es bei der Anfrage.
 
 - [ ] **9. UK: FCA National Storage Mechanism.**
-  - **Erst die Rechtsprüfung:** `robots.txt` erklärt einen TDM-Vorbehalt nach Art. 4 DSM-RL (`Content-Signal: ai-train=no, use=reference`).
+  - **Rechtsprüfung parallel, vor einem öffentlichen Betrieb:** `robots.txt` erklärt einen TDM-Vorbehalt nach Art. 4 DSM-RL (`Content-Signal: ai-train=no, use=reference`).
     - Unser TDM-Check liest bisher nur `tdmrep.json`. Er muss auch `Content-Signal` in `robots.txt` erkennen.
     - Zu klären ist, ob Titel aus so einer Quelle überhaupt ans LLM dürfen. Falls nicht, braucht `sources` ein Merkmal, das die Klassifizierung abschaltet.
-  - **Danach:**
+  - **Umfang:**
     - Markt `UK`, Katalog FTSE 100.
+    - Die Quelle wird von der LLM-Klassifizierung ausgenommen.
     - Parser für den POST auf `api.data.fca.org.uk/search?index=nsm-search` (Elasticsearch-JSON, LEI).
 
 ## D. Doku
@@ -193,7 +190,7 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
 
 ## Reihenfolge
 
-1 → 2 → 3 → 4 sind die Voraussetzung, danach 5 (am einfachsten), 6, 7. Die Punkte 8 und 9 laufen parallel als Anfragen.
+1 → 2 → 3 → 4 sind die Voraussetzung, danach 5 (am einfachsten), 6, 7, 8, 9. Die Anfragen an Nasdaq und die Rechtsprüfung der FCA laufen parallel.
 Grober Aufwand:
 
 | Aufgabe | Aufwand |

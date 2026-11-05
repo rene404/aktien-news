@@ -2,28 +2,30 @@
  * Design tokens: the one place to change the look of the site.
  * globals.css only uses these variables, it defines no colours, fonts or sizes of its own.
  *
- * Font: change --font-sans. For a web font, load it with next/font in
- * app/layout.tsx (e.g. `variable: "--font-brand"`, class on <html>) and set
- * --font-sans: var(--font-brand), system-ui, sans-serif;
+ * Fonts: Inter and JetBrains Mono (OFL), self-hosted from app/fonts via
+ * next/font/local in app/layout.tsx, which sets --font-inter and
+ * --font-jetbrains-mono on <html>. The stacks below fall back to system fonts.
  *
- * Colour scheme: follows the system setting. Light: white content, dark blue
- * header. Dark: the block at the end redefines every colour (theme.test.ts
- * checks that none is missing and that text stays readable, WCAG AA).
+ * Look: close to alltop.com, an editorial page: paper background, ink text,
+ * one accent (rust) for small labels and the ".at" of the brand.
+ * Colour scheme: follows the system setting. Dark: the block at the end
+ * redefines every colour (theme.test.ts checks that none is missing and that
+ * text stays readable, WCAG AA).
  */
 :root {
   /* Typography */
-  /* Helvetica where installed (macOS/iOS), its look-alikes elsewhere */
-  --font-sans: "Helvetica Neue", Helvetica, Arial, "Nimbus Sans", "Liberation Sans", sans-serif;
-  /* Times, counts, tickers and badges: a monospaced face with even figures, so
-     the time column lines up. System fonts only, nothing is downloaded. */
-  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, "Helvetica Neue", Arial, sans-serif;
+  /* Times, counts, tickers and badges: even figures, so the time column lines up. */
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --font-size: 16px;
   --line-height: 1.5;
   --text-xs: 0.7rem;   /* badges */
   --text-sm: 0.8rem;   /* meta line, chips, day headings */
   --text-md: 0.9rem;   /* filters, times, footer */
   --text-lg: 1.15rem;  /* brand */
-  --text-xl: 1.4rem;   /* page title */
+  --text-xl: 2rem;     /* page title */
+  --title-tracking: -0.02em; /* page title and brand: set tight, like Alltop */
+  --title-weight: 500; /* news headlines */
   --weight-normal: 400;
   --weight-semibold: 600;
   --weight-bold: 700;
@@ -52,64 +54,61 @@
   --search-width: 360px;
   --search-width-focus: 600px;
 
-  /* Brand: the dark blue of the header, links, chips and buttons.
-     To change the blue, change --brand (and --brand-hover, --link*). */
-  --brand: #0b2a55;
-  --brand-hover: #14407d;
+  /* Brand: ink. Header, chips, buttons and active segments are ink on paper. */
+  --brand: #111111;
+  --brand-hover: #3a3a36;
   --on-brand: #ffffff;
-  /* Buttons: a shade darker than the brand blue, also on the header */
-  --button-bg: #051733;
+  --button-bg: #111111;
   --button-hover: var(--brand-hover);
+  /* The one accent: rust, for micro labels, ".at" and link hover */
+  --accent: #b8361b;
 
   /* Colours */
-  --bg: #ffffff;
-  --text: #16181d;
-  --muted: #4a505a;
-  --border: #e3e6eb;   /* inputs, tabs, segmented controls */
-  --hairline: #eef0f3; /* separators between news rows and sections */
-  --link: var(--brand);
-  --link-hover: var(--brand-hover);
+  --bg: #fafaf5;       /* paper */
+  --text: #111111;     /* ink */
+  --muted: #5f5f59;
+  --border: #dcdcd3;   /* inputs, tabs, segmented controls */
+  --hairline: #e8e8e0; /* separators between news rows and sections */
+  --link: #111111;
+  --link-hover: var(--accent);
   --chip-bg: var(--brand);
   --chip-bg-hover: var(--brand-hover);
   --chip-text: var(--on-brand);
-  --adhoc: #b42318;
-  --adhoc-bg: #fdecea;
-  --skeleton: #e9ecf0;
-  --count-zero-bg: #eef0f3; /* count badge of a stock without news */
+  --adhoc: #b8361b;
+  --adhoc-bg: #fbe8e2;
+  --skeleton: #ebebe3;
+  --count-zero-bg: #efefe7; /* count badge of a stock without news */
 
-  /* Header: white on the brand blue */
-  --header-bg: var(--brand);
-  --header-text: #ffffff;
-  --header-muted: #b6bfcc;
+  /* Header: paper with a hairline, like the page */
+  --header-bg: #fafaf5;
+  --header-text: #111111;
+  --header-muted: #5f5f59;
   color-scheme: light dark;
 }
 
-/* Dark mode: the header keeps the brand blue; links and chips get lighter
-   blues, which read better on the dark background. */
+/* Dark mode: near-black paper, off-white ink, a lighter rust. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --brand: #0b2a55;
-    --brand-hover: #1a4a8a;
-    --on-brand: #ffffff;
-    --button-bg: #1a3d70;
+    --brand: #f4f3ee;
+    --brand-hover: #d6d5cf;
+    --on-brand: #111111;
+    --button-bg: #f4f3ee;
+    --accent: #f0714f;
 
-    --bg: #0e131a;
-    --text: #e4e8ee;
-    --muted: #9aa4b2;
-    --border: #2b3440;
-    --hairline: #1d242d;
-    --link: #8fb8ff;
-    --link-hover: #b8d2ff;
-    --chip-bg: #1f4c8f;
-    --chip-bg-hover: #2a5ca8;
-    --adhoc: #ff8a7a;
-    --adhoc-bg: #3b1612;
-    --skeleton: #1e2630;
-    --count-zero-bg: #1a2129;
+    --bg: #0e0e0e;
+    --text: #f4f3ee;
+    --muted: #a3a29b;
+    --border: #2c2c29;
+    --hairline: #1f1f1d;
+    --link: #f4f3ee;
+    --adhoc: #f0714f;
+    --adhoc-bg: #3a1710;
+    --skeleton: #1f1f1d;
+    --count-zero-bg: #1c1c1a;
 
-    --header-text: #ffffff;
-    --header-muted: #b6bfcc;
+    --header-bg: #0e0e0e;
+    --header-text: #f4f3ee;
+    --header-muted: #a3a29b;
     --header-shadow: 0 2px 8px rgb(0 0 0 / 0.5);
   }
 }
-

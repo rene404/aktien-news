@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Disclaimer from "@/components/Disclaimer";
+import Shortcuts from "@/components/Shortcuts";
 import SiteHeader from "@/components/SiteHeader";
 import "./theme.css";
 import "./globals.css";
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="site">
           <div className="wrap">
             <Disclaimer />
+            <Shortcuts />
           </div>
         </footer>
       </body>

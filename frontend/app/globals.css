@@ -232,3 +232,23 @@ ul.results li { padding: 8px 0; border-bottom: 1px solid var(--hairline); }
 
 footer.site { border-top: 1px solid var(--hairline); color: var(--muted); font-size: var(--text-md); }
 footer.site .wrap { padding-top: 16px; padding-bottom: 24px; }
+
+/* Keyboard shortcuts (Shortcuts): a text button in the footer, the help floats bottom right. */
+button.link-button { padding: 0; border: 0; background: none; color: var(--link); text-decoration: underline; font-size: var(--text-md); }
+button.link-button:hover { background: none; color: var(--link-hover); }
+button.link-button[hidden] { display: none; }
+.shortcuts {
+  position: fixed; right: 16px; bottom: 16px; z-index: 30; width: min(340px, calc(100vw - 32px));
+  padding: 12px 16px; background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--header-shadow);
+}
+.shortcuts h2 { margin: 0 0 8px; font-size: var(--micro-size); letter-spacing: var(--micro-tracking); text-transform: uppercase; color: var(--muted); }
+.shortcuts dl { margin: 0 0 12px; display: grid; gap: 4px; }
+.shortcuts dl div { display: grid; grid-template-columns: 2.5rem 1fr; align-items: baseline; }
+.shortcuts dd { margin: 0; font-size: var(--text-md); }
+kbd {
+  display: inline-block; min-width: 1.6em; padding: 0 5px; text-align: center;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: var(--text-sm);
+}
+/* The row whose title has the focus (j/k or Tab). */
+ol.news li:has(.title:focus-visible) { background: var(--count-zero-bg); }

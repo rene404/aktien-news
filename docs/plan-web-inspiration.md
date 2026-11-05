@@ -109,11 +109,15 @@ Nachrichtenquellen (EU-Plan, weitere Newsfeeds) spürbar etwas.
   serverseitig parallel); ein gebündelter Endpunkt nur, wenn das messbar zu langsam ist.
   Done: Test: je Quelle eine Kachel, leere Quellen ausgeblendet; Umschalter Feed/Quellen im Kopf.
 
-- [ ] **7. Tastenkürzel** — `feature/web-shortcuts`
+- [x] **7. Tastenkürzel** — `feature/web-shortcuts`
   Files: `frontend/components/Shortcuts.tsx` (+ Test), `frontend/app/layout.tsx`
   What: `j`/`k` nächste/vorige Meldung (Fokus und Markierung), `o` oder `Enter` öffnet die Quelle in einem neuen
   Fenster, `/` springt in die Suche, `?` zeigt die Hilfe. Nicht aktiv, solange ein Eingabefeld den Fokus hat.
   Done: Test mit simulierten Tasten; Hilfe per `?` erreichbar.
+  Umsetzungsnotiz: `o` öffnet die Meldung mit dem Fokus (Enter tut das ohnehin über den Link). Die Hilfe ist
+  ein kleines Feld unten rechts (`role="dialog"`, nicht modal), dazu ein Button „Tastenkürzel“ im Footer, der erst
+  nach der Hydration erscheint. Die Zeile mit dem Fokus ist hinterlegt (`li:has(.title:focus-visible)`).
+  Live mit echten Tasten geprüft (Playwright).
 
 - [ ] **8. Teilen** — `feature/web-share`
   Files: `frontend/components/ShareButton.tsx` (+ Test), `frontend/components/NewsList.tsx`

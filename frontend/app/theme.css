@@ -13,6 +13,9 @@
   /* Typography */
   /* Helvetica where installed (macOS/iOS), its look-alikes elsewhere */
   --font-sans: "Helvetica Neue", Helvetica, Arial, "Nimbus Sans", "Liberation Sans", sans-serif;
+  /* Times, counts, tickers and badges: a monospaced face with even figures, so
+     the time column lines up. System fonts only, nothing is downloaded. */
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --font-size: 16px;
   --line-height: 1.5;
   --text-xs: 0.7rem;   /* badges */
@@ -23,6 +26,9 @@
   --weight-normal: 400;
   --weight-semibold: 600;
   --weight-bold: 700;
+  /* Small uppercase labels: day headings, badges, "Heute im Gespräch" */
+  --micro-size: 0.68rem;
+  --micro-tracking: 0.08em;
 
   /* Shape and layout */
   --content-width: 860px;
@@ -57,7 +63,8 @@
   --bg: #ffffff;
   --text: #16181d;
   --muted: #4a505a;
-  --border: #e3e6eb;
+  --border: #e3e6eb;   /* inputs, tabs, segmented controls */
+  --hairline: #eef0f3; /* separators between news rows and sections */
   --link: var(--brand);
   --link-hover: var(--brand-hover);
   --chip-bg: var(--brand);

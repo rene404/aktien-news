@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { NewsItem, SourceKind } from "@/lib/api";
 import { dayKey, dayLabel } from "@/lib/format";
 import NewsTime from "./NewsTime";
+import SourceIcon from "./SourceIcon";
 
 type Props = {
   items: NewsItem[];
@@ -67,7 +68,10 @@ function NewsRow({ item, hideTicker }: { item: NewsItem; hideTicker?: string }) 
         </a>
         <div className="meta">
           {kind && <span className={`badge badge-${item.source.kind}`}>{kind}</span>}
-          <span>{item.source.name}</span>
+          <span className="src">
+            <SourceIcon sourceKey={item.source.key} name={item.source.name} />
+            {item.source.name}
+          </span>
           {item.tickers
             .filter((t) => t !== hideTicker)
             .map((t) => (

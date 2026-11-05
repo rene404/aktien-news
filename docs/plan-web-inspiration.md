@@ -64,11 +64,16 @@ Nachrichtenquellen (EU-Plan, weitere Newsfeeds) spürbar etwas.
   (`useNow`, `useSyncExternalStore`, alle 30 s) für alle Zeilen; auf dem Server `null`, daher bleibt das
   gecachte HTML gleich und es gibt keinen Hydration-Unterschied. Bis 5 Min in der Zukunft gilt als „jetzt“.
 
-- [ ] **3. Logos der Quellen** — `feature/web-source-icons`
+- [x] **3. Logos der Quellen** — `feature/web-source-icons`
   Files: `frontend/public/sources/<key>.png|svg`, `frontend/components/SourceIcon.tsx` (+ Test), `frontend/components/NewsList.tsx`
   What: Kleines Icon (16 px) vor dem Quellennamen, aus `public/` ausgeliefert, einmalig von Hand abgelegt.
   Fehlt ein Icon, ein Kreis mit dem Anfangsbuchstaben. Kein Laden von Google oder der Quelle zur Laufzeit.
   Done: Test: bekannter Key → `<img>`, unbekannter → Buchstabe.
+  Umsetzungsnotiz: Zuordnung über den Anbieter, das Präfix des Keys vor dem ersten „_“ (`fn_dax` → `fn`),
+  in `frontend/lib/sources.ts`; 7 Icons (fn, oekb, ots, prn, sec, telekom, voestalpine) als 64-px-PNG, angezeigt
+  in 14 px. Der Ersatz-Buchstabe kommt per CSS (`::before`), damit die Zeile keinen Text dazubekommt.
+  Dabei gefunden: Das Docker-Image (`output: "standalone"`) kopierte `public/` nicht; das `Dockerfile` kopiert
+  es jetzt, ein Regressionstest prüft das. Live geprüft: alle Icons laden, keine Anfragen an fremde Hosts.
 
 - [ ] **4. Aktualitätszeile** — `feature/api-status`
   Files: `backend/internal/store/queries/*.sql`, `backend/internal/service/status.go` (+ Test),

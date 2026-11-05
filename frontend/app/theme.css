@@ -6,8 +6,9 @@
  * app/layout.tsx (e.g. `variable: "--font-brand"`, class on <html>) and set
  * --font-sans: var(--font-brand), system-ui, sans-serif;
  *
- * Colour scheme: always light, also when the system is set to dark mode
- * (white content, dark blue header).
+ * Colour scheme: follows the system setting. Light: white content, dark blue
+ * header. Dark: the block at the end redefines every colour (theme.test.ts
+ * checks that none is missing and that text stays readable, WCAG AA).
  */
 :root {
   /* Typography */
@@ -80,6 +81,35 @@
   --header-bg: var(--brand);
   --header-text: #ffffff;
   --header-muted: #b6bfcc;
-  color-scheme: light;
+  color-scheme: light dark;
+}
+
+/* Dark mode: the header keeps the brand blue; links and chips get lighter
+   blues, which read better on the dark background. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand: #0b2a55;
+    --brand-hover: #1a4a8a;
+    --on-brand: #ffffff;
+    --button-bg: #1a3d70;
+
+    --bg: #0e131a;
+    --text: #e4e8ee;
+    --muted: #9aa4b2;
+    --border: #2b3440;
+    --hairline: #1d242d;
+    --link: #8fb8ff;
+    --link-hover: #b8d2ff;
+    --chip-bg: #1f4c8f;
+    --chip-bg-hover: #2a5ca8;
+    --adhoc: #ff8a7a;
+    --adhoc-bg: #3b1612;
+    --skeleton: #1e2630;
+    --count-zero-bg: #1a2129;
+
+    --header-text: #ffffff;
+    --header-muted: #b6bfcc;
+    --header-shadow: 0 2px 8px rgb(0 0 0 / 0.5);
+  }
 }
 

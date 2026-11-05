@@ -84,10 +84,15 @@ Nachrichtenquellen (EU-Plan, weitere Newsfeeds) spürbar etwas.
   „16 Quellen · zuletzt aktualisiert vor 2 Min“.
   Done: DTO-Test grün; Zeile erscheint auf Startseite und Aktienseite.
 
-- [ ] **5. Dark Mode** (Entscheidung 2) — `feature/web-dark-mode`
+- [x] **5. Dark Mode** (Entscheidung 2) — `feature/web-dark-mode`
   Files: `frontend/app/theme.css`, `frontend/app/theme.test.ts`
   What: Zweiter Token-Satz unter `@media (prefers-color-scheme: dark)`; `color-scheme: light dark`.
   Done: Kontrast ≥ 4.5:1 für Text und Links in beiden Modi (Test über die Token-Werte).
+  Umsetzungsnotiz: Der Header behält das Markenblau; Links, Tabs und Chips bekommen hellere Blautöne
+  (`--link` `#8fb8ff`, `--chip-bg` `#1f4c8f`), Hintergrund `#0e131a`. Ein Test verlangt, dass jede wörtliche
+  Farbe des hellen Satzes im dunklen neu gesetzt ist, damit keine vergessen wird; dazu neue Kontrastpaare
+  (Hover-Link, Suchvorschlag, Button-Hover). Live geprüft mit `colorScheme: "dark"`: Startseite, Aktienseite,
+  `/aktien`, Suchvorschläge, 375 px.
 
 ## B. Ansichten und Bedienung
 

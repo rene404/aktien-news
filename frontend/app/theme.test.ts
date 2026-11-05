@@ -75,7 +75,31 @@ const PAIRS = [
   ["--header-muted", "--header-bg"],
   ["--adhoc", "--adhoc-bg"],
   ["--muted", "--count-zero-bg"],
+  ["--text", "--count-zero-bg"], // hovered search suggestion
+  ["--link", "--count-zero-bg"],
+  ["--link-hover", "--bg"],
+  ["--on-brand", "--button-hover"],
 ] as const;
+
+// Dark mode follows the system setting (docs/plan-web-inspiration.md, task 5).
+describe("dark mode", () => {
+  const theme = readFileSync(new URL("./theme.css", import.meta.url), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  const split = theme.indexOf("@media (prefers-color-scheme: dark)");
+
+  it("has a dark scheme and tells the browser both schemes are supported", () => {
+    expect(split).toBeGreaterThan(0);
+    expect(theme.slice(0, split)).toMatch(/color-scheme:\s*light dark;/);
+  });
+
+  it("redefines every literal colour of the light scheme, so none is forgotten", () => {
+    const light = tokens(theme.slice(0, split));
+    const dark = tokens(theme.slice(split));
+    const colours = Object.entries(light)
+      .filter(([name, v]) => /^(#|rgba?\()/.test(v) && name !== "--mask-solid") // the mask is not a visible colour
+      .map(([name]) => name);
+    expect(colours.filter((name) => !(name in dark))).toEqual([]);
+  });
+});
 
 describe("theme contrast", () => {
   const theme = readFileSync(new URL("./theme.css", import.meta.url), "utf8");

@@ -144,8 +144,14 @@ Der Endpunkt braucht kein Login. Er liefert `{"anzahlTreffer": 54956, "dokumente
 - **Einschränkung:** Die API ist **nicht dokumentiert**. Eine `robots.txt` gibt es nicht.
 - **Konsequenz:** Die offene OeKB-Anfrage (siehe unten) bezieht sich jetzt konkret auf diesen Endpunkt.
 - **Bewertung: hoch.** Das ist die offizielle Quelle für AT-Pflichtmeldungen mit ISIN. Sie schließt die Lücke, die die Wiener Börse lässt.
-- **Umsetzung:** Wir brauchen einen eigenen Parser (JSON → RawArticle). Die Quelle bekommt `kind = adhoc` bzw. `filing`, damit gilt die ISIN als Emittenten-Signal.
-- **Link:** Ein Deep Link auf die einzelne Meldung muss noch geklärt werden. Bis dahin verlinken wir auf das PDF.
+- **Umgesetzt (2026-11-05):** Parser `ingest/oekb`, zwei Quellen über denselben Endpunkt:
+  - `oekb_adhoc` (`kind = adhoc`, Server-Filter `meldeTypCode=EP_AD_HOC`);
+  - `oekb_filings` (`kind = filing`, alle übrigen Meldetypen).
+  - Die ISIN gilt dadurch als Emittenten-Signal; bei mehreren ISINs zählt die Aktie.
+  - Englische Fassungen werden verworfen, wenn auf derselben Seite die deutsche Fassung desselben Emittenten und Typs innerhalb von 10 Minuten steht. Englisch-only bleibt.
+  - Nennt der Titel den Emittenten nicht, setzt der Parser ihn hinter das Verteiler-Kürzel („PTA-PVR: OMV Aktiengesellschaft: …“). So lautet der Titel wie bei FinanzNachrichten, und beide landen im selben Cluster.
+- **Link:** Die Web-App hat keine Seite pro Meldung, deshalb verlinken wir auf das PDF (`…/iic/download?id=<Datei-ID>`).
+- **Weitere Filter** (aus dem App-Bundle): `meldeTypCode`, `sprachcode`, `emittentId`, `isins`, `uploadFrom`/`uploadTo`.
 
 ### Behörden und Pflichtmeldungen
 
@@ -211,11 +217,46 @@ Geprüft wurden alle ATX- und DAX-Werte: die Seiten auf `rel=alternate` und RSS-
 
 ### Empfohlene Reihenfolge
 
-1. **OeKB OAM** (AT-Pflichtmeldungen mit ISIN). Neuer JSON-Parser; parallel die Anfrage bei der OeKB.
+1. ✅ **OeKB OAM** (AT-Pflichtmeldungen mit ISIN): umgesetzt am 2026-11-05. Parallel läuft die Anfrage bei der OeKB.
 2. **Emittenten-Feeds DAX**: Continental, Fresenius, Heidelberg Materials, BMW, VW, Siemens, adidas, Qiagen, Airbus. Dafür reicht der vorhandene `pressrss`-Parser mit `issuer_slug`; für Airbus und CPI Europe muss der Datumsparser erweitert werden.
 3. **BaFin `RSS_Massnahmen`/`RSS_Presse`, FTC Competition, SEC Press Releases.** Generischer Parser; Meldungen ohne Firma im Titel landen im Bereich „Markt & Politik“.
 4. **Stock News API Premium** (49,99 $/Monat) für die US-Breite inkl. GlobeNewswire. Sentiment des Anbieters nur intern verwenden.
 5. Anfragen: Marketaux (DE/AT), EQS (DE-Ad-hoc), BaFin (Directors' Dealings CSV).
+
+## Nachtrag 2026-11-05: Pflichtmeldungen in anderen EU-Ländern
+
+Gesucht wurde das Gegenstück zu OeKB OAM, also der OAM oder das Melderegister je Land. Gemeint sind Insiderinformationen (Art. 17 MAR), Directors' Dealings (Art. 19 MAR), Stimmrechte und Finanzberichte.
+[V] = selbst abgerufen am 2026-11-05.
+
+| Land | Quelle | Zugang | Kennung | Lizenz / robots | Wert |
+|---|---|---|---|---|---|
+| FR | **DILA Open Data AMF** [V] | `echanges.dila.gouv.fr/OPENDATA/AMF/amf-gz_DDMMYYYY_HHMM.tar.gz`: XML und PDF, mehrmals täglich | ISIN, LEI, Ticker, Name | Licence Ouverte (data.gouv.fr), keine robots.txt | **hoch**: rund 1.100 Insiderinfos pro Monat; sauberster Weg |
+| FR | info-financiere.gouv.fr API (Opendatasoft) [V] | `…/api/explore/v2.1/catalog/datasets/flux-amf-new-prod/records` | ISIN, LEI | gleiche Lizenz, aber **robots.txt `Disallow: /api/`** | nein, DILA-Bulk statt API |
+| FR | AMF BDIF Directors' Dealings [V] | `bdif.amf-france.org/back/api/v1/informations?typesInformation=DD` (JSON, undokumentiert) | Name | keine robots.txt | mittel |
+| ES | **CNMV RSS** [V] | `cnmv.es/portal/informacion-privilegiada/RSS.asmx/GetNoticiasCNMV`, `…/Otra-Informacion-Relevante/RSS.asmx/GetNoticiasCNMV` | Name, `nreg` | Weiterverwendung erlaubt, wenn „fielmente, sin manipular“; robots.txt sperrt nur `*.shtml` | **hoch** (IBEX). Enthält nur den laufenden Tag, also alle 15 min abfragen; Elementnamen großgeschrieben (`<Title>`) |
+| NL | **AFM-Register Directors' Dealings** [V] | `afm.nl/export.aspx?type=0ee836dc-5520-459d-bcf4-a4a689de6614&format=xml` (Komplettdump, ca. 680 KB) | Name, **LEI** | Kopie und Verbreitung mit Quellenangabe „AFM“ erlaubt; robots.txt `Allow: /` | mittel–hoch (ASML, STMicro …) |
+| NL | AFM Stimmrechte, Finanzberichte | gleiche Export-URL, andere `type` | Name | wie oben | niedrig: die Stimmrechtsdatei hat 113 MB |
+| NL/BE/FR/PT/IE | Euronext Company News | live.euronext.com | – | ❌ robots.txt `Disallow: /products/equities/company-news/` | – |
+| Nordics | Nasdaq Nordic Company Announcements [V] | `api.news.eu.nasdaq.com/news/query.action?type=json&…` | Name, Markt, Kategorie | Bedingungen nicht gefunden [U] | mittel; vor Nutzung anfragen |
+| NO | Oslo Børs NewsWeb [V] | `api3.oslo.oslobors.no/v1/newsreader/list` | Ticker | Bedingungen nicht gefunden [U] | niedrig (kein Zielindex) |
+| SE | FI Insynsregistret [V] | CSV-Export `marknadssok.fi.se/…SearchFunctionType=Insyn…&button=export` | LEI, ISIN | Behörde, Bedingungen [U] | niedrig–mittel |
+| UK | FCA National Storage Mechanism [V] | `POST api.data.fca.org.uk/search?index=nsm-search` | LEI | ⚠️ robots.txt: `Content-Signal: ai-train=no, use=reference` = TDM-Vorbehalt → höchstens nur Titel, kein LLM | mittel |
+| DE | BaFin Directors' Dealings CSV [V] | `portal.mvp.bafin.de/database/DealingsInfo/…` | ISIN | ❌ robots.txt `Disallow: /` | hoch, nur mit Genehmigung |
+| DE | Unternehmensregister, EQS, Börse Frankfurt | – | – | keine API bzw. kein freier Feed bzw. API mit signierten Headern | ❌ |
+| IT | eMarket Storage (Teleborsa) [V] | `emarketstorage.it/rss.xml` | Name | ❌ „solo per uso personale … non commerciale“ | nur mit Lizenz |
+| CH | SIX Exchange Regulation [V] | `ser-ag.com/sheldon/management_transactions/v1/overview.json` | ISIN | ❌ kommerzielle Nutzung nur mit schriftlicher Zustimmung; Ad-hoc veröffentlicht jeder Emittent selbst | – |
+| BE, LU, PT, IE, PL | FSMA STORI, LuxSE, CMVM, CBI, KNF/ESPI | nur Web-UI bzw. Bot-Schutz | – | FSMA: nur nicht-kommerziell | niedrig |
+| EU | **ESMA FIRDS** [V] | `registers.esma.europa.eu/solr/esma_registers_firds/select?q=isin:…&wt=json` | ISIN ↔ LEI, Name, MIC | EU-Weiterverwendung [U] | hoch als Hilfe zum Verknüpfen von Kennungen |
+| EU | **ESAP** (European Single Access Point) [U] | API geplant | LEI | – | Langfristig die Antwort für DE. Öffentlich ab **10.07.2027** mit den Pflichtmeldungen nach Transparenzrichtlinie, Prospekten und Leerverkäufen; weitere Phasen 2028 und 2030 |
+
+**Fazit**
+- **Deutschland:** Bis ESAP startet, gibt es keine offene amtliche Quelle für Pflichtmeldungen. DAX-Ad-hocs kommen weiter über FinanzNachrichten `rss-aktien-adhoc` (EQS). Directors' Dealings gibt es nur mit BaFin-Genehmigung.
+- **Für eine spätere Erweiterung auf EuroStoxx, CAC und IBEX:**
+  1. DILA AMF (Bulk-XML, ISIN und LEI).
+  2. CNMV RSS.
+  3. ESMA FIRDS, um LEI und Namen auf ISINs abzubilden.
+  4. AFM Directors' Dealings.
+  5. Nasdaq Nordic (nach Anfrage).
 
 ## Stammdaten
 
@@ -240,6 +281,7 @@ Geprüft wurden alle ATX- und DAX-Werte: die Seiten auf `rel=alternate` und RSS-
 - Marketaux: kommerzielle Anzeige von Schlagzeile + Link und interne LLM-Verarbeitung.
 - EQS: Lizenzangebot für den News-Feed (DE-Ad-hoc).
 - Infineon: ob der Feed auf presseagentur.com offiziell ist.
+- Nasdaq Nordic: Nutzungsbedingungen der Company-Announcements-API (bei einer Erweiterung auf die Nordics).
 - FinanzNachrichten: ob die Übernahme ausdrücklich auch ein kommerzielles Portal abdeckt (kein tdmrep, geprüft 2026-10-29).
 - Alpha Vantage: interne kommerzielle Nutzung als Baseline.
 - Business Wire / PR Newswire: Nutzungsbedingungen für die Anzeige auf einem kommerziellen Portal.

@@ -83,3 +83,16 @@ LEFT JOIN LATERAL (
     ORDER BY started_at DESC LIMIT 1 -- ingest_runs_source_idx
 ) r ON true
 WHERE s.enabled ORDER BY s.name;
+
+-- name: ListAlsoAt :many
+-- "Auch bei": for each given representative, the earliest member of every
+-- OTHER source in its cluster (title, link, source, time — public fields only).
+-- The service sorts them by time and caps the list.
+SELECT DISTINCT ON (r.id, m.source_id)
+       r.id AS representative_id, m.id, m.title, m.url, m.published_at,
+       s.key AS source_key, s.name AS source_name, s.kind AS source_kind
+FROM articles r
+JOIN articles m ON m.cluster_id = r.cluster_id AND m.source_id <> r.source_id
+JOIN sources s  ON s.id = m.source_id
+WHERE r.id = ANY(@representative_ids::bigint[])
+ORDER BY r.id, m.source_id, m.published_at, m.id;

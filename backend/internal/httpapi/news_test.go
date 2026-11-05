@@ -198,6 +198,36 @@ func TestSourcesEndpoint(t *testing.T) {
 	}
 }
 
+func TestNewsAlsoAt(t *testing.T) {
+	h, pool := newServerWithPool(t)
+	ctx := context.Background()
+	// A copy of the Erste ad-hoc in another source, in the same cluster.
+	if _, err := pool.Exec(ctx, `
+		INSERT INTO sources (key, name, kind, market, url, parser) VALUES ('ots_finanzen', 'APA-OTS Finanzen', 'press_release', 'AT', 'https://example.com/ots', 'ots');
+		INSERT INTO articles (source_id, external_id, url, canonical_url, title, published_at, content_hash, cluster_id)
+		SELECT s.id, 'o1', 'https://example.com/ots/1', 'https://example.com/ots/1', 'Erste Group: Dividende', '2026-10-28T09:35:00Z', '\x02', a.cluster_id
+		FROM sources s, articles a WHERE s.key = 'ots_finanzen' AND a.external_id = '1';`); err != nil {
+		t.Fatal(err)
+	}
+	items := decode(t, get(t, h, "/api/v1/news"))["items"].([]any)
+	also := items[0].(map[string]any)["also"].([]any)
+	if len(also) != 1 {
+		t.Fatalf("also = %v", also)
+	}
+	a := also[0].(map[string]any)
+	src := a["source"].(map[string]any)
+	if a["title"] != "Erste Group: Dividende" || a["url"] != "https://example.com/ots/1" || src["name"] != "APA-OTS Finanzen" || a["published_at"] != "2026-10-28T09:35:00Z" {
+		t.Errorf("also[0] = %v", a)
+	}
+}
+
+func TestNewsAlsoAtEmptyIsArray(t *testing.T) {
+	items := decode(t, get(t, newServer(t), "/api/v1/news"))["items"].([]any)
+	if also, ok := items[0].(map[string]any)["also"].([]any); !ok || len(also) != 0 {
+		t.Errorf("also = %v, want []", items[0].(map[string]any)["also"])
+	}
+}
+
 func TestSourcesEndpointLastOK(t *testing.T) {
 	h, pool := newServerWithPool(t)
 	if _, err := pool.Exec(context.Background(), `INSERT INTO ingest_runs (source_id, started_at, finished_at, status)

@@ -82,6 +82,19 @@ function NewsRow({ item, hideTicker }: { item: NewsItem; hideTicker?: string }) 
             ))}
           <ShareButton title={item.title} url={item.url} />
         </div>
+        {item.also && item.also.length > 0 && (
+          <div className="also">
+            Auch bei:{" "}
+            {item.also.map((a, i) => (
+              <span key={a.url}>
+                {i > 0 && " · "}
+                <a href={a.url} target="_blank" rel="noopener noreferrer" title={a.title}>
+                  {a.source.name} <span className="sr-only">(öffnet in neuem Fenster)</span>
+                </a>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </li>
   );

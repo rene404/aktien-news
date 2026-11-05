@@ -232,7 +232,8 @@ Migrationen: goose, jede mit `up` und `down`. Die CI testet up → down → up g
 `GET /api/v1/news`
 - Query: `ticker?` (string), `index?` (ATX|DAX|…), `source?` (key), `from?`/`to?` (RFC 3339),
   `cursor?` (opak), `limit?` (1–100, Default 25)
-- 200: `{ items: [{ id, title, url, source: {key, name}, published_at, tickers: [string] }], next_cursor }`
+- 200: `{ items: [{ id, title, url, source: {key, name, kind}, published_at, tickers: [string], also: [{ title, url, source, published_at }] }], next_cursor }`
+  (`also`: je andere Quelle im Cluster das früheste Mitglied, älteste zuerst, höchstens 5; nie die Quelle des Repräsentanten)
 - 400: ungültiger Parameter. Ein unbekannter Ticker ist kein Fehler und liefert eine leere Liste.
 - Der Response-Typ enthält **keine** Felder für Text, Snippet, Sentiment oder Event-Typ (Rechts-Invariante).
 

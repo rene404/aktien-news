@@ -201,6 +201,11 @@ ol.news li.adhoc .title { font-weight: var(--weight-semibold); }
 ol.news .ext { font-size: 0.75em; color: var(--muted); }
 .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 2px; font-size: var(--text-sm); color: var(--muted); }
 
+/* "Auch bei: APA-OTS Finanzen · FinanzNachrichten USA": the same news at other sources. */
+.also { margin-top: 2px; font-size: var(--text-sm); color: var(--muted); }
+.also a { color: var(--muted); }
+.also a:hover { color: var(--link); }
+
 /* Share (ShareButton): a quiet text button at the end of the meta line. */
 button.share {
   margin-left: auto; padding: 0 2px; border: 0; background: none; color: var(--muted);

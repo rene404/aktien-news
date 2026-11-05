@@ -238,7 +238,7 @@ Migrationen: goose, jede mit `up` und `down`. Die CI testet up → down → up g
 
 `GET /api/v1/instruments?q=` → 200 `{ items: [{ ticker, mic, name, isin }] }` (Autocomplete, max. 10)
 
-`GET /api/v1/sources` → 200 `{ items: [{ key, name, market }] }`
+`GET /api/v1/sources` → 200 `{ items: [{ key, name, market, kind, last_ok_at }] }` (`last_ok_at`: Ende des letzten Laufs mit Status `ok`/`partial`, sonst `null`)
 
 `GET /api/v1/tickers/top?from=&index?=&kind?=&limit?=` → 200 `{ items: [{ ticker, name, count }] }`
 (meistgenannt seit `from`, `limit` 1–20). `GET /api/v1/indices/{index}/instruments?from?=&kind?=` → 200 dasselbe

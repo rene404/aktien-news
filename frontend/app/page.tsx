@@ -1,12 +1,13 @@
 import { Suspense } from "react";
 import Filters from "@/components/Filters";
+import FreshnessLine from "@/components/FreshnessLine";
 import NewsFeed from "@/components/NewsFeed";
 import NewsSkeleton from "@/components/NewsSkeleton";
 import SectionTabs from "@/components/SectionTabs";
 import Trending from "@/components/Trending";
 import { getSources } from "@/lib/api";
 import { feedQuery } from "@/lib/feed";
-import { parseFilters, sourcesFor, type SearchParams } from "@/lib/filters";
+import { parseFilters, shownSources, sourcesFor, type SearchParams } from "@/lib/filters";
 
 export default async function Home({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const filters = parseFilters(await searchParams);
@@ -18,6 +19,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       <p className="sub">Ad-hoc-Mitteilungen und Nachrichten zu ATX-, DAX- und US-Aktien.</p>
       <SectionTabs value={filters} />
       <Filters path="/" sources={sources} value={filters} />
+      <FreshnessLine sources={shownSources(sources, filters.source)} />
       {/* Own boundary: the feed never waits for the chips. */}
       <Suspense key={`trending:${filters.section}`} fallback={null}>
         <Trending section={filters.section} />

@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/rene404/aktien-news/backend/internal/catalog"
 	"github.com/rene404/aktien-news/backend/internal/httpapi"
 	"github.com/rene404/aktien-news/backend/internal/service"
@@ -19,6 +21,12 @@ import (
 
 // newServer seeds the catalog testdata and one article linked to Erste (EBS).
 func newServer(t *testing.T) http.Handler {
+	t.Helper()
+	h, _ := newServerWithPool(t)
+	return h
+}
+
+func newServerWithPool(t *testing.T) (http.Handler, *pgxpool.Pool) {
 	t.Helper()
 	ctx := context.Background()
 	pool := testdb.New(t)
@@ -51,7 +59,7 @@ func newServer(t *testing.T) http.Handler {
 		VALUES ($1, $2, 1, 'issuer', 'linked', 'engine')`, a.ID, erste.ID); err != nil {
 		t.Fatal(err)
 	}
-	return httpapi.NewRouter(service.New(pool))
+	return httpapi.NewRouter(service.New(pool)), pool
 }
 
 func get(t *testing.T, h http.Handler, target string) *httptest.ResponseRecorder {
@@ -183,6 +191,22 @@ func TestSourcesEndpoint(t *testing.T) {
 	items := decode(t, rec)["items"].([]any)
 	if len(items) != 1 || items[0].(map[string]any)["key"] != "fn_adhoc" || items[0].(map[string]any)["kind"] != "adhoc" {
 		t.Errorf("items = %v", items)
+	}
+	// No run yet: present, but null.
+	if v, ok := items[0].(map[string]any)["last_ok_at"]; !ok || v != nil {
+		t.Errorf("last_ok_at = %v (present %v), want null", v, ok)
+	}
+}
+
+func TestSourcesEndpointLastOK(t *testing.T) {
+	h, pool := newServerWithPool(t)
+	if _, err := pool.Exec(context.Background(), `INSERT INTO ingest_runs (source_id, started_at, finished_at, status)
+		SELECT id, '2026-11-05T19:55:00Z', '2026-11-05T19:55:30Z', 'ok' FROM sources WHERE key = 'fn_adhoc'`); err != nil {
+		t.Fatal(err)
+	}
+	items := decode(t, get(t, h, "/api/v1/sources"))["items"].([]any)
+	if got := items[0].(map[string]any)["last_ok_at"]; got != "2026-11-05T19:55:30Z" {
+		t.Errorf("last_ok_at = %v", got)
 	}
 }
 

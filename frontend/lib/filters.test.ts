@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Source, SourceKind } from "./api";
-import { filterHref, parseFilters, sourcesFor, toNewsParams } from "./filters";
+import { filterHref, parseFilters, shownSources, sourcesFor, toNewsParams } from "./filters";
 
 const now = new Date("2026-10-28T12:00:00Z");
 const NEWS_KINDS = "adhoc,press_release,news_api,ir";
@@ -80,7 +80,7 @@ describe("filterHref", () => {
 });
 
 describe("sourcesFor", () => {
-  const src = (key: string, market: string, kind: SourceKind): Source => ({ key, name: key, market, kind });
+  const src = (key: string, market: string, kind: SourceKind): Source => ({ key, name: key, market, kind, last_ok_at: null });
   const all = [
     src("fn_adhoc", "MULTI", "adhoc"),
     src("fn_atx", "AT", "news_api"),
@@ -126,5 +126,16 @@ describe("adhoc only (stock page)", () => {
     const f = { section: "", source: "", range: "all", cursor: "" };
     expect(filterHref("/aktie/VOE", { ...f, adhoc: true }, { defaultRange: "all" })).toBe("/aktie/VOE?adhoc=1");
     expect(filterHref("/aktie/VOE", { ...f, adhoc: false }, { defaultRange: "all" })).toBe("/aktie/VOE");
+  });
+});
+
+describe("shownSources", () => {
+  const src = (key: string): Source => ({ key, name: key, market: "AT", kind: "news_api", last_ok_at: null });
+  const list = [src("fn_atx"), src("ots_finanzen")];
+
+  it("is the whole list without a source filter, only the picked source with one", () => {
+    expect(shownSources(list, "")).toEqual(list);
+    expect(shownSources(list, "ots_finanzen")).toEqual([list[1]]);
+    expect(shownSources(list, "gone")).toEqual([]);
   });
 });

@@ -70,6 +70,13 @@ describe("NewsList", () => {
     expect(filing.querySelector(".meta img")).toHaveAttribute("src", "/sources/sec.png");
   });
 
+  it("offers to share each news item", () => {
+    render(<NewsList items={items} now={now} />);
+    // Rendered for every row; visible only where the browser can share or copy.
+    const first = screen.getAllByRole("listitem")[0];
+    expect(first.querySelector("button.share")).toHaveAttribute("aria-label", `Teilen: ${items[0].title}`);
+  });
+
   it("badges ad-hoc releases and filings, not plain news", () => {
     render(<NewsList items={items} now={now} />);
     const [adhoc, news, filing] = screen.getAllByRole("listitem");
@@ -88,7 +95,8 @@ describe("NewsList", () => {
     screen.getAllByRole("listitem").forEach((li, i) => {
       let rest = li.textContent ?? "";
       const it = items[i];
-      for (const s of [it.title, NEW_WINDOW, it.source.name, KIND_LABELS[it.source.kind] ?? "", ...it.tickers, li.querySelector("time")?.textContent ?? ""]) {
+      // "Teilen" is the share button's own label, not content.
+      for (const s of ["Teilen", it.title, NEW_WINDOW, it.source.name, KIND_LABELS[it.source.kind] ?? "", ...it.tickers, li.querySelector("time")?.textContent ?? ""]) {
         rest = rest.replace(s, "");
       }
       expect(rest.replace(/[\s·↗]/g, "")).toBe("");

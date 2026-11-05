@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { NewsItem, SourceKind } from "@/lib/api";
 import { dayKey, dayLabel } from "@/lib/format";
 import NewsTime from "./NewsTime";
+import ShareButton from "./ShareButton";
 import SourceIcon from "./SourceIcon";
 
 type Props = {
@@ -79,6 +80,7 @@ function NewsRow({ item, hideTicker }: { item: NewsItem; hideTicker?: string }) 
                 {t}
               </Link>
             ))}
+          <ShareButton title={item.title} url={item.url} />
         </div>
       </div>
     </li>

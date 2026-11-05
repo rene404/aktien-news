@@ -124,11 +124,14 @@ Nachrichtenquellen (EU-Plan, weitere Newsfeeds) spürbar etwas.
   nach der Hydration erscheint. Die Zeile mit dem Fokus ist hinterlegt (`li:has(.title:focus-visible)`).
   Live mit echten Tasten geprüft (Playwright).
 
-- [ ] **8. Teilen** — `feature/web-share`
+- [x] **8. Teilen** — `feature/web-share`
   Files: `frontend/components/ShareButton.tsx` (+ Test), `frontend/components/NewsList.tsx`
   What: Kleiner Button je Meldung: auf dem Handy `navigator.share` mit Titel und Original-Link,
   sonst Link kopieren mit kurzer Bestätigung. Ohne JavaScript nicht sichtbar.
   Done: Test für beide Wege.
+  Umsetzungsnotiz: Geteilt wird der Original-Link. Teilen und Zwischenablage gibt es nur im sicheren Kontext
+  (https oder localhost); über reines http, z. B. `http://aktien.<LAN_IP>.sslip.io/` auf dem Handy, bleibt der
+  Button daher verborgen. Abbruch des Teilen-Dialogs bleibt still. Live geprüft unter localhost (Zwischenablage).
 
 ## C. Cluster sichtbar machen (später)
 

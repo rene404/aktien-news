@@ -23,6 +23,46 @@ describe("theme", () => {
   });
 });
 
+// Calmer typography (docs/plan-web-inspiration.md, task 1): figures in a monospaced
+// face, hairline separators, small uppercase labels.
+describe("typography", () => {
+  const theme = readFileSync(new URL("./theme.css", import.meta.url), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  const globals = readFileSync(new URL("./globals.css", import.meta.url), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  const rule = (selector: string) => {
+    const at = globals.indexOf(`${selector} {`);
+    if (at < 0) throw new Error(`no rule for ${selector}`);
+    return globals.slice(at, globals.indexOf("}", at));
+  };
+
+  it("defines the new tokens", () => {
+    for (const name of ["--font-mono", "--hairline", "--micro-size", "--micro-tracking"]) {
+      expect(theme).toContain(`${name}:`);
+    }
+  });
+
+  it("loads no font or file at runtime (no third-party requests)", () => {
+    expect(theme + globals).not.toMatch(/url\(|@import|@font-face/);
+  });
+
+  it.each(["ol.news time", ".badge", ".tchip-count", ".chip", ".tchip-ticker", ".suggest-ticker"])(
+    "%s sets figures in the mono face",
+    (selector) => {
+      expect(rule(selector)).toContain("var(--font-mono)");
+    },
+  );
+
+  it.each([".skeleton-row", "section.day h2", "ul.results li"])("%s is separated by a hairline", (selector) => {
+    expect(rule(selector)).toContain("var(--hairline)");
+  });
+
+  it.each(["section.day h2", ".badge", ".trending-label"])("%s is a micro label", (selector) => {
+    const r = rule(selector);
+    expect(r).toContain("var(--micro-size)");
+    expect(r).toContain("var(--micro-tracking)");
+    expect(r).toContain("uppercase");
+  });
+});
+
 // Text/background pairs that must stay readable (WCAG AA, 4.5:1) in every colour scheme theme.css defines.
 const PAIRS = [
   ["--text", "--bg"],

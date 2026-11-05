@@ -75,7 +75,7 @@ Nachrichtenquellen (EU-Plan, weitere Newsfeeds) spürbar etwas.
   Dabei gefunden: Das Docker-Image (`output: "standalone"`) kopierte `public/` nicht; das `Dockerfile` kopiert
   es jetzt, ein Regressionstest prüft das. Live geprüft: alle Icons laden, keine Anfragen an fremde Hosts.
 
-- [ ] **4. Aktualitätszeile** — `feature/api-status`
+- [x] **4. Aktualitätszeile** — `feature/api-status`
   Files: `backend/internal/store/queries/*.sql`, `backend/internal/service/status.go` (+ Test),
   `backend/internal/httpapi/status.go` (+ Test), `backend/internal/httpapi/dto.go` (+ `publicDTOs`),
   `frontend/components/FreshnessLine.tsx` (+ Test)
@@ -83,6 +83,11 @@ Nachrichtenquellen (EU-Plan, weitere Newsfeeds) spürbar etwas.
   (aus `ingest_runs`), nur Zählungen und Zeitpunkte. Darunter unter „Aktuelle Meldungen“:
   „16 Quellen · zuletzt aktualisiert vor 2 Min“.
   Done: DTO-Test grün; Zeile erscheint auf Startseite und Aktienseite.
+  Umsetzungsnotiz: kein eigener Endpunkt `/api/v1/status`, sondern `last_ok_at` je Quelle in
+  `GET /api/v1/sources` (Ende des letzten Laufs mit `ok`/`partial`, sonst `null`; Lateral-Join über
+  `ingest_runs_source_idx`). Die Website lädt die Quellen ohnehin je Bereich und zeigt so die Aktualität
+  passend zum Tab bzw. zur gewählten Quelle (`shownSources`): Alle 13, ATX 8, DAX 6, S&P 500 5, Ad-hoc 2,
+  SEC-Filings 3 Quellen. Server rendert „um 21:55“, der Browser „vor 2 Min“/„gerade eben“; nicht heute → Datum.
 
 - [x] **5. Dark Mode** (Entscheidung 2) — `feature/web-dark-mode`
   Files: `frontend/app/theme.css`, `frontend/app/theme.test.ts`

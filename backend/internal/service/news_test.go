@@ -390,3 +390,41 @@ func TestSources(t *testing.T) {
 		t.Errorf("sources = %+v", got)
 	}
 }
+
+// last_ok_at: the end of the newest run that brought data (ok or partial);
+// failed and skipped runs, and runs still going, do not count.
+func TestSourcesLastOK(t *testing.T) {
+	w := newWorld(t)
+	ctx := context.Background()
+	run := func(source int64, finished *time.Time, status string) {
+		t.Helper()
+		if _, err := w.pool.Exec(ctx, `INSERT INTO ingest_runs (source_id, started_at, finished_at, status)
+			VALUES ($1, $2, $3, $4::run_status)`, source, finished.Add(-30*time.Second), finished, status); err != nil {
+			t.Fatal(err)
+		}
+	}
+	at := func(min int) *time.Time { v := w.base.Add(time.Duration(min) * time.Minute); return &v }
+	run(w.adhoc, at(1), "ok")
+	run(w.adhoc, at(2), "partial")
+	run(w.adhoc, at(3), "failed")
+	run(w.adhoc, at(4), "skipped")
+	if _, err := w.pool.Exec(ctx, `INSERT INTO ingest_runs (source_id, started_at) VALUES ($1, $2)`, w.adhoc, *at(5)); err != nil {
+		t.Fatal(err) // still running: no finished_at, no status
+	}
+	run(w.other, at(1), "failed")
+
+	got, err := w.svc.Sources(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	last := map[string]*time.Time{}
+	for _, s := range got {
+		last[s.Key] = s.LastOKAt
+	}
+	if a := last["fn_adhoc"]; a == nil || !a.Equal(*at(2)) {
+		t.Errorf("fn_adhoc last ok = %v, want %v", a, *at(2))
+	}
+	if u, ok := last["fn_usa"]; !ok || u != nil {
+		t.Errorf("fn_usa last ok = %v (listed %v), want nil", u, ok)
+	}
+}

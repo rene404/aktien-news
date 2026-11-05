@@ -5,8 +5,8 @@ import type { Source } from "@/lib/api";
 import Filters from "./Filters";
 
 const sources: Source[] = [
-  { key: "fn_adhoc", name: "FinanzNachrichten Ad-hoc", market: "MULTI", kind: "adhoc" },
-  { key: "fn_atx", name: "FinanzNachrichten ATX", market: "AT", kind: "news_api" },
+  { key: "fn_adhoc", name: "FinanzNachrichten Ad-hoc", market: "MULTI", kind: "adhoc", last_ok_at: null },
+  { key: "fn_atx", name: "FinanzNachrichten ATX", market: "AT", kind: "news_api", last_ok_at: null },
 ];
 
 describe("Filters", () => {

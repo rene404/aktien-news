@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Filters from "@/components/Filters";
+import FreshnessLine from "@/components/FreshnessLine";
 import NewsFeed from "@/components/NewsFeed";
 import NewsSkeleton from "@/components/NewsSkeleton";
 import { getInstrument, getSources } from "@/lib/api";
 import { feedQuery, STOCK_DEFAULT_RANGE } from "@/lib/feed";
-import { EXCHANGES, parseFilters, sourcesFor, type SearchParams } from "@/lib/filters";
+import { EXCHANGES, parseFilters, shownSources, sourcesFor, type SearchParams } from "@/lib/filters";
 
 type Props = { params: Promise<{ ticker: string }>; searchParams: Promise<SearchParams> };
 
@@ -38,6 +39,7 @@ export default async function StockPage({ params, searchParams }: Props) {
         {[inst.isin, EXCHANGES[inst.mic]?.name ?? inst.mic, ...inst.indices].filter(Boolean).join(" · ")}
       </p>
       <Filters path={path} sources={sources} value={filters} showAdhoc />
+      <FreshnessLine sources={shownSources(sources, filters.source)} />
       <Suspense key={feedQuery(filters, inst.ticker)} fallback={<NewsSkeleton />}>
         <NewsFeed filters={filters} path={path} ticker={inst.ticker} />
       </Suspense>

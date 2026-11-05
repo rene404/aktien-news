@@ -53,6 +53,8 @@ type sourceDTO struct {
 	Name   string `json:"name"`
 	Market string `json:"market"`
 	Kind   string `json:"kind"`
+	// Last successful fetch (UTC); null before the first.
+	LastOKAt *time.Time `json:"last_ok_at"`
 }
 
 type sourceListDTO struct {

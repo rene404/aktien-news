@@ -44,6 +44,11 @@ export function sourcesFor(sources: Source[], opts: { section?: string; mic?: st
   );
 }
 
+/** The sources behind the list on screen: all offered ones, or just the one picked in the URL. */
+export function shownSources(sources: Source[], selected: string): Source[] {
+  return selected ? sources.filter((s) => s.key === selected) : sources;
+}
+
 export const RANGES = [
   { key: "24h", label: "24 Stunden", hours: 24 },
   { key: "7d", label: "7 Tage", hours: 24 * 7 },

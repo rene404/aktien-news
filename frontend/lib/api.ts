@@ -18,7 +18,14 @@ export type Instrument = { ticker: string; mic: string; name: string; isin?: str
 
 export type InstrumentDetail = Instrument & { country: string; indices: string[] };
 
-export type Source = { key: string; name: string; market: string; kind: SourceKind };
+export type Source = {
+  key: string;
+  name: string;
+  market: string;
+  kind: SourceKind;
+  /** Last successful fetch (ISO, UTC); null before the first. */
+  last_ok_at: string | null;
+};
 
 /** A stock with the number of news items it appears in. */
 export type TickerCount = { ticker: string; name: string; count: number };

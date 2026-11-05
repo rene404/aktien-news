@@ -42,7 +42,7 @@ docker compose --profile test run --rm web-test       # Frontend: lint, test, bu
 | `GET /api/v1/news?ticker=&index=&source=&from=&to=&cursor=&limit=` | Meldungen mit sicher verknüpfter Firma, neueste zuerst, ein Eintrag pro Cluster gleicher Meldungen (Titel/Link/Quelle der wichtigsten Quelle, Ticker aller Mitglieder). `source`/`from`/`to` beziehen sich auf diesen Eintrag. `from`/`to` RFC 3339, `limit` 1–100 (Default 25), `cursor` aus `next_cursor` |
 | `GET /api/v1/instruments?q=` | Suche nach Ticker, Name oder ISIN (max. 10; exakter Ticker, dann Namensanfang, dann Index-Werte zuerst) |
 | `GET /api/v1/instruments/{ticker}` | Name, ISIN, Börse, Indizes einer Aktie (404 wenn unbekannt) |
-| `GET /api/v1/sources` | aktive Quellen |
+| `GET /api/v1/sources` | aktive Quellen mit letztem erfolgreichem Abruf (`last_ok_at`) |
 | `GET /api/v1/tickers/top?from=&index=&kind=&limit=` | meistgenannte Aktien seit `from` (Pflicht, RFC 3339): Ticker, Name, Anzahl Meldungen; `index` nur dessen Werte, `kind` Quellenarten, `limit` 1–20 (Default 10) |
 | `GET /api/v1/indices/{index}/instruments?from=&kind=` | alle aktuellen Werte eines Index mit Anzahl Meldungen (auch 0), nach Name (404 wenn unbekannt) |
 | `GET /healthz` | Health-Check |

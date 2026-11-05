@@ -42,16 +42,26 @@ func (q *Queries) InstrumentByTicker(ctx context.Context, ticker string) (Instru
 }
 
 const listEnabledSources = `-- name: ListEnabledSources :many
-SELECT key, name, market, kind FROM sources WHERE enabled ORDER BY name
+SELECT s.key, s.name, s.market, s.kind, r.finished_at AS last_ok_at
+FROM sources s
+LEFT JOIN LATERAL (
+    SELECT finished_at FROM ingest_runs
+    WHERE source_id = s.id AND status IN ('ok', 'partial') AND finished_at IS NOT NULL
+    ORDER BY started_at DESC LIMIT 1 -- ingest_runs_source_idx
+) r ON true
+WHERE s.enabled ORDER BY s.name
 `
 
 type ListEnabledSourcesRow struct {
-	Key    string
-	Name   string
-	Market string
-	Kind   SourceKind
+	Key      string
+	Name     string
+	Market   string
+	Kind     SourceKind
+	LastOkAt *time.Time
 }
 
+// last_ok_at: end of the newest run that brought data (ok or partial), null
+// before the first one. Served publicly for "zuletzt aktualisiert".
 func (q *Queries) ListEnabledSources(ctx context.Context) ([]ListEnabledSourcesRow, error) {
 	rows, err := q.db.Query(ctx, listEnabledSources)
 	if err != nil {
@@ -66,6 +76,7 @@ func (q *Queries) ListEnabledSources(ctx context.Context) ([]ListEnabledSourcesR
 			&i.Name,
 			&i.Market,
 			&i.Kind,
+			&i.LastOkAt,
 		); err != nil {
 			return nil, err
 		}

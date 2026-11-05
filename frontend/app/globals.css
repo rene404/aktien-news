@@ -150,6 +150,9 @@ ul.tickers { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex
 .tchip.zero { color: var(--muted); }
 .tchip.zero .tchip-count { background: var(--count-zero-bg); color: var(--muted); }
 
+/* "16 Quellen · zuletzt aktualisiert vor 2 Min" under the filters. */
+p.freshness { margin: 0 0 8px; font-size: var(--text-sm); color: var(--muted); }
+
 /* "Heute im Gespräch": label, then compact chips that wrap, so all of them stay visible. */
 .trending { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 4px 0 0; }
 .trending-label {

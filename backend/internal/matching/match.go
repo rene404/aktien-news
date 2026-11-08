@@ -9,7 +9,9 @@
 //	isin       0.90  ISIN tagged by a news feed, company also named in the title
 //	isin       0.60  ISIN tagged by a news feed, not corroborated → review
 //	cashtag    0.95  $TICKER
-//	ticker     0.90  known ticker as an uppercase whole word, not stoplisted
+//	ticker     0.90  known ticker as an uppercase whole word, not stoplisted;
+//	                 on Euronext Paris/Amsterdam and Madrid only where the
+//	                 ticker is also the company's name ("IAG", "ASML")
 //	full_name  0.90  name incl. legal form (legal name, issuer/former names)
 //	core_name  0.55  name without legal form, >= 3 chars → review queue
 //
@@ -79,6 +81,25 @@ type Match struct {
 	CompanyID  int64
 	Confidence float64
 	Method     string // matches the match_method enum
+}
+
+// Exchanges whose tickers are mnemonics rather than symbols used in
+// headlines: "EN" (Bouygues), "RED" (Redeia), "NN" (NN Group) are ordinary
+// words in titles. Cashtags still count.
+var mnemonicMICs = map[string]bool{"XPAR": true, "XAMS": true, "XMAD": true}
+
+// tickerIsName reports whether the ticker spells the company's name or an alias.
+func tickerIsName(c CompanyEntry, ticker string) bool {
+	t := Fold(ticker)
+	if t == Fold(c.Name) || t == stripLegalForm(Fold(c.LegalName)) {
+		return true
+	}
+	for _, a := range c.Aliases {
+		if t == Fold(a.Text) {
+			return true
+		}
+	}
+	return false
 }
 
 // Uppercase words that look like tickers but are not meant as one.
@@ -154,7 +175,7 @@ func NewIndex(companies []CompanyEntry) *Index {
 		}
 		for _, l := range c.Listings {
 			addUnique(ix.cashtags, l.Ticker, c.ID)
-			if !c.Uncurated {
+			if !c.Uncurated && (!mnemonicMICs[l.MIC] || tickerIsName(c, l.Ticker)) {
 				addUnique(ix.tickers, l.Ticker, c.ID)
 			}
 			addUnique(ix.isin, l.ISIN, c.ID)

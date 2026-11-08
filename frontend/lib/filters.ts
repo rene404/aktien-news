@@ -19,6 +19,9 @@ export const EXCHANGES: Record<string, { name: string; market: string }> = {
   XETR: { name: "Xetra", market: "DE" },
   XNYS: { name: "NYSE", market: "US" },
   XNAS: { name: "Nasdaq", market: "US" },
+  XPAR: { name: "Euronext Paris", market: "FR" },
+  XMAD: { name: "Bolsa de Madrid", market: "ES" },
+  XAMS: { name: "Euronext Amsterdam", market: "NL" },
 };
 
 /**

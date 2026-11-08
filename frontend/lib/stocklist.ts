@@ -6,6 +6,11 @@ import { RANGES, SECTIONS, type SearchParams } from "./filters";
 /** The indices with a section of their own, in the same order. */
 export const LIST_INDICES = SECTIONS.flatMap((s) => ("index" in s ? [{ key: s.index, label: s.label }] : []));
 
+/** "ATX, DAX, … und S&P 500": the indices of the list, for running text. */
+export function listedIndices(): string {
+  return new Intl.ListFormat("de", { type: "conjunction" }).format(LIST_INDICES.map((i) => i.label));
+}
+
 /** A list counts recent news: no "Alle"/30 days, that says little about today. */
 export const LIST_RANGES = RANGES.filter((r) => r.key === "24h" || r.key === "7d");
 

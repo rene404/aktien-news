@@ -9,6 +9,10 @@ import "time"
 // Legal invariant: it deliberately has no field for descriptions, snippets or
 // body text. Feed descriptions are often third-party agency text (e.g.
 // dpa-AFX) that we may neither display nor send to an LLM.
+//
+// One exception is not body text: the CNMV puts the subject of a notice (its
+// headline) into <description>, after time and category. The cnmv parser
+// takes that subject alone into Title, nothing else of the description.
 type RawArticle struct {
 	ExternalID  string // stable per-source id (guid, or the link if none)
 	URL         string

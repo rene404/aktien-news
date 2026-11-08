@@ -13,10 +13,10 @@ describe("SourceIcon", () => {
   });
 
   it("falls back to the first letter of the name, drawn by CSS, so it adds no text", () => {
-    const { container } = render(<SourceIcon sourceKey="cnmv_hechos" name="CNMV Hechos relevantes" />);
+    const { container } = render(<SourceIcon sourceKey="borsa_news" name="Borsa News" />);
     expect(container.querySelector("img")).toBeNull();
     const letter = container.querySelector(".src-icon")!;
-    expect(letter).toHaveAttribute("data-letter", "C");
+    expect(letter).toHaveAttribute("data-letter", "B");
     expect(letter).toHaveAttribute("aria-hidden", "true");
     expect(letter.textContent).toBe("");
   });

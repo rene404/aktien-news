@@ -1,4 +1,4 @@
-# Plan: Pflichtmeldungen aus FR, ES, NL (später Nordics, UK)
+# Plan: Pflichtmeldungen aus FR, ES, NL, Nordics und UK
 
 Entwurf vom 2026-11-05. Grundlage ist die Recherche in `docs/research-sources.md`, Abschnitt „Nachtrag 2026-11-05: Pflichtmeldungen in anderen EU-Ländern“.
 Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).

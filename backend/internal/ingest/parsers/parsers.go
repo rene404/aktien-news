@@ -4,6 +4,7 @@ package parsers
 
 import (
 	"github.com/rene404/aktien-news/backend/internal/ingest"
+	"github.com/rene404/aktien-news/backend/internal/ingest/afm"
 	"github.com/rene404/aktien-news/backend/internal/ingest/cnmv"
 	"github.com/rene404/aktien-news/backend/internal/ingest/dila"
 	"github.com/rene404/aktien-news/backend/internal/ingest/finanznachrichten"
@@ -15,6 +16,7 @@ import (
 // All returns a fresh map; callers may change it.
 func All() map[string]ingest.Parser {
 	return map[string]ingest.Parser{
+		"afm":               afm.Parse,
 		"cnmv":              cnmv.Parse,
 		"dila_adhoc":        dila.ParseAdhoc,
 		"dila_filings":      dila.ParseFilings,

@@ -19,3 +19,4 @@ cnmv_ip,CNMV Información privilegiada,adhoc,ES,https://www.cnmv.es/portal/infor
 cnmv_oir,CNMV Otra información relevante,filing,ES,https://www.cnmv.es/portal/Otra-Informacion-Relevante/RSS.asmx/GetNoticiasCNMV,cnmv,0.90,15,none,https://www.cnmv.es/portal/utilidades/NotaLegal,
 amf_adhoc,AMF Informations privilégiées,adhoc,FR,https://echanges.dila.gouv.fr/OPENDATA/AMF/,dila_adhoc,1.00,60,none,https://www.etalab.gouv.fr/licence-ouverte-open-licence/,
 amf_filings,AMF Informations réglementées,filing,FR,https://echanges.dila.gouv.fr/OPENDATA/AMF/,dila_filings,0.90,60,none,https://www.etalab.gouv.fr/licence-ouverte-open-licence/,
+afm_dd,AFM – Transacties leidinggevenden,filing,NL,https://www.afm.nl/export.aspx?type=0ee836dc-5520-459d-bcf4-a4a689de6614&format=xml,afm,0.90,60,none,https://www.afm.nl/en/over-de-afm/over-deze-website,

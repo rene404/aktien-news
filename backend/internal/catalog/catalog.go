@@ -35,6 +35,26 @@ func notFound[T any](v T, err error) (T, error) {
 	return v, err
 }
 
+// ValidLEI checks the ISO 17442 format (18 upper-case alphanumerics, two
+// check digits) and the check digits: the number with A=10 … Z=35 is 1 mod 97.
+func ValidLEI(lei string) bool {
+	if len(lei) != 20 {
+		return false
+	}
+	rem := 0
+	for i, r := range lei {
+		switch {
+		case r >= '0' && r <= '9':
+			rem = (rem*10 + int(r-'0')) % 97
+		case r >= 'A' && r <= 'Z' && i < 18:
+			rem = (rem*100 + int(r-'A') + 10) % 97
+		default:
+			return false
+		}
+	}
+	return rem == 1
+}
+
 // ValidISIN checks format and the ISO 6166 check digit (Luhn over the
 // digit expansion where A=10 … Z=35).
 func ValidISIN(isin string) bool {

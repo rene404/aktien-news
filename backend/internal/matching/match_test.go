@@ -264,3 +264,44 @@ func TestFold(t *testing.T) {
 		}
 	}
 }
+
+// docs/plan-eu-sources.md, task 3: Euronext and Madrid tickers are mnemonics
+// ("EN", "RED", "NN") that headlines use as words, not as symbols. They count
+// as plain words only where the ticker is also the company's name ("IAG").
+// Real titles from the dev database, 2026-11-08.
+func TestEUTickersCountOnlyWhereTheyAreTheName(t *testing.T) {
+	const (
+		bouygues = iota + 100
+		redeia
+		nn
+		iag
+	)
+	ix := matching.NewIndex([]matching.CompanyEntry{
+		{ID: bouygues, Name: "Bouygues", LegalName: "BOUYGUES", Listings: []matching.Listing{{Ticker: "EN", MIC: "XPAR", ISIN: "FR0000120503"}}},
+		{ID: redeia, Name: "Redeia", LegalName: "REDEIA CORPORACION SA", Listings: []matching.Listing{{Ticker: "RED", MIC: "XMAD", ISIN: "ES0173093024"}}},
+		{ID: nn, Name: "NN Group", LegalName: "NN Group N.V.", Listings: []matching.Listing{{Ticker: "NN", MIC: "XAMS", ISIN: "NL0010773842"}}},
+		{ID: iag, Name: "IAG", LegalName: "INTERNATIONAL CONSOLIDATED AIRLINES GROUP, S.A.", Listings: []matching.Listing{{Ticker: "IAG", MIC: "XMAD", ISIN: "ES0177542018"}}},
+	})
+	cases := []struct {
+		title string
+		want  []want
+	}{
+		{"LOGICALIS DEVIENT LE PREMIER PARTENAIRE MONDIAL DE CISCO EN MATIÈRE DE RÉSEAUX", nil},
+		{"RED ROBIN ANNOUNCES PRELIMINARY THIRD QUARTER COMPARABLE RESTAURANT REVENUE", nil},
+		{"8-K: NN INC – Item 2.02 Results of Operations and Financial Condition", nil},
+		{"RBC stuft IAG auf 'Outperform'", []want{{iag, "ticker", 0.90}}},
+		{"Why $EN is up today", []want{{bouygues, "cashtag", 0.95}}},
+	}
+	for _, tc := range cases {
+		got := ix.Match(matching.Input{Title: tc.title})
+		if len(got) != len(tc.want) {
+			t.Errorf("%q: got %+v, want %+v", tc.title, got, tc.want)
+			continue
+		}
+		for i, w := range tc.want {
+			if got[i].CompanyID != w.id || got[i].Method != w.method || got[i].Confidence != w.conf {
+				t.Errorf("%q: got %+v, want %+v", tc.title, got[i], w)
+			}
+		}
+	}
+}

@@ -77,7 +77,14 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
     - In einer News-Quelle zählt die LEI nicht als Emittenten-Signal.
     - Eine OeKB-Meldung ohne ISIN, aber mit LEI wird verknüpft.
 
-- [ ] **3. Stammdaten FR, ES, NL.** Branch `feature/catalog-eu`.
+- [x] **3. Stammdaten FR, ES, NL.** Branch `feature/catalog-eu`.
+  - **Umgesetzt (2026-11-08):** 102 neue Firmen, 104 Listings und 105 Indexmitgliedschaften (`valid_from` 2026-11-08); Airbus bestand schon und bekam das Pariser Listing und seine LEI.
+    - **Zusammensetzung:** CAC 40 und IBEX 35 sind 2026 unverändert (Euronext und Comité Asesor Técnico, März, Juni und September). Der AEX hat seit dem 22.09.2025 30 Werte; die niederländische Wikipedia, Stand 22.06.2026, nennt 29. InPost ist mitgezählt, weil die Aktie trotz laufender Übernahme noch notiert ist. Nach dem Delisting muss InPost mit `valid_to` heraus.
+    - **ISIN und LEI:** LEI aus ESMA FIRDS, rechtlicher Name aus GLEIF. Die ISIN ist die aktive Aktien-ISIN an der Heimatbörse laut FIRDS; bei Dassault Systèmes, Eurofins, Michelin, Aena und Unilever ist das schon die neue ISIN nach Split oder Umstellung.
+    - **Aliasse:** Der rechtliche Name steht nur als `legal_name`. Als `issuer_name`-Alias würde ein nackter Name wie „ORANGE“ als voller Firmenname zählen und „Orange County Bancorp“ verknüpfen. Für spanische Firmen kommt die CNMV-Schreibweise „…, S.A.“ als `issuer_name` dazu.
+    - **Ticker:** Kürzel von Euronext Paris, Amsterdam und Madrid sind Mnemonics („EN“, „RED“, „NN“). Als Wort im Titel zählen sie nur, wenn sie zugleich der Name sind (IAG, BBVA, ASML, ACS); Cashtags gelten weiter. Ermittelt gegen alle 15.364 Titel der Dev-Datenbank.
+    - **Prüfung:** `ValidLEI` (ISO 17442, mod 97) im Seed.
+    - **Offen:** Ein ADR-Duplikat aus dem SEC-Import (etwa „ASML HOLDING NV“ an der Nasdaq, uncurated) bleibt eine eigene Firma.
   - **Dateien:** `backend/seed/companies.csv`, `listings.csv`, `index_memberships.csv`, `company_aliases.csv`.
   - **Inhalt:**
     - Pro Firma: Name, rechtlicher Name, Land, **LEI**, ISIN, Ticker, MIC und Index (CAC40, IBEX35, AEX).

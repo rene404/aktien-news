@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" version="2.0">
+  <Channel>
+    <title>CNMV - Información privilegiada.</title>
+    <link>https://www.cnmv.es/Portal/Informacion-privilegiada/AlDia-IP.aspx</link>
+    <description>Información privilegiada del día (Desde el cierre de la sesión anterior).</description>
+    <generator>CNMV RSS</generator>
+    <language>es</language>
+    <ttl>15</ttl>
+    <image>
+      <Title>Comisión nacional del mercado de valores</Title>
+      <Link>http://www.cnmv.es</Link>
+      <Url>http://www.cnmv.es/images/cnmv_logo.gif</Url>
+    </image>
+        <item>
+      <Title>MAPFRE, S.A.</Title>
+      <link><![CDATA[https://www.cnmv.es/Portal/Informacion-Privilegiada/Resultado-IP.aspx?nreg=900]]></link>
+      <guid isPermaLink="true"><![CDATA[https://www.cnmv.es/Portal/Informacion-Privilegiada/Resultado-IP.aspx?nreg=900]]></guid>
+      <pubDate>Mon, 09 Nov 2026 07:30:00 GMT</pubDate>
+      <description><![CDATA[<p><b>08:30  09/11/2026  </b> Sobre resultados<BR/><BR/>Resultados 3T &amp; cartera &lt;estable&gt;</p>]]></description>
+    </item>
+    <item>
+      <Title>VIDRALA, S.A.</Title>
+      <link><![CDATA[https://www.cnmv.es/Portal/Informacion-Privilegiada/Resultado-IP.aspx?nreg=901]]></link>
+      <pubDate>Mon, 09 Nov 2026 07:45:00 GMT</pubDate>
+      <description><![CDATA[<p><b>08:45  09/11/2026  </b> Sobre dividendos</p>]]></description>
+    </item>
+    <item>
+      <Title>SIN ENLACE, S.A.</Title>
+      <pubDate>Mon, 09 Nov 2026 08:00:00 GMT</pubDate>
+      <description><![CDATA[<p><b>09:00  09/11/2026  </b> Otros<BR/><BR/>Sin enlace</p>]]></description>
+    </item>
+    <item>
+      <Title>FECHA MALA, S.A.</Title>
+      <link><![CDATA[https://www.cnmv.es/Portal/Informacion-Privilegiada/Resultado-IP.aspx?nreg=903]]></link>
+      <pubDate>ayer</pubDate>
+      <description><![CDATA[<p>x</p>]]></description>
+    </item>
+    <item>
+      <Title>SIN NREG, S.A.</Title>
+      <link><![CDATA[https://www.cnmv.es/Portal/Informacion-Privilegiada/Resultado-IP.aspx]]></link>
+      <pubDate>Mon, 09 Nov 2026 08:10:00 GMT</pubDate>
+      <description><![CDATA[<p><b>09:10  09/11/2026  </b> Otros<BR/><BR/>Ohne nreg</p>]]></description>
+    </item>
+  </Channel>
+</rss>

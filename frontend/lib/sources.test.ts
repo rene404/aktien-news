@@ -18,7 +18,7 @@ describe("sourceIcon", () => {
   });
 
   it("has no icon for an unknown publisher", () => {
-    expect(sourceIcon("cnmv_hechos")).toBeNull();
+    expect(sourceIcon("borsa_news")).toBeNull();
     expect(sourceIcon("")).toBeNull();
   });
 

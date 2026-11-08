@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" version="2.0">
+  <Channel>
+    <title>CNMV - Información privilegiada.</title>
+    <link>https://www.cnmv.es/Portal/Informacion-privilegiada/AlDia-IP.aspx</link>
+    <description>Información privilegiada del día (Desde el cierre de la sesión anterior).</description>
+    <generator>CNMV RSS</generator>
+    <language>es</language>
+    <ttl>15</ttl>
+    <image>
+      <Title>Comisión nacional del mercado de valores</Title>
+      <Link>http://www.cnmv.es</Link>
+      <Url>http://www.cnmv.es/images/cnmv_logo.gif</Url>
+    </image>
+    <item>
+      <Title>ACS, ACTIVIDADES DE CONSTRUCCION Y SERVICIOS, S.A.</Title>
+      <link><![CDATA[https://www.cnmv.es/Portal/Informacion-Privilegiada/Resultado-IP.aspx?nreg=3413]]></link>
+      <guid isPermaLink="true"><![CDATA[https://www.cnmv.es/Portal/Informacion-Privilegiada/Resultado-IP.aspx?nreg=3413]]></guid>
+      <pubDate>Sat, 07 Nov 2026 11:37:38 GMT</pubDate>
+      <description><![CDATA[<p><b>12:37  07/11/2026  </b> Sobre operaciones corporativas: fusiones, adquisiciones y otros<BR/><BR/>El Grupo ACS niega la OPA sobre Hochtief y la venta de Turner</p>]]></description>
+    </item>
+    <item>
+      <Title>TUBOS REUNIDOS, S.A. (EN LIQUIDACIÓN)</Title>
+      <link><![CDATA[https://www.cnmv.es/Portal/Informacion-Privilegiada/Resultado-IP.aspx?nreg=3412]]></link>
+      <guid isPermaLink="true"><![CDATA[https://www.cnmv.es/Portal/Informacion-Privilegiada/Resultado-IP.aspx?nreg=3412]]></guid>
+      <pubDate>Fri, 06 Nov 2026 17:00:03 GMT</pubDate>
+      <description><![CDATA[<p><b>18:00  06/11/2026  </b> Sobre suspensiones, levantamientos y exclusiones de negociación<BR/><BR/>La CNMV informa que ha acordado la exclusión de negociación de las acciones de Tubos Reunidos, S.A. (en liquidación).</p>]]></description>
+    </item>
+  </Channel>
+</rss>

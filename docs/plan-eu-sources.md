@@ -115,7 +115,11 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
 
 ## B. Neue Quellen
 
-- [ ] **5. Spanien: CNMV.** Branch `feature/ingest-cnmv`.
+- [x] **5. Spanien: CNMV.** Branch `feature/ingest-cnmv`.
+  - **Umgesetzt (2026-11-08):** `ingest/cnmv` mit Fixtures (zwei Live-Antworten, Randfälle, leer, kaputt). Quellen `cnmv_ip` (adhoc, Gewicht 1.00) und `cnmv_oir` (filing, 0.90); `terms_url` ist die [Nota Legal](https://www.cnmv.es/portal/utilidades/NotaLegal).
+    Fehlt der Betreff, steht die Kategorie an seiner Stelle. Einträge ohne `nreg`, Link oder lesbares Datum werden übersprungen.
+    Das Favicon liegt als `public/sources/cnmv.png` bei.
+    Live-Lauf: „ACS, ACTIVIDADES DE CONSTRUCCION Y SERVICIOS, S.A.: El Grupo ACS niega la OPA …“ ist über den Emittenten mit ACS verknüpft und steht im Tab IBEX 35.
   - **Dateien:**
     - `ingest/cnmv/parse.go` mit Tests und `testdata/` (beide Feeds, einmal leer, einmal kaputt);
     - `ingest/parsers/parsers.go` und `seed/sources.csv`.

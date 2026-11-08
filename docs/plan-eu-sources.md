@@ -140,7 +140,17 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
     - Im Live-Lauf werden IBEX-Werte über den Namen verknüpft (Alias aus Aufgabe 3).
     - `sources.csv` nennt die Nutzungsbedingungen in `terms_url`.
 
-- [ ] **6. Frankreich: AMF über DILA Open Data.** Branch `feature/ingest-dila-amf`.
+- [x] **6. Frankreich: AMF über DILA Open Data.** Branch `feature/ingest-dila-amf`.
+  - **Umgesetzt (2026-11-08):**
+    - **Fetcher:** `ingest/dila` liest das Verzeichnis und lädt die Archive der letzten 26 Stunden. Die XML-Dateien behält er je Archiv im Speicher, das Verzeichnis 10 Minuten. Beide Quellen teilen sich eine Instanz.
+      Archive bis 40 MB: `fetch.HTTPFetcher.WithMaxBytes`, der Standard bleibt 10 MB. Eine fehlerhafte XML-Datei wird mit Warnung übersprungen, damit sie das Bündel nicht einen Tag lang blockiert.
+    - **Ad-hoc-Typen:** Hauptlabel „Informations privilégiées“, also 001002, 001006, 001007, 001008 und 015000 (aus der DILA-Notiz, LOV STYP). Alles andere ist Filing.
+    - **`ExternalID`:** `IDI_COD_DIF` + `_` + `UIN_IDT_UIN`, abweichend vom Plan, weil der Zähler je Verbreiter läuft und bei 999999 von vorn beginnt.
+    - **Sprachversionen:** Französische Meldungen mit englischem Zwilling (gleicher Emittent, Typ und Verbreiter, ≤ 10 Minuten) werden übersprungen; die englische Fassung bleibt.
+    - **Link:** `https://fr.ftp.opendatasoft.com/datadila/INFOFI/<INF_FIC_NOM>`, die `url_de_recuperation` von info-financiere.gouv.fr. Der Host sperrt in robots.txt jeden Abruf. Wir rufen dort aber nichts ab, wir verlinken nur.
+    - **`terms_url`:** Licence Ouverte (Etalab).
+    - **Live-Lauf am Sonntag:** `ok` mit 0 Meldungen, weil im Fenster kein Archiv liegt.
+    - **Probelauf** gegen die Archive vom 06.11.2026: 26 Ad-hoc-Meldungen und 82 Filings; 10 verknüpfen CAC-40-Werte über den Emittenten (Kering, Euronext, Renault, Saint-Gobain …).
   - **Dateien:**
     - `ingest/dila/fetch.go`: Fetcher, liest das Verzeichnis, lädt die Archive und entpackt die XML-Dateien.
     - `ingest/dila/parse.go`, Tests mit einem kleinen nachgebauten `tar.gz` in `testdata/`.

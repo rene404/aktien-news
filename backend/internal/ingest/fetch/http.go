@@ -15,10 +15,18 @@ const MaxBodyBytes = 10 << 20
 type HTTPFetcher struct {
 	client    *http.Client
 	userAgent string
+	maxBytes  int64
 }
 
 func New(userAgent string, timeout time.Duration) *HTTPFetcher {
-	return &HTTPFetcher{client: &http.Client{Timeout: timeout}, userAgent: userAgent}
+	return &HTTPFetcher{client: &http.Client{Timeout: timeout}, userAgent: userAgent, maxBytes: MaxBodyBytes}
+}
+
+// WithMaxBytes returns a copy that accepts bodies up to n bytes.
+func (f *HTTPFetcher) WithMaxBytes(n int64) *HTTPFetcher {
+	c := *f
+	c.maxBytes = n
+	return &c
 }
 
 func (f *HTTPFetcher) Fetch(ctx context.Context, url string) ([]byte, error) {
@@ -38,12 +46,12 @@ func (f *HTTPFetcher) Fetch(ctx context.Context, url string) ([]byte, error) {
 		return nil, fmt.Errorf("fetch %s: HTTP %d", url, resp.StatusCode)
 	}
 
-	b, err := io.ReadAll(io.LimitReader(resp.Body, MaxBodyBytes+1))
+	b, err := io.ReadAll(io.LimitReader(resp.Body, f.maxBytes+1))
 	if err != nil {
 		return nil, fmt.Errorf("fetch %s: read body: %w", url, err)
 	}
-	if len(b) > MaxBodyBytes {
-		return nil, fmt.Errorf("fetch %s: body exceeds %d bytes", url, MaxBodyBytes)
+	if int64(len(b)) > f.maxBytes {
+		return nil, fmt.Errorf("fetch %s: body exceeds %d bytes", url, f.maxBytes)
 	}
 	return b, nil
 }

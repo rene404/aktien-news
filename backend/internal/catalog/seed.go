@@ -112,6 +112,9 @@ func load(dir fs.FS) (*seedData, error) {
 			if len(r["country"]) != 2 || strings.ToUpper(r["country"]) != r["country"] {
 				addErr("companies.csv", line, "country %q must be ISO alpha-2", r["country"])
 			}
+			if r["lei"] != "" && !ValidLEI(r["lei"]) {
+				addErr("companies.csv", line, "invalid LEI %s", r["lei"])
+			}
 			d.companies = append(d.companies, db.UpsertCompanyParams{
 				Slug: r["slug"], Name: r["name"], LegalName: optional(r["legal_name"]),
 				Country: r["country"], Lei: optional(r["lei"]), Cik: optional(r["cik"]),

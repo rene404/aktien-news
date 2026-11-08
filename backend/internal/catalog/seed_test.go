@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"testing/fstest"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -174,4 +175,77 @@ func mapsEqual(a, b map[string]int) bool {
 		}
 	}
 	return true
+}
+
+// fixture is testdata/valid with some files replaced.
+func fixture(t *testing.T, replace map[string]string) fstest.MapFS {
+	t.Helper()
+	fsys := fstest.MapFS{}
+	for _, name := range []string{"sources.csv", "companies.csv", "listings.csv", "index_memberships.csv", "company_aliases.csv"} {
+		b, err := os.ReadFile("testdata/valid/" + name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		fsys[name] = &fstest.MapFile{Data: b}
+	}
+	for name, data := range replace {
+		fsys[name] = &fstest.MapFile{Data: []byte(data)}
+	}
+	return fsys
+}
+
+// docs/plan-eu-sources.md, task 1: France, Spain and the Netherlands with their exchanges.
+func TestSeedAcceptsEUMarketsAndExchanges(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+	err := catalog.Seed(ctx, pool, fixture(t, map[string]string{
+		"sources.csv": `key,name,kind,market,url,parser,weight,fetch_interval_minutes,text_policy,terms_url,issuer_slug
+amf,AMF,adhoc,FR,https://example.com/amf,dila,1.00,60,none,,
+cnmv,CNMV,adhoc,ES,https://example.com/cnmv,cnmv,1.00,60,none,,
+afm,AFM,filing,NL,https://example.com/afm,afm,1.00,60,none,,
+`,
+		"companies.csv": `slug,name,legal_name,country,lei,cik
+totalenergies,TotalEnergies,TotalEnergies SE,FR,,
+inditex,Inditex,"Industria de Diseño Textil, S.A.",ES,,
+asml,ASML,ASML Holding N.V.,NL,,
+`,
+		"listings.csv": `company_slug,isin,ticker,mic,currency
+totalenergies,FR0000120271,TTE,XPAR,EUR
+inditex,ES0148396007,ITX,XMAD,EUR
+asml,NL0010273215,ASML,XAMS,EUR
+`,
+		"index_memberships.csv": "mic,ticker,index_key,valid_from\n",
+		"company_aliases.csv":   "company_slug,alias,kind\n",
+	}))
+	if err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	var markets string
+	if err := pool.QueryRow(ctx, `SELECT string_agg(market, ',' ORDER BY market) FROM sources`).Scan(&markets); err != nil {
+		t.Fatal(err)
+	}
+	if markets != "ES,FR,NL" {
+		t.Errorf("source markets = %s, want ES,FR,NL", markets)
+	}
+}
+
+func TestSeedStillRejectsUnknownMarketsAndExchanges(t *testing.T) {
+	for _, tc := range []struct {
+		name, file, data, want string
+	}{
+		{"market", "sources.csv", `key,name,kind,market,url,parser,weight,fetch_interval_minutes,text_policy,terms_url,issuer_slug
+lse,LSE,adhoc,UK,https://example.com/lse,lse,1.00,60,none,,
+`, `unknown market "UK"`},
+		{"exchange", "listings.csv", `company_slug,isin,ticker,mic,currency
+apple,US0378331005,AAPL,XLON,USD
+`, `unknown mic "XLON"`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			pool := testdb.New(t)
+			err := catalog.Seed(context.Background(), pool, fixture(t, map[string]string{tc.file: tc.data}))
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("err = %v, want it to contain %s", err, tc.want)
+			}
+		})
+	}
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Source, SourceKind } from "./api";
-import { filterHref, parseFilters, shownSources, sourcesFor, TILE_SIZE, tileParams, toNewsParams } from "./filters";
+import { EXCHANGES, filterHref, parseFilters, shownSources, sourcesFor, TILE_SIZE, tileParams, toNewsParams } from "./filters";
 
 const now = new Date("2026-10-28T12:00:00Z");
 const NEWS_KINDS = "adhoc,press_release,news_api,ir";
@@ -87,16 +87,19 @@ describe("sourcesFor", () => {
     src("fn_dax", "DE", "news_api"),
     src("prn_all", "US", "press_release"),
     src("sec_8k", "US", "filing"),
+    src("amf", "FR", "adhoc"),
+    src("cnmv", "ES", "adhoc"),
+    src("afm", "NL", "filing"),
   ];
   const keys = (s: Source[]) => s.map((x) => x.key);
 
   it.each([
-    ["", ["fn_adhoc", "fn_atx", "fn_dax", "prn_all"]],
+    ["", ["fn_adhoc", "fn_atx", "fn_dax", "prn_all", "amf", "cnmv"]],
     ["ATX", ["fn_adhoc", "fn_atx"]],
     ["DAX", ["fn_adhoc", "fn_dax"]],
     ["SP500", ["fn_adhoc", "prn_all"]],
-    ["adhoc", ["fn_adhoc"]],
-    ["filings", ["sec_8k"]],
+    ["adhoc", ["fn_adhoc", "amf", "cnmv"]],
+    ["filings", ["sec_8k", "afm"]],
   ])("section %j offers %j", (section, want) => {
     expect(keys(sourcesFor(all, { section }))).toEqual(want);
   });
@@ -104,6 +107,20 @@ describe("sourcesFor", () => {
   it("limits a stock page to the market of its exchange", () => {
     expect(keys(sourcesFor(all, { mic: "XWBO" }))).toEqual(["fn_adhoc", "fn_atx"]);
     expect(keys(sourcesFor(all, { mic: "XNAS" }))).toEqual(["fn_adhoc", "prn_all", "sec_8k"]);
+  });
+
+  it.each([
+    ["XPAR", ["fn_adhoc", "amf"]],
+    ["XMAD", ["fn_adhoc", "cnmv"]],
+    ["XAMS", ["fn_adhoc", "afm"]],
+  ])("limits a stock page on %s to its market and MULTI", (mic, want) => {
+    expect(keys(sourcesFor(all, { mic }))).toEqual(want);
+  });
+
+  it("names the new exchanges as readers know them", () => {
+    expect(EXCHANGES.XPAR).toEqual({ name: "Euronext Paris", market: "FR" });
+    expect(EXCHANGES.XMAD).toEqual({ name: "Bolsa de Madrid", market: "ES" });
+    expect(EXCHANGES.XAMS).toEqual({ name: "Euronext Amsterdam", market: "NL" });
   });
 
   it("offers every source for an unknown exchange", () => {

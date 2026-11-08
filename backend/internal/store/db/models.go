@@ -117,6 +117,7 @@ const (
 	MatchMethodFullName MatchMethod = "full_name"
 	MatchMethodCoreName MatchMethod = "core_name"
 	MatchMethodAdmin    MatchMethod = "admin"
+	MatchMethodLei      MatchMethod = "lei"
 )
 
 func (e *MatchMethod) Scan(src interface{}) error {

@@ -50,6 +50,7 @@ type document struct {
 	Issuer   struct {
 		ID   int64  `json:"id"`
 		Name string `json:"name"`
+		LEI  string `json:"lei"` // null for some issuers
 	} `json:"emittent"`
 	Files []struct {
 		ID int64 `json:"id"`
@@ -91,6 +92,7 @@ func parse(b []byte, keep func(string) bool) ([]ingest.RawArticle, error) {
 			PublishedAt: time.UnixMilli(d.Uploaded).UTC(),
 			IssuerHint:  issuer,
 			IssuerISIN:  shareISIN(d.ISINs),
+			IssuerLEI:   strings.ToUpper(strings.TrimSpace(d.Issuer.LEI)),
 		})
 	}
 	return arts, nil

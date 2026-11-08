@@ -57,7 +57,11 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
     - Der Seed lehnt unbekannte Märkte weiter ab.
     - `sourcesFor` liefert auf einer Pariser Aktienseite nur FR- und MULTI-Quellen.
 
-- [ ] **2. Matching über LEI.** Branch `feature/matching-lei`.
+- [x] **2. Matching über LEI.** Branch `feature/matching-lei`.
+  - **Umgesetzt (2026-11-08):** Migration `00008_match_lei.sql`; `RawArticle.IssuerLEI`; `CompanyEntry.LEI` und ein LEI-Index im Matcher.
+    `Input.ISINIsIssuer` heißt jetzt `IssuerGrade`, weil das Merkmal für ISIN und LEI gilt.
+    Der OeKB-Parser setzt `emittent.lei`. In der Fixture `iic.json` trägt die RLB-NÖ-Wien-Meldung (ohne ISIN) jetzt ihre echte LEI wie auf der Live-Seite.
+    Die Down-Migration baut den Enum ohne `lei` neu und bricht ab, solange es Verknüpfungen mit Methode `lei` gibt.
   - **Dateien:**
     - Migration `00008_match_lei.sql` (`ALTER TYPE match_method ADD VALUE 'lei'`);
     - `ingest/raw.go` (neues Feld `IssuerLEI`);

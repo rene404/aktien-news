@@ -17,4 +17,5 @@ type RawArticle struct {
 	IssuerHint  string // issuer name stated by the feed or title, if any
 	IssuerISIN  string // ISIN supplied by the feed, if any
 	IssuerCIK   string // SEC CIK of the filer (filing feeds), no leading zeros
+	IssuerLEI   string // LEI of the issuer supplied by the feed, if any
 }

@@ -5,6 +5,7 @@
 //	issuer     1.00  issuer named by the feed/title equals a known name, the
 //	                 source is the issuer's own channel, or the filer's CIK
 //	isin       0.98  issuer ISIN (ad-hoc/filing feed) or ISIN in the title
+//	lei        0.98  issuer LEI (ad-hoc/filing feed only)
 //	isin       0.90  ISIN tagged by a news feed, company also named in the title
 //	isin       0.60  ISIN tagged by a news feed, not corroborated → review
 //	cashtag    0.95  $TICKER
@@ -47,6 +48,7 @@ type CompanyEntry struct {
 	Name      string
 	LegalName string
 	CIK       string // SEC CIK, no leading zeros
+	LEI       string // ISO 17442 legal entity identifier
 	Aliases   []Alias
 	Listings  []Listing
 	// Uncurated companies come from a bulk import (SEC ticker list). Only
@@ -61,9 +63,11 @@ type Input struct {
 	Title      string
 	IssuerHint string
 	IssuerISIN string // ISIN supplied by the feed
-	// ISINIsIssuer marks IssuerISIN as the issuer of the item (ad-hoc and
-	// filing feeds). In news feeds the ISIN is only a loose tag.
-	ISINIsIssuer bool
+	IssuerLEI  string // LEI supplied by the feed
+	// IssuerGrade marks IssuerISIN and IssuerLEI as the issuer of the item
+	// (ad-hoc and filing feeds). In news feeds the ISIN is only a loose tag,
+	// and a LEI does not count at all.
+	IssuerGrade bool
 	// IssuerCompanyID is set when the source is the issuer's own channel
 	// (IR feed): every item is about that company.
 	IssuerCompanyID int64
@@ -106,6 +110,7 @@ type nameEntry struct {
 type Index struct {
 	issuer   map[string]int64 // folded name, also without legal form → company (-1 = ambiguous)
 	cik      map[string]int64
+	lei      map[string]int64
 	isin     map[string]int64
 	cashtags map[string]int64 // every ticker; -1 = ambiguous
 	tickers  map[string]int64 // tickers of curated companies, matched as plain words; -1 = ambiguous
@@ -113,7 +118,7 @@ type Index struct {
 }
 
 func NewIndex(companies []CompanyEntry) *Index {
-	ix := &Index{issuer: map[string]int64{}, cik: map[string]int64{}, isin: map[string]int64{}, cashtags: map[string]int64{}, tickers: map[string]int64{}}
+	ix := &Index{issuer: map[string]int64{}, cik: map[string]int64{}, lei: map[string]int64{}, isin: map[string]int64{}, cashtags: map[string]int64{}, tickers: map[string]int64{}}
 	addUnique := func(m map[string]int64, key string, id int64) {
 		if key == "" {
 			return
@@ -141,6 +146,7 @@ func NewIndex(companies []CompanyEntry) *Index {
 
 	for _, c := range companies {
 		addUnique(ix.cik, c.CIK, c.ID)
+		addUnique(ix.lei, c.LEI, c.ID)
 		addName(c.Name, c.ID, false, c.Uncurated)
 		addName(c.LegalName, c.ID, false, c.Uncurated)
 		for _, a := range c.Aliases {
@@ -173,6 +179,9 @@ func (ix *Index) Match(in Input) []Match {
 	consider(in.IssuerCompanyID, 1.00, "issuer")
 	if in.IssuerCIK != "" {
 		consider(ix.cik[in.IssuerCIK], 1.00, "issuer")
+	}
+	if in.IssuerGrade && in.IssuerLEI != "" {
+		consider(ix.lei[in.IssuerLEI], 0.98, "lei")
 	}
 	if h := Fold(in.IssuerHint); h != "" {
 		if id, ok := ix.issuer[h]; ok {
@@ -210,7 +219,7 @@ func (ix *Index) Match(in Input) []Match {
 	if id := ix.isin[in.IssuerISIN]; in.IssuerISIN != "" && id > 0 {
 		_, named := best[id]
 		switch {
-		case in.ISINIsIssuer:
+		case in.IssuerGrade:
 			consider(id, 0.98, "isin")
 		case named:
 			consider(id, 0.90, "isin")

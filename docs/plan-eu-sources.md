@@ -40,7 +40,10 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
 
 ## A. Grundlagen
 
-- [ ] **1. Neue Märkte und Börsen.** Branch `feature/markets-eu`.
+- [x] **1. Neue Märkte und Börsen.** Branch `feature/markets-eu`.
+  - **Umgesetzt (2026-11-08):** Migration `00007_markets_eu.sql`; `knownMarkets` und `knownMICs` im Seed; `EXCHANGES` im Frontend.
+    Die Down-Migration schlägt fehl, solange FR-, ES- oder NL-Quellen existieren, damit nichts stillschweigend verloren geht.
+    Offen für Aufgabe 4/7: Der Tab „SEC-Filings“ zeigt alle Quellen der Art `filing`, also künftig auch AFM; Beschriftung dann anpassen.
   - **Dateien:**
     - neue Migration `00007_markets_eu.sql`;
     - `backend/internal/catalog/seed.go`;

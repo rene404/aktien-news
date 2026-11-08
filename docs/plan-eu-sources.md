@@ -98,7 +98,11 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
     - Ein Test prüft das LEI-Format (20 Zeichen, Prüfziffer nach ISO 17442, mod 97) und das ISIN-Format.
     - Jede Firma der drei Indizes hat ein Listing.
 
-- [ ] **4. Website: Tabs und Aktienliste.** Branch `feature/web-eu-sections`.
+- [x] **4. Website: Tabs und Aktienliste.** Branch `feature/web-eu-sections`.
+  - **Umgesetzt (2026-11-08):** Tabs „CAC 40“, „IBEX 35“ und „AEX“ zwischen DAX und S&P 500. Die Aktienliste übernimmt sie über `LIST_INDICES`.
+    Texte, die die Indizes fest aufzählten (Untertitel der Aktienliste, Startseite, Seitentitel, `/quellen`), nennen jetzt alle; die Aktienliste nimmt ihre Aufzählung aus `listedIndices()`.
+    Screenshots: Handy (390 px) und Desktop.
+    Meldungen werden nur beim Einlesen verknüpft. IBEX 35 und AEX füllen sich deshalb erst mit neuen Meldungen; CAC 40 zeigt schon die älteren Airbus-Meldungen.
   - **Dateien:**
     - `frontend/lib/filters.ts` (`SECTIONS`), `frontend/lib/stocklist.ts` (`LIST_INDICES`);
     - die zugehörigen Tests.

@@ -52,6 +52,14 @@ describe("toNewsParams", () => {
     expect(toNewsParams({ section: "", source: "", range: "all", cursor: "" }, now)).toEqual({ kind: NEWS_KINDS, limit: 25 });
   });
 
+  it.each([
+    ["CAC40", "CAC40"],
+    ["IBEX35", "IBEX35"],
+    ["AEX", "AEX"],
+  ])("the %s section asks for the linked news of its index", (section, index) => {
+    expect(toNewsParams({ section, source: "", range: "all", cursor: "" }, now)).toEqual({ index, kind: NEWS_KINDS, limit: 25 });
+  });
+
   it("kind sections filter by source kind", () => {
     expect(toNewsParams({ section: "adhoc", source: "", range: "all", cursor: "" }, now).kind).toBe("adhoc");
     expect(toNewsParams({ section: "filings", source: "", range: "all", cursor: "" }, now).kind).toBe("filing");
@@ -98,6 +106,9 @@ describe("sourcesFor", () => {
     ["ATX", ["fn_adhoc", "fn_atx"]],
     ["DAX", ["fn_adhoc", "fn_dax"]],
     ["SP500", ["fn_adhoc", "prn_all"]],
+    ["CAC40", ["fn_adhoc", "amf"]],
+    ["IBEX35", ["fn_adhoc", "cnmv"]],
+    ["AEX", ["fn_adhoc"]], // afm is a filing source: not in the news sections
     ["adhoc", ["fn_adhoc", "amf", "cnmv"]],
     ["filings", ["sec_8k", "afm"]],
   ])("section %j offers %j", (section, want) => {

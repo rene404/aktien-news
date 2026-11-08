@@ -1,10 +1,26 @@
 import { describe, expect, it } from "vitest";
 import type { TickerCount } from "./api";
-import { parseStockList, sortTickers, stockListHref } from "./stocklist";
+import { LIST_INDICES, listedIndices, parseStockList, sortTickers, stockListHref } from "./stocklist";
 
 describe("parseStockList", () => {
   it("defaults to the ATX, 7 days, most news first", () => {
     expect(parseStockList({})).toEqual({ index: "ATX", range: "7d", sort: "count" });
+  });
+
+  it("lists the European indices in the order of the tabs", () => {
+    expect(LIST_INDICES).toEqual([
+      { key: "ATX", label: "ATX" },
+      { key: "DAX", label: "DAX" },
+      { key: "CAC40", label: "CAC 40" },
+      { key: "IBEX35", label: "IBEX 35" },
+      { key: "AEX", label: "AEX" },
+      { key: "SP500", label: "S&P 500" },
+    ]);
+    expect(parseStockList({ index: "IBEX35" }).index).toBe("IBEX35");
+  });
+
+  it("names the indices as a German list", () => {
+    expect(listedIndices()).toBe("ATX, DAX, CAC 40, IBEX 35, AEX und S&P 500");
   });
 
   it("keeps known values and drops unknown ones", () => {

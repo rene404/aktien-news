@@ -1,7 +1,8 @@
 import type { NewsParams, Source } from "./api";
 
-// Source kinds of the API. Filings (SEC 8-K/6-K) come in by the hundred and
-// would bury everything else, so they get a section of their own.
+// Source kinds of the API. Filings (SEC 8-K/6-K, OeKB, CNMV, AMF, AFM) come in
+// by the hundred and would bury everything else, so they get a section of
+// their own: "Pflichtmeldungen".
 export const NEWS_KINDS = ["adhoc", "press_release", "news_api", "ir"];
 
 export const SECTIONS = [
@@ -13,7 +14,7 @@ export const SECTIONS = [
   { key: "AEX", label: "AEX", index: "AEX", kinds: NEWS_KINDS, market: "NL" },
   { key: "SP500", label: "S&P 500", index: "SP500", kinds: NEWS_KINDS, market: "US" },
   { key: "adhoc", label: "Ad-hoc", kinds: ["adhoc"] },
-  { key: "filings", label: "SEC-Filings", kinds: ["filing"] },
+  { key: "filings", label: "Pflichtmeldungen", kinds: ["filing"] },
 ] as const satisfies readonly { key: string; label: string; index?: string; kinds: readonly string[]; market?: string }[];
 
 /** Exchanges (MIC) as readers know them, and the source market they belong to. */

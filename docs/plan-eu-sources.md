@@ -177,7 +177,19 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
     - Fixture-Tests decken ab: Ad-hoc und Filing getrennt, ISIN und LEI gesetzt, ein kaputtes Archiv ergibt einen Fehler, und ein Archiv außerhalb der 26 Stunden wird nicht geladen.
     - Im Live-Lauf werden CAC-Werte verknüpft.
 
-- [ ] **7. Niederlande: AFM Directors' Dealings.** Branch `feature/ingest-afm-dd`.
+- [x] **7. Niederlande: AFM Directors' Dealings.** Branch `feature/ingest-afm-dd`.
+  - **Umgesetzt (2026-11-08):**
+    - **Parser und Quelle:** `ingest/afm`, Quelle `afm_dd` (filing, NL, stündlich). `terms_url` ist [„Over deze website“](https://afm.nl/en/over-de-afm/over-deze-website): Weitergabe mit ausdrücklicher Quellenangabe AFM.
+    - **Datum:** Der Export hat kein Meldedatum, also `transactiedatum` um 00:00 Uhr in Amsterdam. Das 14-Tage-Fenster misst vom neuesten Eintrag im Export aus, damit der Parser rein bleibt.
+    - **Link:** die Detailseite `…/transacties-leidinggevenden-mar19-/details?id=<meldingid>`.
+    - **Fixture:** echte Einträge, Personennamen ersetzt. Der Parser liest die Felder für Person und Funktion gar nicht.
+    - **Tab:** „SEC-Filings“ heißt jetzt „Pflichtmeldungen“.
+    - **Icon:** Das AFM-Favicon gibt es nur in 16 px.
+    - **Live-Lauf:** 50 Meldungen. AEX-Werte werden verknüpft, über den Emittenten (UMG, NN, ASR) und über die LEI (Unilever, Shell, RELX, Ferrovial, STMicroelectronics).
+  - **Offen (Produktfragen):**
+    - Index-Tabs zeigen keine Filings. AFM, `amf_filings` und `cnmv_oir` erscheinen daher nur auf Aktienseiten und unter „Pflichtmeldungen“, wo die SEC-Filings sie verdrängen.
+    - Gleichlautende AFM-Titel eines Emittenten innerhalb von 72 Stunden landen in einem Cluster; sichtbar ist dann eine Meldung.
+    - Uncurated SEC-Duplikate (z. B. „Shell plc“) werden mitverknüpft und bringen ihre US-Ticker (SHEL, UL) mit.
   - **Dateien:** `ingest/afm/parse.go` mit Tests und `testdata/`, `parsers.go`, `sources.csv`.
   - **Quelle:**
     - `afm_dd`: `kind = filing`, Markt `NL`, Name „AFM – Transacties leidinggevenden“ (Quellenangabe).

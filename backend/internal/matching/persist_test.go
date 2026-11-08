@@ -186,3 +186,24 @@ func TestPersistDropsBelowMinThreshold(t *testing.T) {
 		t.Fatalf("%d rows, want 0", n)
 	}
 }
+
+// docs/plan-eu-sources.md, task 2: the LEI from the catalog links a filing,
+// and the database takes "lei" as match method.
+func TestLoadIndexAndPersistLinkByLEI(t *testing.T) {
+	f := setup(t)
+	ctx := context.Background()
+	ix, err := matching.LoadIndex(ctx, f.pool)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := ix.Match(matching.Input{Title: "Stimmrechtsmitteilung", IssuerLEI: "PQOH26KWDF7CG10L6792", IssuerGrade: true})
+	if len(got) != 1 || got[0].CompanyID != f.erste || got[0].Method != "lei" {
+		t.Fatalf("got %+v, want erste via lei", got)
+	}
+	if err := matching.Persist(ctx, f.pool, f.articleID, got); err != nil {
+		t.Fatal(err)
+	}
+	if got := current(t, f); got[f.erste] != "linked" {
+		t.Fatalf("current = %v", got)
+	}
+}

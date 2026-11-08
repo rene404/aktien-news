@@ -41,7 +41,7 @@ func (q *Queries) IndexAliases(ctx context.Context) ([]IndexAliasesRow, error) {
 }
 
 const indexCompanies = `-- name: IndexCompanies :many
-SELECT id, name, legal_name, cik, curated FROM companies ORDER BY id
+SELECT id, name, legal_name, cik, lei, curated FROM companies ORDER BY id
 `
 
 type IndexCompaniesRow struct {
@@ -49,6 +49,7 @@ type IndexCompaniesRow struct {
 	Name      string
 	LegalName *string
 	Cik       *string
+	Lei       *string
 	Curated   bool
 }
 
@@ -66,6 +67,7 @@ func (q *Queries) IndexCompanies(ctx context.Context) ([]IndexCompaniesRow, erro
 			&i.Name,
 			&i.LegalName,
 			&i.Cik,
+			&i.Lei,
 			&i.Curated,
 		); err != nil {
 			return nil, err

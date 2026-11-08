@@ -111,6 +111,7 @@ var tickerStoplist = map[string]bool{
 	"ESG": true, "KI": true, "AI": true, "EUR": true, "USD": true, "CHF": true, "EPS": true,
 	"EBIT": true, "EBITDA": true, "FY": true, "H1": true, "H2": true, "Q1": true, "Q2": true,
 	"Q3": true, "Q4": true, "POS": true, "EQS": true, "DD": true, "OTS": true, "APA": true,
+	"AIR": true, // Airbus (XETR, XPAR): "AIR FRANCE-KLM", "AIR LIQUIDE", "DELTA AIR LINES"
 }
 
 var (

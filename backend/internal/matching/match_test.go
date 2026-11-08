@@ -305,3 +305,26 @@ func TestEUTickersCountOnlyWhereTheyAreTheName(t *testing.T) {
 		}
 	}
 }
+
+// Regression: Airbus trades as AIR on Xetra and Paris. As a plain word it
+// linked "AIR FRANCE-KLM", "AIR LIQUIDE" and "DELTA AIR LINES" (dev database,
+// 2026-11-08). Headlines name Airbus anyway; "$AIR" still counts.
+func TestTickerAIRIsAWord(t *testing.T) {
+	const airbus = 200
+	ix := matching.NewIndex([]matching.CompanyEntry{
+		{ID: airbus, Name: "Airbus", LegalName: "Airbus SE", Listings: []matching.Listing{
+			{Ticker: "AIR", MIC: "XETR", ISIN: "NL0000235190"}, {Ticker: "AIR", MIC: "XPAR", ISIN: "NL0000235190"}}},
+	})
+	for _, title := range []string{
+		"JPMORGAN stuft AIR FRANCE-KLM auf 'Overweight'",
+		"BERNSTEIN RESEARCH stuft AIR LIQUIDE(L) auf 'Outperform'",
+		"8-K: DELTA AIR LINES, INC. – Item 1.01 Entry into a Material Definitive Agreement",
+	} {
+		if got := ix.Match(matching.Input{Title: title}); len(got) != 0 {
+			t.Errorf("%q linked %+v", title, got)
+		}
+	}
+	if got := ix.Match(matching.Input{Title: "Why $AIR is up today"}); len(got) != 1 || got[0].Method != "cashtag" {
+		t.Errorf("cashtag: got %+v", got)
+	}
+}

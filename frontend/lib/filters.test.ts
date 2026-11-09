@@ -4,6 +4,7 @@ import { EXCHANGES, filterHref, parseFilters, shownSources, sourcesFor, TILE_SIZ
 
 const now = new Date("2026-10-28T12:00:00Z");
 const NEWS_KINDS = "adhoc,press_release,news_api,ir";
+const INDEX_KINDS = "adhoc,press_release,news_api,ir,filing";
 
 describe("parseFilters", () => {
   it("defaults", () => {
@@ -39,10 +40,10 @@ describe("parseFilters", () => {
 });
 
 describe("toNewsParams", () => {
-  it("an index section keeps filings out and turns the range into a from timestamp", () => {
+  it("an index section includes its filings and turns the range into a from timestamp", () => {
     expect(toNewsParams({ section: "DAX", source: "", range: "24h", cursor: "" }, now)).toEqual({
       index: "DAX",
-      kind: NEWS_KINDS,
+      kind: INDEX_KINDS,
       from: "2026-10-27T12:00:00.000Z",
       limit: 25,
     });
@@ -60,8 +61,8 @@ describe("toNewsParams", () => {
     ["OMXH25", "OMXH25"],
     ["OMXC25", "OMXC25"],
     ["FTSE100", "FTSE100"],
-  ])("the %s section asks for the linked news of its index", (section, index) => {
-    expect(toNewsParams({ section, source: "", range: "all", cursor: "" }, now)).toEqual({ index, kind: NEWS_KINDS, limit: 25 });
+  ])("the %s section asks for the linked news and filings of its index", (section, index) => {
+    expect(toNewsParams({ section, source: "", range: "all", cursor: "" }, now)).toEqual({ index, kind: INDEX_KINDS, limit: 25 });
   });
 
   it("kind sections filter by source kind", () => {
@@ -111,14 +112,14 @@ describe("sourcesFor", () => {
     ["", ["fn_adhoc", "fn_atx", "fn_dax", "prn_all", "amf", "cnmv", "nasdaq_nordic_adhoc"]],
     ["ATX", ["fn_adhoc", "fn_atx"]],
     ["DAX", ["fn_adhoc", "fn_dax"]],
-    ["SP500", ["fn_adhoc", "prn_all"]],
+    ["SP500", ["fn_adhoc", "prn_all", "sec_8k"]], // index sections include filings
     ["CAC40", ["fn_adhoc", "amf"]],
     ["IBEX35", ["fn_adhoc", "cnmv"]],
-    ["AEX", ["fn_adhoc"]], // afm is a filing source: not in the news sections
+    ["AEX", ["fn_adhoc", "afm"]],
     ["OMXS30", ["fn_adhoc", "nasdaq_nordic_adhoc"]], // one Nordic feed for all three
     ["OMXH25", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
     ["OMXC25", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
-    ["FTSE100", ["fn_adhoc"]], // fca_nsm is a filing source
+    ["FTSE100", ["fn_adhoc", "fca_nsm"]],
     ["adhoc", ["fn_adhoc", "amf", "cnmv", "nasdaq_nordic_adhoc"]],
     ["filings", ["sec_8k", "afm", "fca_nsm"]],
   ])("section %j offers %j", (section, want) => {

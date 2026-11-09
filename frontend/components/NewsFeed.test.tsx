@@ -19,7 +19,7 @@ beforeEach(() => vi.mocked(getNews).mockResolvedValue({ items: [item], next_curs
 describe("NewsFeed", () => {
   it("on the start page asks for the section's kinds and links the next page with the filters", async () => {
     render(await NewsFeed({ filters: { section: "ATX", source: "", range: "24h", cursor: "" }, path: "/" }));
-    expect(getNews).toHaveBeenCalledWith(expect.objectContaining({ index: "ATX", kind: "adhoc,press_release,news_api,ir" }));
+    expect(getNews).toHaveBeenCalledWith(expect.objectContaining({ index: "ATX", kind: "adhoc,press_release,news_api,ir,filing" }));
     expect(screen.getByRole("link", { name: /ältere meldungen/i })).toHaveAttribute("href", "/?section=ATX&range=24h&cursor=c2");
   });
 

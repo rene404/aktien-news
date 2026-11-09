@@ -2,6 +2,7 @@
 package fetch
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -34,9 +35,25 @@ func (f *HTTPFetcher) Fetch(ctx context.Context, url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", f.userAgent)
 	req.Header.Set("Accept", "application/rss+xml, application/xml;q=0.9, */*;q=0.1")
+	return f.read(req)
+}
 
+// PostJSON posts body as JSON to url and returns the response body, under the
+// same rules as Fetch (User-Agent, 2xx only, size cap).
+func (f *HTTPFetcher) PostJSON(ctx context.Context, url string, body []byte) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	return f.read(req)
+}
+
+func (f *HTTPFetcher) read(req *http.Request) ([]byte, error) {
+	url := req.URL.String()
+	req.Header.Set("User-Agent", f.userAgent)
 	resp, err := f.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fetch %s: %w", url, err)

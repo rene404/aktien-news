@@ -18,11 +18,17 @@ var foldReplacer = strings.NewReplacer(
 // Fold lowercases, transliterates umlauts/accents (ö → oe, é → e) and
 // turns every run of non-alphanumerics into one space, so names compare
 // independent of spelling variants like "Österreichische"/"Oesterreichische".
+// An "&" between two letters stays: "AT&S" → "at&s", not "at s" (which
+// would match "at S-Thetics") nor "ats" (the word "ATS").
 func Fold(s string) string {
-	s = foldReplacer.Replace(strings.ToLower(s))
+	rs := []rune(foldReplacer.Replace(strings.ToLower(s)))
 	var b strings.Builder
 	space := true
-	for _, r := range s {
+	for i, r := range rs {
+		if gluedAmpersand(rs, i) {
+			b.WriteRune(r)
+			continue
+		}
 		if unicode.IsLetter(r) || unicode.IsDigit(r) {
 			b.WriteRune(r)
 			space = false
@@ -32,6 +38,12 @@ func Fold(s string) string {
 		}
 	}
 	return strings.TrimSpace(b.String())
+}
+
+func isAlnum(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) }
+
+func gluedAmpersand(rs []rune, i int) bool {
+	return rs[i] == '&' && i > 0 && i+1 < len(rs) && isAlnum(rs[i-1]) && isAlnum(rs[i+1])
 }
 
 // Folded legal-form tokens. "co" covers "& Co." in "GmbH & Co. KGaA".

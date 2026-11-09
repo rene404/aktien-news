@@ -1,23 +1,25 @@
 import type { NewsParams, Source } from "./api";
 
 // Source kinds of the API. Filings (SEC 8-K/6-K, OeKB, CNMV, AMF, AFM, FCA) come in
-// by the hundred and would bury everything else, so they get a section of
-// their own: "Pflichtmeldungen".
+// by the hundred and would bury everything else on "Alle", so they get a
+// section of their own: "Pflichtmeldungen". An index section shows only the
+// linked items of its members, a handful of filings a day, so it includes them.
 export const NEWS_KINDS = ["adhoc", "press_release", "news_api", "ir"];
+export const INDEX_KINDS = [...NEWS_KINDS, "filing"];
 
 export const SECTIONS = [
   { key: "", label: "Alle", kinds: NEWS_KINDS },
-  { key: "ATX", label: "ATX", index: "ATX", kinds: NEWS_KINDS, market: "AT" },
-  { key: "DAX", label: "DAX", index: "DAX", kinds: NEWS_KINDS, market: "DE" },
-  { key: "CAC40", label: "CAC 40", index: "CAC40", kinds: NEWS_KINDS, market: "FR" },
-  { key: "IBEX35", label: "IBEX 35", index: "IBEX35", kinds: NEWS_KINDS, market: "ES" },
-  { key: "AEX", label: "AEX", index: "AEX", kinds: NEWS_KINDS, market: "NL" },
+  { key: "ATX", label: "ATX", index: "ATX", kinds: INDEX_KINDS, market: "AT" },
+  { key: "DAX", label: "DAX", index: "DAX", kinds: INDEX_KINDS, market: "DE" },
+  { key: "CAC40", label: "CAC 40", index: "CAC40", kinds: INDEX_KINDS, market: "FR" },
+  { key: "IBEX35", label: "IBEX 35", index: "IBEX35", kinds: INDEX_KINDS, market: "ES" },
+  { key: "AEX", label: "AEX", index: "AEX", kinds: INDEX_KINDS, market: "NL" },
   // Nasdaq Nordic: one feed (market NORDIC) for Stockholm, Helsinki and Copenhagen.
-  { key: "OMXS30", label: "OMXS30", index: "OMXS30", kinds: NEWS_KINDS, market: "NORDIC" },
-  { key: "OMXH25", label: "OMXH25", index: "OMXH25", kinds: NEWS_KINDS, market: "NORDIC" },
-  { key: "OMXC25", label: "OMXC25", index: "OMXC25", kinds: NEWS_KINDS, market: "NORDIC" },
-  { key: "FTSE100", label: "FTSE 100", index: "FTSE100", kinds: NEWS_KINDS, market: "UK" },
-  { key: "SP500", label: "S&P 500", index: "SP500", kinds: NEWS_KINDS, market: "US" },
+  { key: "OMXS30", label: "OMXS30", index: "OMXS30", kinds: INDEX_KINDS, market: "NORDIC" },
+  { key: "OMXH25", label: "OMXH25", index: "OMXH25", kinds: INDEX_KINDS, market: "NORDIC" },
+  { key: "OMXC25", label: "OMXC25", index: "OMXC25", kinds: INDEX_KINDS, market: "NORDIC" },
+  { key: "FTSE100", label: "FTSE 100", index: "FTSE100", kinds: INDEX_KINDS, market: "UK" },
+  { key: "SP500", label: "S&P 500", index: "SP500", kinds: INDEX_KINDS, market: "US" },
   { key: "adhoc", label: "Ad-hoc", kinds: ["adhoc"] },
   { key: "filings", label: "Pflichtmeldungen", kinds: ["filing"] },
 ] as const satisfies readonly { key: string; label: string; index?: string; kinds: readonly string[]; market?: string }[];

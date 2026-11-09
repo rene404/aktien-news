@@ -213,6 +213,29 @@ func TestListNewsAlsoAt(t *testing.T) {
 	}
 }
 
+// Several items of one source in a cluster (e.g. directors' dealings of one
+// issuer with the same title) show as one; SameSource counts the others.
+func TestListNewsSameSourceCount(t *testing.T) {
+	w := newWorld(t)
+	rep := w.article(t, w.adhoc, 10, "Huhtamäki Oyj: Eigengeschäft einer Führungskraft", link{w.erste, "linked"})
+	a := w.article(t, w.adhoc, 11, "Huhtamäki Oyj: Eigengeschäft einer Führungskraft")
+	b := w.article(t, w.adhoc, 12, "Huhtamäki Oyj: Eigengeschäft einer Führungskraft")
+	other := w.article(t, w.other, 13, "Huhtamäki: managers' transactions")
+	w.cluster(t, rep, a, b, other)
+	w.article(t, w.adhoc, 20, "alone", link{w.apple, "linked"})
+
+	page, err := w.svc.ListNews(context.Background(), service.NewsQuery{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := page.Items[0].SameSource; n != 0 {
+		t.Errorf("alone: same source = %d, want 0", n)
+	}
+	if n := page.Items[1].SameSource; n != 2 {
+		t.Errorf("cluster: same source = %d, want 2", n)
+	}
+}
+
 func TestListNewsAlsoAtAtMostFive(t *testing.T) {
 	w := newWorld(t)
 	ctx := context.Background()

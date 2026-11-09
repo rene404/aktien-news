@@ -186,10 +186,11 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
     - **Tab:** „SEC-Filings“ heißt jetzt „Pflichtmeldungen“.
     - **Icon:** Das AFM-Favicon gibt es nur in 16 px.
     - **Live-Lauf:** 50 Meldungen. AEX-Werte werden verknüpft, über den Emittenten (UMG, NN, ASR) und über die LEI (Unilever, Shell, RELX, Ferrovial, STMicroelectronics).
-  - **Offen (Produktfragen):**
-    - Index-Tabs zeigen keine Filings. AFM, `amf_filings` und `cnmv_oir` erscheinen daher nur auf Aktienseiten und unter „Pflichtmeldungen“, wo die SEC-Filings sie verdrängen.
-    - Gleichlautende AFM-Titel eines Emittenten innerhalb von 72 Stunden landen in einem Cluster; sichtbar ist dann eine Meldung.
-    - Uncurated SEC-Duplikate (z. B. „Shell plc“) werden mitverknüpft und bringen ihre US-Ticker (SHEL, UL) mit.
+  - **Produktfragen, entschieden und umgesetzt am 2026-11-09:**
+    - Index-Tabs zeigen jetzt auch Filings, die Aktienliste zählt sie mit („Alle“ weiterhin ohne).
+    - Gleichlautende Titel einer Quelle bleiben ein Cluster; die Zeile sagt „+8 weitere Meldungen“ (API-Feld `same_source`).
+    - Uncurated SEC-Duplikate werden beim Seed in die kuratierte Firma gleichen Rechtsnamens gefaltet (bis auf Leer- und Satzzeichen: „BP PLC“ = „BP P.L.C.“); die kuratierte Firma bekommt die CIK, ihre Ticker bleiben die der Heimatbörse.
+      In der Dev-Datenbank 35 Fälle; Namensvettern wie „Orion S.A.“ (≠ Orion Oyj) bleiben getrennt.
   - **Dateien:** `ingest/afm/parse.go` mit Tests und `testdata/`, `parsers.go`, `sources.csv`.
   - **Quelle:**
     - `afm_dd`: `kind = filing`, Markt `NL`, Name „AFM – Transacties leidinggevenden“ (Quellenangabe).
@@ -223,7 +224,9 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
   - **Offen:**
     - Die Anfrage bei Nasdaq steht weiter aus.
     - Die beiden falschen Verknüpfungen (Castellum, RTX) aus dem ersten Lauf bleiben in der Datenbank (append-only).
-    - Altfehler entdeckt: „AT&S“ wird als „at s“ gefaltet und trifft Titel mit „… at S-Thetics …“ als vollen Namen.
+    - ~~Altfehler: „AT&S“ wird als „at s“ gefaltet und trifft Titel mit „… at S-Thetics …“ als vollen Namen.~~
+      Behoben am 2026-11-09 (`fix/matching-ats`): Ein „&“ zwischen zwei Buchstaben bleibt beim Falten erhalten („at&s“), „AT&S“ allein ist ein Kernname (pending).
+      Außerdem zählt der Ticker des eigenen Emittenten im Titel nicht für eine andere Firma („6-K: ATS Corp /ATS“ verknüpfte AT&S).
   - **Parallel:** schriftliche Anfrage bei Nasdaq zur Nutzung von `api.news.eu.nasdaq.com`; Pflicht vor einem öffentlichen Betrieb.
   - **Umfang:**
     - Markt `NORDIC` (bzw. SE, FI, DK).

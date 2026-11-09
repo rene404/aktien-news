@@ -141,10 +141,13 @@ type nameEntry struct {
 
 // Index is an immutable lookup structure built from the catalog.
 type Index struct {
-	issuer   map[string]int64 // folded name, also without legal form → company (-1 = ambiguous)
-	looseUS  map[string]int64 // uncurated names without legal form; see Input.USIssuers
-	cik      map[string]int64
-	lei      map[string]int64
+	issuer  map[string]int64 // folded name, also without legal form → company (-1 = ambiguous)
+	looseUS map[string]int64 // uncurated names without legal form; see Input.USIssuers
+	cik     map[string]int64
+	lei     map[string]int64
+	// own lists every company's tickers, uncurated ones included: the
+	// ticker of the item's own issuer is no mention of another company.
+	own      map[int64]map[string]bool
 	isin     map[string]int64
 	cashtags map[string]int64 // every ticker; -1 = ambiguous
 	tickers  map[string]int64 // tickers of curated companies, matched as plain words; -1 = ambiguous
@@ -152,7 +155,7 @@ type Index struct {
 }
 
 func NewIndex(companies []CompanyEntry) *Index {
-	ix := &Index{issuer: map[string]int64{}, looseUS: map[string]int64{}, cik: map[string]int64{}, lei: map[string]int64{}, isin: map[string]int64{}, cashtags: map[string]int64{}, tickers: map[string]int64{}}
+	ix := &Index{issuer: map[string]int64{}, looseUS: map[string]int64{}, cik: map[string]int64{}, lei: map[string]int64{}, own: map[int64]map[string]bool{}, isin: map[string]int64{}, cashtags: map[string]int64{}, tickers: map[string]int64{}}
 	addUnique := func(m map[string]int64, key string, id int64) {
 		if key == "" {
 			return
@@ -191,6 +194,10 @@ func NewIndex(companies []CompanyEntry) *Index {
 			addName(a.Text, c.ID, a.Kind == "issuer_name" || a.Kind == "former_name", c.Uncurated)
 		}
 		for _, l := range c.Listings {
+			if ix.own[c.ID] == nil {
+				ix.own[c.ID] = map[string]bool{}
+			}
+			ix.own[c.ID][l.Ticker] = true
 			addUnique(ix.cashtags, l.Ticker, c.ID)
 			if !c.Uncurated && (!mnemonicMICs[l.MIC] || tickerIsName(c, l.Ticker)) {
 				addUnique(ix.tickers, l.Ticker, c.ID)
@@ -246,9 +253,23 @@ func (ix *Index) Match(in Input) []Match {
 	for _, m := range cashtagRe.FindAllStringSubmatch(title, -1) {
 		consider(ix.cashtags[m[1]], 0.95, "cashtag")
 	}
+	// Issuers identified so far (feed issuer, CIK, LEI): their own ticker in
+	// the title ("6-K: ATS Corp /ATS") names them, not a namesake (AT&S, ATS).
+	issuers := make([]int64, 0, len(best))
+	for id := range best {
+		issuers = append(issuers, id)
+	}
+	ownTicker := func(tok string, id int64) bool {
+		for _, i := range issuers {
+			if i != id && ix.own[i][tok] {
+				return true
+			}
+		}
+		return false
+	}
 	for _, tok := range tickerRe.FindAllString(title, -1) {
-		if !tickerStoplist[tok] {
-			consider(ix.tickers[tok], 0.90, "ticker")
+		if id := ix.tickers[tok]; !tickerStoplist[tok] && !ownTicker(tok, id) {
+			consider(id, 0.90, "ticker")
 		}
 	}
 
@@ -343,11 +364,15 @@ type titleWordList struct {
 	words []word
 }
 
+// Words are split like Fold splits them: "M&A" is one word.
 func titleWords(title string) titleWordList {
 	var ws []word
 	start := -1
+	rs := []rune(title)
+	ri := 0
 	for i, r := range title {
-		alnum := unicode.IsLetter(r) || unicode.IsDigit(r)
+		alnum := isAlnum(r) || gluedAmpersand(rs, ri)
+		ri++
 		switch {
 		case alnum && start < 0:
 			start = i

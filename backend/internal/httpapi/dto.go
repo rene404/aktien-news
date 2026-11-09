@@ -25,6 +25,8 @@ type newsItemDTO struct {
 	Tickers     []string  `json:"tickers"`
 	// The same news at other sources: title, link, source and time only.
 	Also []alsoDTO `json:"also"`
+	// Further items of the same source in this cluster (a count, no text).
+	SameSource int `json:"same_source"`
 }
 
 type alsoDTO struct {
@@ -95,7 +97,7 @@ func toNewsPage(p service.NewsPage) newsPageDTO {
 		out.Items[i] = newsItemDTO{
 			ID: it.ID, Title: it.Title, URL: it.URL,
 			Source:      sourceRef{Key: it.SourceKey, Name: it.SourceName, Kind: it.SourceKind},
-			PublishedAt: it.PublishedAt, Tickers: tickers, Also: make([]alsoDTO, len(it.Also)),
+			PublishedAt: it.PublishedAt, Tickers: tickers, Also: make([]alsoDTO, len(it.Also)), SameSource: it.SameSource,
 		}
 		for j, a := range it.Also {
 			out.Items[i].Also[j] = alsoDTO{

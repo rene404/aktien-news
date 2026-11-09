@@ -91,7 +91,8 @@ func ParseSECTickers(b []byte) ([]SECCompany, error) {
 // it again changes nothing.
 //
 //   - A curated company found by CIK, or else (without CIK yet) by its full
-//     legal name or one of the US tickers, keeps its name, aliases and
+//     legal name (up to spacing and punctuation, see compactName) or one of
+//     the US tickers, keeps its name, aliases and
 //     listings; only the missing CIK is filled in. An uncurated duplicate an
 //     earlier import created for that CIK is removed.
 //   - An uncurated company found by CIK gets missing listings.
@@ -102,18 +103,9 @@ func ImportSEC(ctx context.Context, pool *pgxpool.Pool, companies []SECCompany) 
 	var created, filled int
 	err := pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
 		q := db.New(tx)
-		names, err := q.CuratedNamesWithoutCIK(ctx)
+		byName, err := curatedByName(ctx, q)
 		if err != nil {
-			return fmt.Errorf("curated names: %w", err)
-		}
-		byName := map[string]int64{} // folded full name → curated company, -1 = ambiguous
-		for _, n := range names {
-			f := matching.Fold(n.Name)
-			if prev, ok := byName[f]; ok && prev != n.ID {
-				byName[f] = -1
-				continue
-			}
-			byName[f] = n.ID
+			return err
 		}
 
 		for _, c := range companies {
@@ -165,7 +157,7 @@ func companyForSEC(ctx context.Context, q *db.Queries, c SECCompany, curatedByNa
 	if found && byCIK.Curated {
 		return byCIK.ID, true, nil
 	}
-	if id := curatedByName[matching.Fold(c.Name)]; id > 0 {
+	if id := curatedByName[compactName(c.Name)]; id > 0 {
 		return id, true, nil
 	}
 	for _, l := range c.Listings {
@@ -184,4 +176,61 @@ func companyForSEC(ctx context.Context, q *db.Queries, c SECCompany, curatedByNa
 		return byCIK.ID, false, nil
 	}
 	return 0, false, nil
+}
+
+// compactName compares legal names up to case, accents, spacing and
+// punctuation: "BP P.L.C." = "BP PLC", but "Orion Oyj" ≠ "Orion S.A.".
+func compactName(s string) string {
+	return strings.ReplaceAll(matching.Fold(s), " ", "")
+}
+
+// curatedByName maps the compact full names (legal name, issuer and former
+// names) of curated companies without CIK to their id; -1 = ambiguous.
+func curatedByName(ctx context.Context, q *db.Queries) (map[string]int64, error) {
+	names, err := q.CuratedNamesWithoutCIK(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("curated names: %w", err)
+	}
+	byName := map[string]int64{}
+	for _, n := range names {
+		f := compactName(n.Name)
+		if prev, ok := byName[f]; ok && prev != n.ID {
+			byName[f] = -1
+			continue
+		}
+		byName[f] = n.ID
+	}
+	return byName, nil
+}
+
+// foldSECTwins merges uncurated SEC companies into the curated company of the
+// same legal name: the curated one takes the CIK, the twin goes (its listings
+// and links cascade). Seeding runs it, because curated companies are often
+// added after the import created their twin.
+func foldSECTwins(ctx context.Context, q *db.Queries) (int, error) {
+	byName, err := curatedByName(ctx, q)
+	if err != nil {
+		return 0, err
+	}
+	twins, err := q.UncuratedWithCIK(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("uncurated: %w", err)
+	}
+	folded := 0
+	for _, u := range twins {
+		key := compactName(u.Name)
+		id := byName[key]
+		if id <= 0 {
+			continue
+		}
+		byName[key] = -1 // one CIK per curated company
+		if err := q.DeleteUncuratedByCIK(ctx, &u.Cik); err != nil {
+			return folded, fmt.Errorf("cik %s: %w", u.Cik, err)
+		}
+		if err := q.FillCompanyCIK(ctx, db.FillCompanyCIKParams{ID: id, Cik: &u.Cik}); err != nil {
+			return folded, fmt.Errorf("cik %s: %w", u.Cik, err)
+		}
+		folded++
+	}
+	return folded, nil
 }

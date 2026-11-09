@@ -73,6 +73,11 @@ function NewsRow({ item, hideTicker }: { item: NewsItem; hideTicker?: string }) 
             <SourceIcon sourceKey={item.source.key} name={item.source.name} />
             {item.source.name}
           </span>
+          {!!item.same_source && item.same_source > 0 && (
+            <span className="same-source">
+              +{item.same_source} weitere {item.same_source === 1 ? "Meldung" : "Meldungen"}
+            </span>
+          )}
           {item.tickers
             .filter((t) => t !== hideTicker)
             .map((t) => (

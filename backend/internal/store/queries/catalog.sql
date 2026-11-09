@@ -87,3 +87,9 @@ WHERE c.curated AND c.cik IS NULL AND a.kind IN ('issuer_name', 'former_name');
 -- name: DeleteUncuratedByCIK :exec
 -- Makes room for a curated company with this CIK; listings and links cascade.
 DELETE FROM companies WHERE cik = @cik AND NOT curated;
+
+-- name: UncuratedWithCIK :many
+-- SEC-imported companies, for folding into a curated twin.
+SELECT c.id, c.name, c.cik::text AS cik FROM companies c
+WHERE NOT c.curated AND c.cik IS NOT NULL
+ORDER BY c.cik;

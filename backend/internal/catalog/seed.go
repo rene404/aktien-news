@@ -226,6 +226,9 @@ func (d *seedData) write(ctx context.Context, q *db.Queries) error {
 			return fmt.Errorf("alias %s/%s: %w", a.CompanySlug, a.Alias, err)
 		}
 	}
+	if _, err := foldSECTwins(ctx, q); err != nil {
+		return fmt.Errorf("sec twins: %w", err)
+	}
 	return nil
 }
 

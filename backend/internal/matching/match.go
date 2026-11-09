@@ -116,6 +116,7 @@ var tickerStoplist = map[string]bool{
 	"Q3": true, "Q4": true, "POS": true, "EQS": true, "DD": true, "OTS": true, "APA": true,
 	"AIR": true, // Airbus (XETR, XPAR): "AIR FRANCE-KLM", "AIR LIQUIDE", "DELTA AIR LINES"
 	"ISS": true, // ISS A/S (XCSE) is also the space station
+	"EQT": true, // EQT AB (XSTO) and EQT Corp (US gas, not in the catalog)
 }
 
 var (

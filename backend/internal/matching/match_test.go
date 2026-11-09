@@ -341,6 +341,7 @@ func TestNordicIssuersAndTickers(t *testing.T) {
 		iss
 		sandvik
 		nokia
+		eqt
 	)
 	ix := matching.NewIndex([]matching.CompanyEntry{
 		{ID: volvo, Name: "Volvo", LegalName: "Aktiebolaget Volvo", Listings: []matching.Listing{{Ticker: "VOLV-B", MIC: "XSTO"}}},
@@ -352,6 +353,7 @@ func TestNordicIssuersAndTickers(t *testing.T) {
 		{ID: iss, Name: "ISS", LegalName: "ISS A/S", Listings: []matching.Listing{{Ticker: "ISS", MIC: "XCSE"}}},
 		{ID: sandvik, Name: "Sandvik", LegalName: "Sandvik Aktiebolag", Listings: []matching.Listing{{Ticker: "SAND", MIC: "XSTO"}}},
 		{ID: nokia, Name: "Nokia", LegalName: "Nokia Oyj", Listings: []matching.Listing{{Ticker: "NOKIA", MIC: "XHEL"}}},
+		{ID: eqt, Name: "EQT", LegalName: "EQT AB", Listings: []matching.Listing{{Ticker: "EQT", MIC: "XSTO"}}},
 	})
 	cases := []struct {
 		in   matching.Input
@@ -366,6 +368,8 @@ func TestNordicIssuersAndTickers(t *testing.T) {
 		{matching.Input{Title: "NASA EXTENDS ISS OPERATIONS"}, []want{{iss, "core_name", 0.55}}},
 		{matching.Input{Title: "SAND PRICES SURGE IN TEXAS"}, nil},
 		{matching.Input{Title: "NOKIA WINS 5G DEAL"}, []want{{nokia, "ticker", 0.90}}},
+		// EQT Corp (US gas) and EQT AB (Swedish investor) share the name.
+		{matching.Input{Title: "8-K: EQT Exeter Real Estate Income Trust, Inc. – Item 7.01"}, []want{{eqt, "core_name", 0.55}}},
 	}
 	for _, tc := range cases {
 		got := ix.Match(tc.in)

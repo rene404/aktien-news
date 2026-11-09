@@ -224,6 +224,39 @@ func (q *Queries) InsertUncuratedCompany(ctx context.Context, arg InsertUncurate
 	return id, err
 }
 
+const uncuratedWithCIK = `-- name: UncuratedWithCIK :many
+SELECT c.id, c.name, c.cik::text AS cik FROM companies c
+WHERE NOT c.curated AND c.cik IS NOT NULL
+ORDER BY c.cik
+`
+
+type UncuratedWithCIKRow struct {
+	ID   int64
+	Name string
+	Cik  string
+}
+
+// SEC-imported companies, for folding into a curated twin.
+func (q *Queries) UncuratedWithCIK(ctx context.Context) ([]UncuratedWithCIKRow, error) {
+	rows, err := q.db.Query(ctx, uncuratedWithCIK)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UncuratedWithCIKRow
+	for rows.Next() {
+		var i UncuratedWithCIKRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.Cik); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertAlias = `-- name: UpsertAlias :exec
 INSERT INTO company_aliases (company_id, alias, kind)
 SELECT c.id, $1, $2 FROM companies c WHERE c.slug = $3

@@ -264,3 +264,62 @@ func TestSeedTakesOverUncuratedCompanyWithSameCIK(t *testing.T) {
 		t.Errorf("newco = %+v, want %+v", got["newco"], want)
 	}
 }
+
+// docs/plan-eu-sources.md, task 7: curated companies seeded after an SEC
+// import (FTSE 100, AEX …) had an uncurated twin that got linked along with
+// them. The next seed folds the twin in when its name equals the legal name
+// up to spacing and punctuation ("BP PLC" = "BP P.L.C."); a namesake with
+// another legal form stays apart ("Orion S.A." ≠ "Orion Oyj").
+func TestSeedFoldsUncuratedTwinByLegalName(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+	if err := catalog.Seed(ctx, pool, seed.FS); err != nil {
+		t.Fatal(err)
+	}
+	if err := catalog.ImportSEC(ctx, pool, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `
+		WITH c AS (INSERT INTO companies (slug, name, legal_name, country, cik, curated) VALUES
+		           ('sec-313807', 'BP PLC', 'BP PLC', 'US', '313807', false),
+		           ('sec-1699150', 'Orion S.A.', 'Orion S.A.', 'US', '1699150', false) RETURNING id, slug)
+		INSERT INTO listings (company_id, ticker, mic)
+		SELECT id, CASE slug WHEN 'sec-313807' THEN 'BP' ELSE 'OEC' END, 'XNYS' FROM c`); err != nil {
+		t.Fatal(err)
+	}
+	before := countCompanies(t, pool)
+	if err := catalog.Seed(ctx, pool, seed.FS); err != nil {
+		t.Fatal(err)
+	}
+	got := companies(t, pool)
+	if _, dup := got["sec-313807"]; dup || got["bp"].cik != "313807" {
+		t.Errorf("BP twin kept = %v, bp = %+v", dup, got["bp"])
+	}
+	if got["sec-1699150"].cik != "1699150" || got["orion"].cik != "" {
+		t.Errorf("Orion S.A. = %+v, Orion Oyj = %+v: namesakes must stay apart", got["sec-1699150"], got["orion"])
+	}
+	if n := countCompanies(t, pool); n != before-1 {
+		t.Errorf("%d companies, want %d", n, before-1)
+	}
+}
+
+// The import itself compares names the same way.
+func TestImportSECMatchesLegalNameUpToPunctuation(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+	if err := catalog.Seed(ctx, pool, seed.FS); err != nil {
+		t.Fatal(err)
+	}
+	before := countCompanies(t, pool)
+	if err := catalog.ImportSEC(ctx, pool, []catalog.SECCompany{
+		{CIK: "313807", Name: "BP PLC", Listings: []catalog.SECListing{{Ticker: "BPX", MIC: "XNYS"}}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if got := companies(t, pool); got["bp"].cik != "313807" {
+		t.Errorf("bp = %+v", got["bp"])
+	}
+	if n := countCompanies(t, pool); n != before {
+		t.Errorf("%d companies, want %d", n, before)
+	}
+}

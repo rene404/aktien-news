@@ -384,3 +384,42 @@ func TestNordicIssuersAndTickers(t *testing.T) {
 		}
 	}
 }
+
+// Regression (dev database, 2026-11-09): Nasdaq Nordic's "Castellum AB" and
+// "RTX" (RTX A/S, Copenhagen) linked the SEC imports "Castellum, Inc." and
+// "RTX Corp" by their names without legal form. That shortcut is for sources
+// with US issuers; the exact name still counts everywhere ("ARGENX SE").
+func TestUncuratedIssuerNeedsFullNameOutsideUS(t *testing.T) {
+	const (
+		castellum = iota + 400
+		rtx
+		argenx
+	)
+	ix := matching.NewIndex([]matching.CompanyEntry{
+		{ID: castellum, Name: "Castellum, Inc.", Uncurated: true, Listings: []matching.Listing{{Ticker: "CTM", MIC: "XNYS"}}},
+		{ID: rtx, Name: "RTX Corp", Uncurated: true, Listings: []matching.Listing{{Ticker: "RTX", MIC: "XNYS"}}},
+		{ID: argenx, Name: "ARGENX SE", Uncurated: true, Listings: []matching.Listing{{Ticker: "ARGX", MIC: "XNAS"}}},
+	})
+	cases := []struct {
+		in   matching.Input
+		want []want
+	}{
+		{matching.Input{Title: "Change to Castellum's Executive Management", IssuerHint: "Castellum AB", IssuerGrade: true}, nil},
+		{matching.Input{Title: "Share buy-back programme", IssuerHint: "RTX", IssuerGrade: true}, nil},
+		{matching.Input{Title: "argenx SE: Eigengeschäft einer Führungskraft", IssuerHint: "argenx SE", IssuerGrade: true},
+			[]want{{argenx, "issuer", 1.00}}},
+		{matching.Input{Title: "RTX wins Army contract", IssuerHint: "RTX", USIssuers: true}, []want{{rtx, "issuer", 1.00}}},
+	}
+	for _, tc := range cases {
+		got := ix.Match(tc.in)
+		if len(got) != len(tc.want) {
+			t.Errorf("%+v: got %+v, want %+v", tc.in, got, tc.want)
+			continue
+		}
+		for i, w := range tc.want {
+			if got[i].CompanyID != w.id || got[i].Method != w.method || got[i].Confidence != w.conf {
+				t.Errorf("%+v: got %+v, want %+v", tc.in, got[i], w)
+			}
+		}
+	}
+}

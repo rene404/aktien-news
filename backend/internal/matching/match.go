@@ -5,10 +5,13 @@
 //	issuer     1.00  issuer named by the feed/title equals a known name, the
 //	                 source is the issuer's own channel, or the filer's CIK
 //	isin       0.98  issuer ISIN (ad-hoc/filing feed) or ISIN in the title
+//	lei        0.98  issuer LEI (ad-hoc/filing feed only)
 //	isin       0.90  ISIN tagged by a news feed, company also named in the title
 //	isin       0.60  ISIN tagged by a news feed, not corroborated → review
 //	cashtag    0.95  $TICKER
-//	ticker     0.90  known ticker as an uppercase whole word, not stoplisted
+//	ticker     0.90  known ticker as an uppercase whole word, not stoplisted;
+//	                 on Euronext Paris/Amsterdam and Madrid only where the
+//	                 ticker is also the company's name ("IAG", "ASML")
 //	full_name  0.90  name incl. legal form (legal name, issuer/former names)
 //	core_name  0.55  name without legal form, >= 3 chars → review queue
 //
@@ -47,6 +50,7 @@ type CompanyEntry struct {
 	Name      string
 	LegalName string
 	CIK       string // SEC CIK, no leading zeros
+	LEI       string // ISO 17442 legal entity identifier
 	Aliases   []Alias
 	Listings  []Listing
 	// Uncurated companies come from a bulk import (SEC ticker list). Only
@@ -61,9 +65,16 @@ type Input struct {
 	Title      string
 	IssuerHint string
 	IssuerISIN string // ISIN supplied by the feed
-	// ISINIsIssuer marks IssuerISIN as the issuer of the item (ad-hoc and
-	// filing feeds). In news feeds the ISIN is only a loose tag.
-	ISINIsIssuer bool
+	IssuerLEI  string // LEI supplied by the feed
+	// IssuerGrade marks IssuerISIN and IssuerLEI as the issuer of the item
+	// (ad-hoc and filing feeds). In news feeds the ISIN is only a loose tag,
+	// and a LEI does not count at all.
+	IssuerGrade bool
+	// USIssuers marks sources that cover US issuers (market US or MULTI):
+	// there an uncurated (SEC) company also matches the issuer hint by its
+	// name without legal form ("RTX" → "RTX Corp"). Elsewhere that name is
+	// too often a local namesake ("Castellum AB" ≠ "Castellum, Inc.").
+	USIssuers bool
 	// IssuerCompanyID is set when the source is the issuer's own channel
 	// (IR feed): every item is about that company.
 	IssuerCompanyID int64
@@ -77,6 +88,28 @@ type Match struct {
 	Method     string // matches the match_method enum
 }
 
+// Exchanges whose tickers are mnemonics rather than symbols used in
+// headlines: "EN" (Bouygues), "RED" (Redeia), "NN" (NN Group), "SAND"
+// (Sandvik) are ordinary words in titles. Cashtags still count.
+var mnemonicMICs = map[string]bool{
+	"XPAR": true, "XAMS": true, "XMAD": true,
+	"XSTO": true, "XHEL": true, "XCSE": true, // Nasdaq Nordic
+}
+
+// tickerIsName reports whether the ticker spells the company's name or an alias.
+func tickerIsName(c CompanyEntry, ticker string) bool {
+	t := Fold(ticker)
+	if t == Fold(c.Name) || t == stripLegalForm(Fold(c.LegalName)) {
+		return true
+	}
+	for _, a := range c.Aliases {
+		if t == Fold(a.Text) {
+			return true
+		}
+	}
+	return false
+}
+
 // Uppercase words that look like tickers but are not meant as one.
 var tickerStoplist = map[string]bool{
 	"AG": true, "SE": true, "SA": true, "NV": true, "PLC": true, "INC": true, "KGAA": true, "GMBH": true,
@@ -86,6 +119,9 @@ var tickerStoplist = map[string]bool{
 	"ESG": true, "KI": true, "AI": true, "EUR": true, "USD": true, "CHF": true, "EPS": true,
 	"EBIT": true, "EBITDA": true, "FY": true, "H1": true, "H2": true, "Q1": true, "Q2": true,
 	"Q3": true, "Q4": true, "POS": true, "EQS": true, "DD": true, "OTS": true, "APA": true,
+	"AIR": true, // Airbus (XETR, XPAR): "AIR FRANCE-KLM", "AIR LIQUIDE", "DELTA AIR LINES"
+	"ISS": true, // ISS A/S (XCSE) is also the space station
+	"EQT": true, // EQT AB (XSTO) and EQT Corp (US gas, not in the catalog)
 }
 
 var (
@@ -105,7 +141,9 @@ type nameEntry struct {
 // Index is an immutable lookup structure built from the catalog.
 type Index struct {
 	issuer   map[string]int64 // folded name, also without legal form → company (-1 = ambiguous)
+	looseUS  map[string]int64 // uncurated names without legal form; see Input.USIssuers
 	cik      map[string]int64
+	lei      map[string]int64
 	isin     map[string]int64
 	cashtags map[string]int64 // every ticker; -1 = ambiguous
 	tickers  map[string]int64 // tickers of curated companies, matched as plain words; -1 = ambiguous
@@ -113,7 +151,7 @@ type Index struct {
 }
 
 func NewIndex(companies []CompanyEntry) *Index {
-	ix := &Index{issuer: map[string]int64{}, cik: map[string]int64{}, isin: map[string]int64{}, cashtags: map[string]int64{}, tickers: map[string]int64{}}
+	ix := &Index{issuer: map[string]int64{}, looseUS: map[string]int64{}, cik: map[string]int64{}, lei: map[string]int64{}, isin: map[string]int64{}, cashtags: map[string]int64{}, tickers: map[string]int64{}}
 	addUnique := func(m map[string]int64, key string, id int64) {
 		if key == "" {
 			return
@@ -130,7 +168,11 @@ func NewIndex(companies []CompanyEntry) *Index {
 			return
 		}
 		addUnique(ix.issuer, f, id)
-		addUnique(ix.issuer, stripLegalForm(f), id)
+		if uncurated {
+			addUnique(ix.looseUS, stripLegalForm(f), id)
+		} else {
+			addUnique(ix.issuer, stripLegalForm(f), id)
+		}
 		switch {
 		case hasLegalForm(f) || fullOnly:
 			ix.names = append(ix.names, nameEntry{f, id, 0.90, "full_name", uncurated})
@@ -141,6 +183,7 @@ func NewIndex(companies []CompanyEntry) *Index {
 
 	for _, c := range companies {
 		addUnique(ix.cik, c.CIK, c.ID)
+		addUnique(ix.lei, c.LEI, c.ID)
 		addName(c.Name, c.ID, false, c.Uncurated)
 		addName(c.LegalName, c.ID, false, c.Uncurated)
 		for _, a := range c.Aliases {
@@ -148,7 +191,7 @@ func NewIndex(companies []CompanyEntry) *Index {
 		}
 		for _, l := range c.Listings {
 			addUnique(ix.cashtags, l.Ticker, c.ID)
-			if !c.Uncurated {
+			if !c.Uncurated && (!mnemonicMICs[l.MIC] || tickerIsName(c, l.Ticker)) {
 				addUnique(ix.tickers, l.Ticker, c.ID)
 			}
 			addUnique(ix.isin, l.ISIN, c.ID)
@@ -174,10 +217,20 @@ func (ix *Index) Match(in Input) []Match {
 	if in.IssuerCIK != "" {
 		consider(ix.cik[in.IssuerCIK], 1.00, "issuer")
 	}
+	if in.IssuerGrade && in.IssuerLEI != "" {
+		consider(ix.lei[in.IssuerLEI], 0.98, "lei")
+	}
 	if h := Fold(in.IssuerHint); h != "" {
-		if id, ok := ix.issuer[h]; ok {
-			consider(id, 1.00, "issuer")
-		} else if id, ok := ix.issuer[stripLegalForm(h)]; ok {
+		id, ok := ix.issuer[h]
+		if !ok {
+			id, ok = ix.issuer[stripLegalForm(h)]
+		}
+		if !ok && in.USIssuers {
+			if id, ok = ix.looseUS[h]; !ok {
+				id, ok = ix.looseUS[stripLegalForm(h)]
+			}
+		}
+		if ok {
 			consider(id, 1.00, "issuer")
 		}
 	}
@@ -210,7 +263,7 @@ func (ix *Index) Match(in Input) []Match {
 	if id := ix.isin[in.IssuerISIN]; in.IssuerISIN != "" && id > 0 {
 		_, named := best[id]
 		switch {
-		case in.ISINIsIssuer:
+		case in.IssuerGrade:
 			consider(id, 0.98, "isin")
 		case named:
 			consider(id, 0.90, "isin")

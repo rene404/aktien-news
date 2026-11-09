@@ -17,7 +17,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   return (
     <>
       <h1>Aktuelle Meldungen</h1>
-      <p className="sub">Ad-hoc-Mitteilungen und Nachrichten zu ATX-, DAX- und US-Aktien.</p>
+      <p className="sub">Ad-hoc-Mitteilungen und Nachrichten zu Aktien aus Österreich, Deutschland, Frankreich, Spanien, den Niederlanden, Schweden, Finnland, Dänemark und den USA.</p>
       <SectionTabs value={filters} />
       <ViewSwitch current="feed" value={filters} />
       <Filters path="/" sources={sources} value={filters} />

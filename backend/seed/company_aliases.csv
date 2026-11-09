@@ -213,3 +213,65 @@ boeing,The Boeing Company,issuer_name
 netflix,Netflix,core_name
 netflix,"Netflix, Inc.",issuer_name
 oracle,Oracle Corporation,issuer_name
+air-liquide,L'Air Liquide,core_name
+credit-agricole,Crédit Agricole S.A.,issuer_name
+eurofins-scientific,Eurofins,core_name
+hermes,Hermès International,core_name
+lvmh,Moët Hennessy Louis Vuitton,core_name
+publicis,Publicis Groupe,core_name
+renault,Renault Group,core_name
+societe-generale,SocGen,brand
+stmicroelectronics,STMicro,brand
+veolia,Veolia Environnement,core_name
+acciona,"Acciona, S.A.",issuer_name
+acciona-energia,"Corporacion Acciona Energias Renovables, S.A.",issuer_name
+acerinox,"ACERINOX, S.A.",issuer_name
+acs,Grupo ACS,core_name
+aena,"AENA, S.A.",issuer_name
+amadeus,"AMADEUS IT GROUP, S.A.",issuer_name
+amadeus,Amadeus IT Group,core_name
+banco-sabadell,Sabadell,core_name
+bankinter,"BANKINTER, S.A.",issuer_name
+bbva,"BANCO BILBAO VIZCAYA ARGENTARIA, S.A.",issuer_name
+bbva,Banco Bilbao Vizcaya Argentaria,core_name
+caixabank,"CAIXABANK, S.A.",issuer_name
+cellnex,"CELLNEX TELECOM, S.A.",issuer_name
+cellnex,Cellnex Telecom,core_name
+endesa,"ENDE, S.A.",issuer_name
+iag,International Airlines Group,core_name
+iberdrola,"IBERDROLA, S.A.",issuer_name
+indra,Indra Sistemas,core_name
+colonial,"COLONIAL SFL SOCIMI, S.A.",issuer_name
+colonial,Inmobiliaria Colonial,former_name
+logista,"LOGISTA INTEGRAL, S.A.",issuer_name
+naturgy,"NATURGY ENERGY GROUP, S.A.",issuer_name
+redeia,"REDEIA CORPORACION, S.A.",issuer_name
+redeia,Red Eléctrica Corporación,former_name
+repsol,"REPSOL, S.A.",issuer_name
+rovi,"LABORATORIOS FARMACEUTICOS ROVI, S.A.",issuer_name
+rovi,Laboratorios Rovi,core_name
+sacyr,"SACYR, S.A.",issuer_name
+banco-santander,Santander,core_name
+solaria,"SOLARIA ENERGIA Y MEDIO AMBIENTE, S.A.",issuer_name
+telefonica,"TELEFONICA, S.A.",issuer_name
+unicaja,"UNICAJA BANCO, S.A.",issuer_name
+unicaja,Unicaja Banco,core_name
+puig,Puig Brands,core_name
+akzonobel,Akzo Nobel,core_name
+asr-nederland,a.s.r.,brand
+besi,BE Semiconductor Industries,core_name
+ing,ING Group,core_name
+ing,ING Groep,core_name
+magnum-ice-cream,The Magnum Ice Cream Company,core_name
+wdp,Warehouses De Pauw,core_name
+ericsson,"Ericsson, Telefonab. L M",issuer_name
+h-m,Hennes & Mauritz,core_name
+sca,Svenska Cellulosa AB SCA,issuer_name
+hiab,Cargotec,former_name
+lumo-kodit,Kojamo,former_name
+metso,Metso Outotec,former_name
+tieto,TietoEVRY,former_name
+upm,UPM-Kymmene,core_name
+a-p-moller-maersk,Maersk,brand
+novonesis,Novonesis (Novozymes A/S),issuer_name
+novonesis,Novozymes,former_name

@@ -653,3 +653,29 @@ func TestClusterUnassignedSkipsFailingArticles(t *testing.T) {
 		t.Errorf("%d unclustered articles, want only the failing one", n)
 	}
 }
+
+// docs/plan-eu-sources.md, task 2: an OeKB filing without ISIN links through
+// the issuer's LEI, even where the feed's spelling of the name is unknown.
+func TestRunDueLinksOeKBFilingByLEI(t *testing.T) {
+	r, pool, f, _ := newRunner(t)
+	ctx := context.Background()
+	f.bodies["https://my.oekb.at/issuer-info/rest/public/meldedaten/iic?startPosition=0&offset=50"] = readFixture(t, "oekb/testdata/iic.json")
+	if _, err := pool.Exec(ctx, `
+		INSERT INTO companies (slug, name, legal_name, country, lei)
+		VALUES ('rlb-noe-wien', 'RLB NÖ-Wien', 'RLB NÖ-Wien AG', 'AT', '529900GPOO9ISPD1EE83')`); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.RunDue(ctx); err != nil {
+		t.Fatal(err)
+	}
+	var got string
+	if err := pool.QueryRow(ctx, `
+		SELECT string_agg(c.slug || ':' || e.method || ':' || e.status, ',')
+		FROM articles a JOIN article_entities e ON e.article_id = a.id JOIN companies c ON c.id = e.company_id
+		WHERE a.external_id = 'oam-253390'`).Scan(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got != "rlb-noe-wien:lei:linked" {
+		t.Errorf("links = %q, want rlb-noe-wien:lei:linked", got)
+	}
+}

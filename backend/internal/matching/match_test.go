@@ -29,10 +29,10 @@ func testIndex() *matching.Index {
 		{ID: post, Name: "Österreichische Post", LegalName: "Österreichische Post AG",
 			Aliases:  []matching.Alias{{Text: "Österreichische Post", Kind: "core_name"}},
 			Listings: []matching.Listing{{Ticker: "POST", MIC: "XWBO", ISIN: "AT0000APOST4"}}},
-		{ID: erste, Name: "Erste Group", LegalName: "Erste Group Bank AG",
+		{ID: erste, Name: "Erste Group", LegalName: "Erste Group Bank AG", LEI: "PQOH26KWDF7CG10L6792",
 			Aliases:  []matching.Alias{{Text: "Erste", Kind: "core_name"}},
 			Listings: []matching.Listing{{Ticker: "EBS", MIC: "XWBO", ISIN: "AT0000652011"}}},
-		{ID: porr, Name: "PORR", LegalName: "PORR AG",
+		{ID: porr, Name: "PORR", LegalName: "PORR AG", LEI: "529900Q4M4K5V7GDEN18",
 			Aliases:  []matching.Alias{{Text: "PORR", Kind: "core_name"}},
 			Listings: []matching.Listing{{Ticker: "POS", MIC: "XWBO", ISIN: "AT0000609607"}}},
 		{ID: apple, Name: "Apple", LegalName: "Apple Inc.",
@@ -77,8 +77,23 @@ func TestMatch(t *testing.T) {
 			matching.Input{Title: "Auftrag von Erste Group Bank AG", IssuerCompanyID: porr},
 			[]want{{porr, "issuer", 1.00}, {erste, "full_name", 0.90}}},
 		{"issuer ISIN from an ad-hoc feed",
-			matching.Input{Title: "Irgendein Titel", IssuerISIN: "AT0000652011", ISINIsIssuer: true},
+			matching.Input{Title: "Irgendein Titel", IssuerISIN: "AT0000652011", IssuerGrade: true},
 			[]want{{erste, "isin", 0.98}}},
+		{"issuer LEI from an ad-hoc or filing feed",
+			matching.Input{Title: "Directors' Dealings", IssuerLEI: "PQOH26KWDF7CG10L6792", IssuerGrade: true},
+			[]want{{erste, "lei", 0.98}}},
+		{"issuer LEI links where the feed's issuer name is unknown (OeKB, no ISIN)",
+			matching.Input{Title: "EQS-DD: EGB AG: Kauf", IssuerHint: "EGB AG", IssuerLEI: "PQOH26KWDF7CG10L6792", IssuerGrade: true},
+			[]want{{erste, "lei", 0.98}}},
+		{"unknown LEI changes nothing",
+			matching.Input{Title: "Erste erhöht Dividende", IssuerLEI: "5299000000000000000X", IssuerGrade: true},
+			[]want{{erste, "core_name", 0.55}}},
+		{"LEI from a news feed is no issuer signal",
+			matching.Input{Title: "Aktien Wien Schluss", IssuerLEI: "PQOH26KWDF7CG10L6792"},
+			nil},
+		{"issuer name beats LEI",
+			matching.Input{Title: "x", IssuerHint: "PORR AG", IssuerLEI: "529900Q4M4K5V7GDEN18", IssuerGrade: true},
+			[]want{{porr, "issuer", 1.00}}},
 		{"tagged ISIN from a news feed, company not in title: review",
 			matching.Input{Title: "Aktien Wien Schluss: ATX legt zu", IssuerISIN: "AT0000652011"},
 			[]want{{erste, "isin", 0.60}}},
@@ -242,10 +257,169 @@ func TestFold(t *testing.T) {
 		"Straße & Co. KGaA":       "strasse co kgaa",
 		"  Mercedes-Benz  Group ": "mercedes benz group",
 		"Société Générale":        "societe generale",
+		"A.P. Møller - Mærsk A/S": "a p moller maersk a s",
 	}
 	for in, want := range cases {
 		if got := matching.Fold(in); got != want {
 			t.Errorf("Fold(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+// docs/plan-eu-sources.md, task 3: Euronext and Madrid tickers are mnemonics
+// ("EN", "RED", "NN") that headlines use as words, not as symbols. They count
+// as plain words only where the ticker is also the company's name ("IAG").
+// Real titles from the dev database, 2026-11-08.
+func TestEUTickersCountOnlyWhereTheyAreTheName(t *testing.T) {
+	const (
+		bouygues = iota + 100
+		redeia
+		nn
+		iag
+	)
+	ix := matching.NewIndex([]matching.CompanyEntry{
+		{ID: bouygues, Name: "Bouygues", LegalName: "BOUYGUES", Listings: []matching.Listing{{Ticker: "EN", MIC: "XPAR", ISIN: "FR0000120503"}}},
+		{ID: redeia, Name: "Redeia", LegalName: "REDEIA CORPORACION SA", Listings: []matching.Listing{{Ticker: "RED", MIC: "XMAD", ISIN: "ES0173093024"}}},
+		{ID: nn, Name: "NN Group", LegalName: "NN Group N.V.", Listings: []matching.Listing{{Ticker: "NN", MIC: "XAMS", ISIN: "NL0010773842"}}},
+		{ID: iag, Name: "IAG", LegalName: "INTERNATIONAL CONSOLIDATED AIRLINES GROUP, S.A.", Listings: []matching.Listing{{Ticker: "IAG", MIC: "XMAD", ISIN: "ES0177542018"}}},
+	})
+	cases := []struct {
+		title string
+		want  []want
+	}{
+		{"LOGICALIS DEVIENT LE PREMIER PARTENAIRE MONDIAL DE CISCO EN MATIÈRE DE RÉSEAUX", nil},
+		{"RED ROBIN ANNOUNCES PRELIMINARY THIRD QUARTER COMPARABLE RESTAURANT REVENUE", nil},
+		{"8-K: NN INC – Item 2.02 Results of Operations and Financial Condition", nil},
+		{"RBC stuft IAG auf 'Outperform'", []want{{iag, "ticker", 0.90}}},
+		{"Why $EN is up today", []want{{bouygues, "cashtag", 0.95}}},
+	}
+	for _, tc := range cases {
+		got := ix.Match(matching.Input{Title: tc.title})
+		if len(got) != len(tc.want) {
+			t.Errorf("%q: got %+v, want %+v", tc.title, got, tc.want)
+			continue
+		}
+		for i, w := range tc.want {
+			if got[i].CompanyID != w.id || got[i].Method != w.method || got[i].Confidence != w.conf {
+				t.Errorf("%q: got %+v, want %+v", tc.title, got[i], w)
+			}
+		}
+	}
+}
+
+// Regression: Airbus trades as AIR on Xetra and Paris. As a plain word it
+// linked "AIR FRANCE-KLM", "AIR LIQUIDE" and "DELTA AIR LINES" (dev database,
+// 2026-11-08). Headlines name Airbus anyway; "$AIR" still counts.
+func TestTickerAIRIsAWord(t *testing.T) {
+	const airbus = 200
+	ix := matching.NewIndex([]matching.CompanyEntry{
+		{ID: airbus, Name: "Airbus", LegalName: "Airbus SE", Listings: []matching.Listing{
+			{Ticker: "AIR", MIC: "XETR", ISIN: "NL0000235190"}, {Ticker: "AIR", MIC: "XPAR", ISIN: "NL0000235190"}}},
+	})
+	for _, title := range []string{
+		"JPMORGAN stuft AIR FRANCE-KLM auf 'Overweight'",
+		"BERNSTEIN RESEARCH stuft AIR LIQUIDE(L) auf 'Outperform'",
+		"8-K: DELTA AIR LINES, INC. – Item 1.01 Entry into a Material Definitive Agreement",
+	} {
+		if got := ix.Match(matching.Input{Title: title}); len(got) != 0 {
+			t.Errorf("%q linked %+v", title, got)
+		}
+	}
+	if got := ix.Match(matching.Input{Title: "Why $AIR is up today"}); len(got) != 1 || got[0].Method != "cashtag" {
+		t.Errorf("cashtag: got %+v", got)
+	}
+}
+
+// Nasdaq Nordic names its issuers "Volvo, AB", "Tieto Oyj", "Essity
+// Aktiebolag (publ)"; Nordic tickers ("SAND", "ISS") are words in headlines.
+func TestNordicIssuersAndTickers(t *testing.T) {
+	const (
+		volvo = iota + 300
+		tieto
+		essity
+		ericsson
+		iss
+		sandvik
+		nokia
+		eqt
+	)
+	ix := matching.NewIndex([]matching.CompanyEntry{
+		{ID: volvo, Name: "Volvo", LegalName: "Aktiebolaget Volvo", Listings: []matching.Listing{{Ticker: "VOLV-B", MIC: "XSTO"}}},
+		{ID: tieto, Name: "Tieto", LegalName: "Tieto Oyj", Listings: []matching.Listing{{Ticker: "TIETO", MIC: "XHEL"}}},
+		{ID: essity, Name: "Essity", LegalName: "Essity Aktiebolag (publ)", Listings: []matching.Listing{{Ticker: "ESSITY-B", MIC: "XSTO"}}},
+		{ID: ericsson, Name: "Ericsson", LegalName: "Telefonaktiebolaget LM Ericsson",
+			Aliases:  []matching.Alias{{Text: "Ericsson, Telefonab. L M", Kind: "issuer_name"}},
+			Listings: []matching.Listing{{Ticker: "ERIC-B", MIC: "XSTO"}}},
+		{ID: iss, Name: "ISS", LegalName: "ISS A/S", Listings: []matching.Listing{{Ticker: "ISS", MIC: "XCSE"}}},
+		{ID: sandvik, Name: "Sandvik", LegalName: "Sandvik Aktiebolag", Listings: []matching.Listing{{Ticker: "SAND", MIC: "XSTO"}}},
+		{ID: nokia, Name: "Nokia", LegalName: "Nokia Oyj", Listings: []matching.Listing{{Ticker: "NOKIA", MIC: "XHEL"}}},
+		{ID: eqt, Name: "EQT", LegalName: "EQT AB", Listings: []matching.Listing{{Ticker: "EQT", MIC: "XSTO"}}},
+	})
+	cases := []struct {
+		in   matching.Input
+		want []want
+	}{
+		{matching.Input{Title: "Buyback of shares", IssuerHint: "Volvo, AB"}, []want{{volvo, "issuer", 1.00}}},
+		{matching.Input{Title: "Managers' transactions", IssuerHint: "Tieto Oyj"}, []want{{tieto, "issuer", 1.00}}},
+		{matching.Input{Title: "Interim report", IssuerHint: "Essity Aktiebolag (publ)"}, []want{{essity, "issuer", 1.00}}},
+		{matching.Input{Title: "Share buybacks", IssuerHint: "Ericsson, Telefonab. L M"}, []want{{ericsson, "issuer", 1.00}}},
+		{matching.Input{Title: "Tieto Oyj: Changes in the Leadership Team"}, []want{{tieto, "full_name", 0.90}}},
+		// Only the core name, pending: not shown.
+		{matching.Input{Title: "NASA EXTENDS ISS OPERATIONS"}, []want{{iss, "core_name", 0.55}}},
+		{matching.Input{Title: "SAND PRICES SURGE IN TEXAS"}, nil},
+		{matching.Input{Title: "NOKIA WINS 5G DEAL"}, []want{{nokia, "ticker", 0.90}}},
+		// EQT Corp (US gas) and EQT AB (Swedish investor) share the name.
+		{matching.Input{Title: "8-K: EQT Exeter Real Estate Income Trust, Inc. – Item 7.01"}, []want{{eqt, "core_name", 0.55}}},
+	}
+	for _, tc := range cases {
+		got := ix.Match(tc.in)
+		if len(got) != len(tc.want) {
+			t.Errorf("%+v: got %+v, want %+v", tc.in, got, tc.want)
+			continue
+		}
+		for i, w := range tc.want {
+			if got[i].CompanyID != w.id || got[i].Method != w.method || got[i].Confidence != w.conf {
+				t.Errorf("%+v: got %+v, want %+v", tc.in, got[i], w)
+			}
+		}
+	}
+}
+
+// Regression (dev database, 2026-11-09): Nasdaq Nordic's "Castellum AB" and
+// "RTX" (RTX A/S, Copenhagen) linked the SEC imports "Castellum, Inc." and
+// "RTX Corp" by their names without legal form. That shortcut is for sources
+// with US issuers; the exact name still counts everywhere ("ARGENX SE").
+func TestUncuratedIssuerNeedsFullNameOutsideUS(t *testing.T) {
+	const (
+		castellum = iota + 400
+		rtx
+		argenx
+	)
+	ix := matching.NewIndex([]matching.CompanyEntry{
+		{ID: castellum, Name: "Castellum, Inc.", Uncurated: true, Listings: []matching.Listing{{Ticker: "CTM", MIC: "XNYS"}}},
+		{ID: rtx, Name: "RTX Corp", Uncurated: true, Listings: []matching.Listing{{Ticker: "RTX", MIC: "XNYS"}}},
+		{ID: argenx, Name: "ARGENX SE", Uncurated: true, Listings: []matching.Listing{{Ticker: "ARGX", MIC: "XNAS"}}},
+	})
+	cases := []struct {
+		in   matching.Input
+		want []want
+	}{
+		{matching.Input{Title: "Change to Castellum's Executive Management", IssuerHint: "Castellum AB", IssuerGrade: true}, nil},
+		{matching.Input{Title: "Share buy-back programme", IssuerHint: "RTX", IssuerGrade: true}, nil},
+		{matching.Input{Title: "argenx SE: Eigengeschäft einer Führungskraft", IssuerHint: "argenx SE", IssuerGrade: true},
+			[]want{{argenx, "issuer", 1.00}}},
+		{matching.Input{Title: "RTX wins Army contract", IssuerHint: "RTX", USIssuers: true}, []want{{rtx, "issuer", 1.00}}},
+	}
+	for _, tc := range cases {
+		got := ix.Match(tc.in)
+		if len(got) != len(tc.want) {
+			t.Errorf("%+v: got %+v, want %+v", tc.in, got, tc.want)
+			continue
+		}
+		for i, w := range tc.want {
+			if got[i].CompanyID != w.id || got[i].Method != w.method || got[i].Confidence != w.conf {
+				t.Errorf("%+v: got %+v, want %+v", tc.in, got[i], w)
+			}
 		}
 	}
 }

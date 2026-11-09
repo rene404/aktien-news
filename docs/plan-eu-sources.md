@@ -1,4 +1,4 @@
-# Plan: Pflichtmeldungen aus FR, ES, NL (später Nordics, UK)
+# Plan: Pflichtmeldungen aus FR, ES, NL, Nordics und UK
 
 Entwurf vom 2026-11-05. Grundlage ist die Recherche in `docs/research-sources.md`, Abschnitt „Nachtrag 2026-11-05: Pflichtmeldungen in anderen EU-Ländern“.
 Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
@@ -40,7 +40,10 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
 
 ## A. Grundlagen
 
-- [ ] **1. Neue Märkte und Börsen.** Branch `feature/markets-eu`.
+- [x] **1. Neue Märkte und Börsen.** Branch `feature/markets-eu`.
+  - **Umgesetzt (2026-11-08):** Migration `00007_markets_eu.sql`; `knownMarkets` und `knownMICs` im Seed; `EXCHANGES` im Frontend.
+    Die Down-Migration schlägt fehl, solange FR-, ES- oder NL-Quellen existieren, damit nichts stillschweigend verloren geht.
+    Offen für Aufgabe 4/7: Der Tab „SEC-Filings“ zeigt alle Quellen der Art `filing`, also künftig auch AFM; Beschriftung dann anpassen.
   - **Dateien:**
     - neue Migration `00007_markets_eu.sql`;
     - `backend/internal/catalog/seed.go`;
@@ -54,7 +57,11 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
     - Der Seed lehnt unbekannte Märkte weiter ab.
     - `sourcesFor` liefert auf einer Pariser Aktienseite nur FR- und MULTI-Quellen.
 
-- [ ] **2. Matching über LEI.** Branch `feature/matching-lei`.
+- [x] **2. Matching über LEI.** Branch `feature/matching-lei`.
+  - **Umgesetzt (2026-11-08):** Migration `00008_match_lei.sql`; `RawArticle.IssuerLEI`; `CompanyEntry.LEI` und ein LEI-Index im Matcher.
+    `Input.ISINIsIssuer` heißt jetzt `IssuerGrade`, weil das Merkmal für ISIN und LEI gilt.
+    Der OeKB-Parser setzt `emittent.lei`. In der Fixture `iic.json` trägt die RLB-NÖ-Wien-Meldung (ohne ISIN) jetzt ihre echte LEI wie auf der Live-Seite.
+    Die Down-Migration baut den Enum ohne `lei` neu und bricht ab, solange es Verknüpfungen mit Methode `lei` gibt.
   - **Dateien:**
     - Migration `00008_match_lei.sql` (`ALTER TYPE match_method ADD VALUE 'lei'`);
     - `ingest/raw.go` (neues Feld `IssuerLEI`);
@@ -70,7 +77,14 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
     - In einer News-Quelle zählt die LEI nicht als Emittenten-Signal.
     - Eine OeKB-Meldung ohne ISIN, aber mit LEI wird verknüpft.
 
-- [ ] **3. Stammdaten FR, ES, NL.** Branch `feature/catalog-eu`.
+- [x] **3. Stammdaten FR, ES, NL.** Branch `feature/catalog-eu`.
+  - **Umgesetzt (2026-11-08):** 102 neue Firmen, 104 Listings und 105 Indexmitgliedschaften (`valid_from` 2026-11-08); Airbus bestand schon und bekam das Pariser Listing und seine LEI.
+    - **Zusammensetzung:** CAC 40 und IBEX 35 sind 2026 unverändert (Euronext und Comité Asesor Técnico, März, Juni und September). Der AEX hat seit dem 22.09.2025 30 Werte; die niederländische Wikipedia, Stand 22.06.2026, nennt 29. InPost ist mitgezählt, weil die Aktie trotz laufender Übernahme noch notiert ist. Nach dem Delisting muss InPost mit `valid_to` heraus.
+    - **ISIN und LEI:** LEI aus ESMA FIRDS, rechtlicher Name aus GLEIF. Die ISIN ist die aktive Aktien-ISIN an der Heimatbörse laut FIRDS; bei Dassault Systèmes, Eurofins, Michelin, Aena und Unilever ist das schon die neue ISIN nach Split oder Umstellung.
+    - **Aliasse:** Der rechtliche Name steht nur als `legal_name`. Als `issuer_name`-Alias würde ein nackter Name wie „ORANGE“ als voller Firmenname zählen und „Orange County Bancorp“ verknüpfen. Für spanische Firmen kommt die CNMV-Schreibweise „…, S.A.“ als `issuer_name` dazu.
+    - **Ticker:** Kürzel von Euronext Paris, Amsterdam und Madrid sind Mnemonics („EN“, „RED“, „NN“). Als Wort im Titel zählen sie nur, wenn sie zugleich der Name sind (IAG, BBVA, ASML, ACS); Cashtags gelten weiter. Ermittelt gegen alle 15.364 Titel der Dev-Datenbank.
+    - **Prüfung:** `ValidLEI` (ISO 17442, mod 97) im Seed.
+    - **Offen:** Ein ADR-Duplikat aus dem SEC-Import (etwa „ASML HOLDING NV“ an der Nasdaq, uncurated) bleibt eine eigene Firma.
   - **Dateien:** `backend/seed/companies.csv`, `listings.csv`, `index_memberships.csv`, `company_aliases.csv`.
   - **Inhalt:**
     - Pro Firma: Name, rechtlicher Name, Land, **LEI**, ISIN, Ticker, MIC und Index (CAC40, IBEX35, AEX).
@@ -84,7 +98,11 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
     - Ein Test prüft das LEI-Format (20 Zeichen, Prüfziffer nach ISO 17442, mod 97) und das ISIN-Format.
     - Jede Firma der drei Indizes hat ein Listing.
 
-- [ ] **4. Website: Tabs und Aktienliste.** Branch `feature/web-eu-sections`.
+- [x] **4. Website: Tabs und Aktienliste.** Branch `feature/web-eu-sections`.
+  - **Umgesetzt (2026-11-08):** Tabs „CAC 40“, „IBEX 35“ und „AEX“ zwischen DAX und S&P 500. Die Aktienliste übernimmt sie über `LIST_INDICES`.
+    Texte, die die Indizes fest aufzählten (Untertitel der Aktienliste, Startseite, Seitentitel, `/quellen`), nennen jetzt alle; die Aktienliste nimmt ihre Aufzählung aus `listedIndices()`.
+    Screenshots: Handy (390 px) und Desktop.
+    Meldungen werden nur beim Einlesen verknüpft. IBEX 35 und AEX füllen sich deshalb erst mit neuen Meldungen; CAC 40 zeigt schon die älteren Airbus-Meldungen.
   - **Dateien:**
     - `frontend/lib/filters.ts` (`SECTIONS`), `frontend/lib/stocklist.ts` (`LIST_INDICES`);
     - die zugehörigen Tests.
@@ -97,7 +115,11 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
 
 ## B. Neue Quellen
 
-- [ ] **5. Spanien: CNMV.** Branch `feature/ingest-cnmv`.
+- [x] **5. Spanien: CNMV.** Branch `feature/ingest-cnmv`.
+  - **Umgesetzt (2026-11-08):** `ingest/cnmv` mit Fixtures (zwei Live-Antworten, Randfälle, leer, kaputt). Quellen `cnmv_ip` (adhoc, Gewicht 1.00) und `cnmv_oir` (filing, 0.90); `terms_url` ist die [Nota Legal](https://www.cnmv.es/portal/utilidades/NotaLegal).
+    Fehlt der Betreff, steht die Kategorie an seiner Stelle. Einträge ohne `nreg`, Link oder lesbares Datum werden übersprungen.
+    Das Favicon liegt als `public/sources/cnmv.png` bei.
+    Live-Lauf: „ACS, ACTIVIDADES DE CONSTRUCCION Y SERVICIOS, S.A.: El Grupo ACS niega la OPA …“ ist über den Emittenten mit ACS verknüpft und steht im Tab IBEX 35.
   - **Dateien:**
     - `ingest/cnmv/parse.go` mit Tests und `testdata/` (beide Feeds, einmal leer, einmal kaputt);
     - `ingest/parsers/parsers.go` und `seed/sources.csv`.
@@ -118,7 +140,17 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
     - Im Live-Lauf werden IBEX-Werte über den Namen verknüpft (Alias aus Aufgabe 3).
     - `sources.csv` nennt die Nutzungsbedingungen in `terms_url`.
 
-- [ ] **6. Frankreich: AMF über DILA Open Data.** Branch `feature/ingest-dila-amf`.
+- [x] **6. Frankreich: AMF über DILA Open Data.** Branch `feature/ingest-dila-amf`.
+  - **Umgesetzt (2026-11-08):**
+    - **Fetcher:** `ingest/dila` liest das Verzeichnis und lädt die Archive der letzten 26 Stunden. Die XML-Dateien behält er je Archiv im Speicher, das Verzeichnis 10 Minuten. Beide Quellen teilen sich eine Instanz.
+      Archive bis 40 MB: `fetch.HTTPFetcher.WithMaxBytes`, der Standard bleibt 10 MB. Eine fehlerhafte XML-Datei wird mit Warnung übersprungen, damit sie das Bündel nicht einen Tag lang blockiert.
+    - **Ad-hoc-Typen:** Hauptlabel „Informations privilégiées“, also 001002, 001006, 001007, 001008 und 015000 (aus der DILA-Notiz, LOV STYP). Alles andere ist Filing.
+    - **`ExternalID`:** `IDI_COD_DIF` + `_` + `UIN_IDT_UIN`, abweichend vom Plan, weil der Zähler je Verbreiter läuft und bei 999999 von vorn beginnt.
+    - **Sprachversionen:** Französische Meldungen mit englischem Zwilling (gleicher Emittent, Typ und Verbreiter, ≤ 10 Minuten) werden übersprungen; die englische Fassung bleibt.
+    - **Link:** `https://fr.ftp.opendatasoft.com/datadila/INFOFI/<INF_FIC_NOM>`, die `url_de_recuperation` von info-financiere.gouv.fr. Der Host sperrt in robots.txt jeden Abruf. Wir rufen dort aber nichts ab, wir verlinken nur.
+    - **`terms_url`:** Licence Ouverte (Etalab).
+    - **Live-Lauf am Sonntag:** `ok` mit 0 Meldungen, weil im Fenster kein Archiv liegt.
+    - **Probelauf** gegen die Archive vom 06.11.2026: 26 Ad-hoc-Meldungen und 82 Filings; 10 verknüpfen CAC-40-Werte über den Emittenten (Kering, Euronext, Renault, Saint-Gobain …).
   - **Dateien:**
     - `ingest/dila/fetch.go`: Fetcher, liest das Verzeichnis, lädt die Archive und entpackt die XML-Dateien.
     - `ingest/dila/parse.go`, Tests mit einem kleinen nachgebauten `tar.gz` in `testdata/`.
@@ -145,7 +177,19 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
     - Fixture-Tests decken ab: Ad-hoc und Filing getrennt, ISIN und LEI gesetzt, ein kaputtes Archiv ergibt einen Fehler, und ein Archiv außerhalb der 26 Stunden wird nicht geladen.
     - Im Live-Lauf werden CAC-Werte verknüpft.
 
-- [ ] **7. Niederlande: AFM Directors' Dealings.** Branch `feature/ingest-afm-dd`.
+- [x] **7. Niederlande: AFM Directors' Dealings.** Branch `feature/ingest-afm-dd`.
+  - **Umgesetzt (2026-11-08):**
+    - **Parser und Quelle:** `ingest/afm`, Quelle `afm_dd` (filing, NL, stündlich). `terms_url` ist [„Over deze website“](https://afm.nl/en/over-de-afm/over-deze-website): Weitergabe mit ausdrücklicher Quellenangabe AFM.
+    - **Datum:** Der Export hat kein Meldedatum, also `transactiedatum` um 00:00 Uhr in Amsterdam. Das 14-Tage-Fenster misst vom neuesten Eintrag im Export aus, damit der Parser rein bleibt.
+    - **Link:** die Detailseite `…/transacties-leidinggevenden-mar19-/details?id=<meldingid>`.
+    - **Fixture:** echte Einträge, Personennamen ersetzt. Der Parser liest die Felder für Person und Funktion gar nicht.
+    - **Tab:** „SEC-Filings“ heißt jetzt „Pflichtmeldungen“.
+    - **Icon:** Das AFM-Favicon gibt es nur in 16 px.
+    - **Live-Lauf:** 50 Meldungen. AEX-Werte werden verknüpft, über den Emittenten (UMG, NN, ASR) und über die LEI (Unilever, Shell, RELX, Ferrovial, STMicroelectronics).
+  - **Offen (Produktfragen):**
+    - Index-Tabs zeigen keine Filings. AFM, `amf_filings` und `cnmv_oir` erscheinen daher nur auf Aktienseiten und unter „Pflichtmeldungen“, wo die SEC-Filings sie verdrängen.
+    - Gleichlautende AFM-Titel eines Emittenten innerhalb von 72 Stunden landen in einem Cluster; sichtbar ist dann eine Meldung.
+    - Uncurated SEC-Duplikate (z. B. „Shell plc“) werden mitverknüpft und bringen ihre US-Ticker (SHEL, UL) mit.
   - **Dateien:** `ingest/afm/parse.go` mit Tests und `testdata/`, `parsers.go`, `sources.csv`.
   - **Quelle:**
     - `afm_dd`: `kind = filing`, Markt `NL`, Name „AFM – Transacties leidinggevenden“ (Quellenangabe).
@@ -164,7 +208,22 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
 
 ## C. Nordics und UK (zum Testen, Entscheidung 3)
 
-- [ ] **8. Nordics: Nasdaq Nordic Company Announcements.**
+- [x] **8. Nordics: Nasdaq Nordic Company Announcements.** Branch `feature/ingest-nasdaq-nordic`.
+  - **Umgesetzt (2026-11-09):**
+    - **Markt:** ein Wert `NORDIC` für die Quellen (Migration 00009); Börsen XSTO, XHEL, XCSE. Die Website ordnet Tabs und Börsen dem Markt `NORDIC` zu.
+    - **Quellen:** ein Feed (`globalName=NordicMainMarkets`, `timeZone=UTC`, 200 Einträge ≈ 1,5 Tage), alle 15 Minuten, drei Parser nach `cnsCategory`:
+      `nasdaq_nordic_adhoc` („Inside information“), `nasdaq_nordic_filings` (übrige Pflichtmeldungen), `nasdaq_nordic_news` („Investor News“, `press_release`).
+      Island wird verworfen. Von Sprachzwillingen (gleicher Emittent und Kategorie, ≤ 10 min) bleibt die englische Fassung.
+      Managers' Transactions heißen „<Emittent>: Eigengeschäft einer Führungskraft“ (Entscheidung 2). `robots.txt` gibt es nicht (404); Nutzungsbedingungen weiter unbekannt.
+    - **Katalog:** OMXS30 (30), OMXH25 (25, Stand 01.08.2026), OMXC25 (25, mit Nordea seit 22.06.2026). ISIN und LEI aus ESMA FIRDS, Rechtsnamen von GLEIF.
+      Ticker mit Bindestrich statt Leerzeichen („VOLV-B“), weil API und Website keine Leerzeichen erlauben. Nordea hat drei Notierungen (NDA-SE, NDA-FI, NDA-DK).
+    - **Matcher:** Rechtsformen Oyj, Abp, Aktiebolag(et), publ; „æ“ → „ae“. Nordische Ticker zählen als Wort nur, wenn sie der Name sind. „ISS“ und „EQT“ (EQT Corp, US) stehen auf der Stoppliste.
+    - **Fix:** Unkuratierte SEC-Firmen treffen den Emittentennamen ohne Rechtsform nur noch bei US-/MULTI-Quellen. Vorher: „Castellum AB“ → „Castellum, Inc.“, „RTX“ (RTX A/S) → „RTX Corp“.
+    - **Live-Lauf:** 147 Meldungen; verknüpft u. a. Ericsson, Essity, Evolution, Saab, Skanska, Huhtamäki, Konecranes, Danske Bank, FLSmidth, Coloplast.
+  - **Offen:**
+    - Die Anfrage bei Nasdaq steht weiter aus.
+    - Die beiden falschen Verknüpfungen (Castellum, RTX) aus dem ersten Lauf bleiben in der Datenbank (append-only).
+    - Altfehler entdeckt: „AT&S“ wird als „at s“ gefaltet und trifft Titel mit „… at S-Thetics …“ als vollen Namen.
   - **Parallel:** schriftliche Anfrage bei Nasdaq zur Nutzung von `api.news.eu.nasdaq.com`; Pflicht vor einem öffentlichen Betrieb.
   - **Umfang:**
     - Markt `NORDIC` (bzw. SE, FI, DK).

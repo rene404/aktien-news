@@ -38,14 +38,16 @@ func TestParseFilings(t *testing.T) {
 			PublishedAt: ms(1793730840000),
 			IssuerHint:  "OMV Aktiengesellschaft",
 			IssuerISIN:  "AT0000743059",
+			IssuerLEI:   "549300V62YJ9HWLOJR90",
 		},
 		{
-			// No ISIN: the issuer name is the only hint.
+			// No ISIN: the issuer's name and LEI are the hints.
 			ExternalID:  "oam-253390",
 			URL:         pdf + "253389",
 			Title:       "EQS-DD: Raiffeisenlandesbank Niederösterreich-Wien AG: Dr. Roland Mechtler, Kauf",
 			PublishedAt: ms(1793438400000),
 			IssuerHint:  "RAIFFEISENLANDESBANK NIEDERÖSTERREICH-WIEN AG",
+			IssuerLEI:   "529900GPOO9ISPD1EE83",
 		},
 		{
 			// The share's ISIN wins over the bonds listed before it.
@@ -78,6 +80,7 @@ func TestParseAdhoc(t *testing.T) {
 			PublishedAt: ms(1793637660000),
 			IssuerHint:  "RHI Magnesita N.V.",
 			IssuerISIN:  "NL0012650360",
+			IssuerLEI:   "724500F4VP0QUKBUT357",
 		},
 		{
 			// The title names the issuer already (case aside).
@@ -114,6 +117,10 @@ func TestParseLivePage(t *testing.T) {
 	for _, a := range append(adhoc, filings...) {
 		if a.Title == "" || a.URL == "" || a.PublishedAt.IsZero() || a.IssuerHint == "" {
 			t.Errorf("incomplete: %+v", a)
+		}
+		// Every issuer on the live page has a LEI.
+		if len(a.IssuerLEI) != 20 {
+			t.Errorf("LEI %q of %s", a.IssuerLEI, a.ExternalID)
 		}
 	}
 }

@@ -54,3 +54,19 @@ func TestFetchLimitsBodySize(t *testing.T) {
 		t.Fatal("oversized body: want error")
 	}
 }
+
+// DILA archives reach 17 MB; their fetcher raises the cap, the default stays.
+func TestFetchWithMaxBytesRaisesTheCap(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(strings.Repeat("x", fetch.MaxBodyBytes+1)))
+	}))
+	defer srv.Close()
+
+	b, err := fetch.New("ua", 5*time.Second).WithMaxBytes(fetch.MaxBodyBytes+10).Fetch(context.Background(), srv.URL)
+	if err != nil || len(b) != fetch.MaxBodyBytes+1 {
+		t.Fatalf("len = %d, err = %v", len(b), err)
+	}
+	if _, err := fetch.New("ua", 5*time.Second).WithMaxBytes(100).Fetch(context.Background(), srv.URL); err == nil {
+		t.Fatal("body above the lower cap: want error")
+	}
+}

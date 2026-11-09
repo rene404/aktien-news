@@ -21,7 +21,7 @@ const mono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: { default: "aktien-news.at – Börsennews zu ATX, DAX und US-Aktien", template: "%s – aktien-news.at" },
+  title: { default: "aktien-news.at – Börsennews zu ATX, DAX, europäischen und US-Aktien", template: "%s – aktien-news.at" },
   description: "Aktuelle Meldungen und Ad-hoc-Mitteilungen zu österreichischen, deutschen und US-Aktien – mit Link zur Originalquelle.",
 };
 

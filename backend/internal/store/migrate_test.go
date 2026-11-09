@@ -251,3 +251,19 @@ func TestArticleLinksTracksNewestDecision(t *testing.T) {
 		t.Fatalf("article_links rows = %d, want 1", n)
 	}
 }
+
+// docs/plan-eu-sources.md, task 1: the database accepts FR, ES and NL sources, nothing else new.
+func TestSourceMarketCheck(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+	insert := func(key, market string) error {
+		_, err := pool.Exec(ctx, `INSERT INTO sources (key, name, kind, market, url) VALUES ($1, $1, 'adhoc', $2, 'https://example.com/' || $1)`, key, market)
+		return err
+	}
+	for _, m := range []string{"AT", "DE", "US", "MULTI", "FR", "ES", "NL", "NORDIC"} {
+		if err := insert("src_"+m, m); err != nil {
+			t.Errorf("market %s rejected: %v", m, err)
+		}
+	}
+	assertPgError(t, insert("src_uk", "UK"), "23514")
+}

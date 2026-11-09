@@ -10,7 +10,7 @@ var foldReplacer = strings.NewReplacer(
 	"á", "a", "à", "a", "â", "a", "ã", "a", "å", "a",
 	"é", "e", "è", "e", "ê", "e", "ë", "e",
 	"í", "i", "ì", "i", "î", "i", "ï", "i",
-	"ó", "o", "ò", "o", "ô", "o", "õ", "o", "ø", "o",
+	"ó", "o", "ò", "o", "ô", "o", "õ", "o", "ø", "o", "æ", "ae",
 	"ú", "u", "ù", "u", "û", "u",
 	"ç", "c", "ñ", "n",
 )
@@ -40,6 +40,8 @@ var legalForms = map[string]bool{
 	"co": true, "kg": true, "sa": true, "s": true, "a": true, "nv": true, "n": true,
 	"v": true, "plc": true, "inc": true, "corp": true, "corporation": true,
 	"ltd": true, "limited": true, "llc": true, "spa": true, "ab": true, "asa": true,
+	// Nordic: "Tieto Oyj", "Wärtsilä Oyj Abp", "Essity Aktiebolag (publ)".
+	"oyj": true, "abp": true, "aktiebolag": true, "aktiebolaget": true, "publ": true,
 }
 
 // stripLegalForm drops trailing legal-form tokens from a folded name:

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" version="2.0">
+  <Channel>
+    <title>CNMV - Otra informacion relevante.</title>
+    <link>https://www.cnmv.es/Portal/Otra-Informacion-Relevante/AlDia-OIR.aspx</link>
+    <description>Otra información relevante del día (Desde el cierre de la sesión anterior).</description>
+    <generator>CNMV RSS</generator>
+    <language>es</language>
+    <ttl>15</ttl>
+    <image>
+      <Title>Comisión nacional del mercado de valores</Title>
+      <Link>http://www.cnmv.es</Link>
+      <Url>http://www.cnmv.es/images/cnmv_logo.gif</Url>
+    </image>
+    <item>
+      <Title>AMPER, S.A.</Title>
+      <link><![CDATA[https://www.cnmv.es/Portal/Otra-Informacion-Relevante/Resultado-OIR.aspx?nreg=43537]]></link>
+      <guid isPermaLink="true"><![CDATA[https://www.cnmv.es/Portal/Otra-Informacion-Relevante/Resultado-OIR.aspx?nreg=43537]]></guid>
+      <pubDate>Fri, 06 Nov 2026 17:14:44 GMT</pubDate>
+      <description><![CDATA[<p><b>18:14  06/11/2026  </b> Sobre instrumentos financieros<BR/><BR/>Inscripción Escritura Ampliación de Capital adquisición Teltronic</p>]]></description>
+    </item>
+    <item>
+      <Title>TECNICAS REUNIDAS, S.A.</Title>
+      <link><![CDATA[https://www.cnmv.es/Portal/Otra-Informacion-Relevante/Resultado-OIR.aspx?nreg=43536]]></link>
+      <guid isPermaLink="true"><![CDATA[https://www.cnmv.es/Portal/Otra-Informacion-Relevante/Resultado-OIR.aspx?nreg=43536]]></guid>
+      <pubDate>Fri, 06 Nov 2026 17:02:04 GMT</pubDate>
+      <description><![CDATA[<p><b>18:02  06/11/2026  </b> Programas de recompra de acciones, estabilización y autocartera<BR/><BR/>Operaciones realizadas al amparo del Programa de Recompra de acciones entre el 29 de octubre y el 4 de noviembre de 2026</p>]]></description>
+    </item>
+  </Channel>
+</rss>

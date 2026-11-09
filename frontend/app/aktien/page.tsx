@@ -6,7 +6,7 @@ import TickerChips from "@/components/TickerChips";
 import { getIndexInstruments } from "@/lib/api";
 import { since } from "@/lib/feed";
 import { NEWS_KINDS, type SearchParams } from "@/lib/filters";
-import { LIST_INDICES, LIST_RANGES, LIST_SORTS, parseStockList, sortTickers, stockListHref, type StockList } from "@/lib/stocklist";
+import { LIST_INDICES, LIST_RANGES, listedIndices, LIST_SORTS, parseStockList, sortTickers, stockListHref, type StockList } from "@/lib/stocklist";
 
 type Props = { searchParams: Promise<SearchParams> };
 
@@ -28,7 +28,7 @@ export default async function StocksPage({ searchParams }: Props) {
   return (
     <>
       <h1>Aktien</h1>
-      <p className="sub">Die Werte von ATX, DAX und S&amp;P 500 mit der Zahl ihrer Meldungen.</p>
+      <p className="sub">Die Werte von {listedIndices()} mit der Zahl ihrer Meldungen.</p>
       <TabNav
         label="Indizes"
         tabs={LIST_INDICES.map((i) => ({ href: stockListHref({ ...list, index: i.key }), label: i.label, current: i.key === list.index }))}

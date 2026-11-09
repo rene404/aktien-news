@@ -3,7 +3,7 @@
 // publisher or Google for it. Several feeds share a publisher: the publisher is
 // the part of the source key before the first "_" (fn_adhoc, fn_dax → fn).
 // A new publisher: add its PNG and its prefix here.
-export const ICON_PUBLISHERS = ["fn", "oekb", "ots", "prn", "sec", "telekom", "voestalpine"] as const;
+export const ICON_PUBLISHERS = ["afm", "amf", "cnmv", "fn", "nasdaq", "oekb", "ots", "prn", "sec", "telekom", "voestalpine"] as const;
 
 const known = new Set<string>(ICON_PUBLISHERS);
 

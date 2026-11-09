@@ -39,7 +39,7 @@ func TestRealFeedAgainstCommittedSeed(t *testing.T) {
 	}
 
 	for _, a := range arts {
-		got := ix.Match(matching.Input{Title: a.Title, IssuerHint: a.IssuerHint, IssuerISIN: a.IssuerISIN, ISINIsIssuer: true})
+		got := ix.Match(matching.Input{Title: a.Title, IssuerHint: a.IssuerHint, IssuerISIN: a.IssuerISIN, IssuerGrade: true})
 		var linked []matching.Match
 		for _, m := range got {
 			if matching.StatusFor(m.Confidence) == "linked" {

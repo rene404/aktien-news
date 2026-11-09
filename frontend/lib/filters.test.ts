@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Source, SourceKind } from "./api";
-import { filterHref, parseFilters, shownSources, sourcesFor, TILE_SIZE, tileParams, toNewsParams } from "./filters";
+import { EXCHANGES, filterHref, parseFilters, shownSources, sourcesFor, TILE_SIZE, tileParams, toNewsParams } from "./filters";
 
 const now = new Date("2026-10-28T12:00:00Z");
 const NEWS_KINDS = "adhoc,press_release,news_api,ir";
@@ -52,6 +52,17 @@ describe("toNewsParams", () => {
     expect(toNewsParams({ section: "", source: "", range: "all", cursor: "" }, now)).toEqual({ kind: NEWS_KINDS, limit: 25 });
   });
 
+  it.each([
+    ["CAC40", "CAC40"],
+    ["IBEX35", "IBEX35"],
+    ["AEX", "AEX"],
+    ["OMXS30", "OMXS30"],
+    ["OMXH25", "OMXH25"],
+    ["OMXC25", "OMXC25"],
+  ])("the %s section asks for the linked news of its index", (section, index) => {
+    expect(toNewsParams({ section, source: "", range: "all", cursor: "" }, now)).toEqual({ index, kind: NEWS_KINDS, limit: 25 });
+  });
+
   it("kind sections filter by source kind", () => {
     expect(toNewsParams({ section: "adhoc", source: "", range: "all", cursor: "" }, now).kind).toBe("adhoc");
     expect(toNewsParams({ section: "filings", source: "", range: "all", cursor: "" }, now).kind).toBe("filing");
@@ -87,16 +98,26 @@ describe("sourcesFor", () => {
     src("fn_dax", "DE", "news_api"),
     src("prn_all", "US", "press_release"),
     src("sec_8k", "US", "filing"),
+    src("amf", "FR", "adhoc"),
+    src("cnmv", "ES", "adhoc"),
+    src("afm", "NL", "filing"),
+    src("nasdaq_nordic_adhoc", "NORDIC", "adhoc"),
   ];
   const keys = (s: Source[]) => s.map((x) => x.key);
 
   it.each([
-    ["", ["fn_adhoc", "fn_atx", "fn_dax", "prn_all"]],
+    ["", ["fn_adhoc", "fn_atx", "fn_dax", "prn_all", "amf", "cnmv", "nasdaq_nordic_adhoc"]],
     ["ATX", ["fn_adhoc", "fn_atx"]],
     ["DAX", ["fn_adhoc", "fn_dax"]],
     ["SP500", ["fn_adhoc", "prn_all"]],
-    ["adhoc", ["fn_adhoc"]],
-    ["filings", ["sec_8k"]],
+    ["CAC40", ["fn_adhoc", "amf"]],
+    ["IBEX35", ["fn_adhoc", "cnmv"]],
+    ["AEX", ["fn_adhoc"]], // afm is a filing source: not in the news sections
+    ["OMXS30", ["fn_adhoc", "nasdaq_nordic_adhoc"]], // one Nordic feed for all three
+    ["OMXH25", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
+    ["OMXC25", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
+    ["adhoc", ["fn_adhoc", "amf", "cnmv", "nasdaq_nordic_adhoc"]],
+    ["filings", ["sec_8k", "afm"]],
   ])("section %j offers %j", (section, want) => {
     expect(keys(sourcesFor(all, { section }))).toEqual(want);
   });
@@ -104,6 +125,23 @@ describe("sourcesFor", () => {
   it("limits a stock page to the market of its exchange", () => {
     expect(keys(sourcesFor(all, { mic: "XWBO" }))).toEqual(["fn_adhoc", "fn_atx"]);
     expect(keys(sourcesFor(all, { mic: "XNAS" }))).toEqual(["fn_adhoc", "prn_all", "sec_8k"]);
+  });
+
+  it.each([
+    ["XPAR", ["fn_adhoc", "amf"]],
+    ["XMAD", ["fn_adhoc", "cnmv"]],
+    ["XAMS", ["fn_adhoc", "afm"]],
+    ["XSTO", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
+    ["XHEL", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
+    ["XCSE", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
+  ])("limits a stock page on %s to its market and MULTI", (mic, want) => {
+    expect(keys(sourcesFor(all, { mic }))).toEqual(want);
+  });
+
+  it("names the new exchanges as readers know them", () => {
+    expect(EXCHANGES.XPAR).toEqual({ name: "Euronext Paris", market: "FR" });
+    expect(EXCHANGES.XMAD).toEqual({ name: "Bolsa de Madrid", market: "ES" });
+    expect(EXCHANGES.XAMS).toEqual({ name: "Euronext Amsterdam", market: "NL" });
   });
 
   it("offers every source for an unknown exchange", () => {

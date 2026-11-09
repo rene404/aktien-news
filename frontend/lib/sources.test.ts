@@ -13,12 +13,13 @@ describe("sourceIcon", () => {
     ["sec_8k", "/sources/sec.png"],
     ["telekom_ir", "/sources/telekom.png"],
     ["voestalpine_ir", "/sources/voestalpine.png"],
+    ["nasdaq_nordic_adhoc", "/sources/nasdaq.png"],
   ])("maps %s to the icon of its publisher", (key, src) => {
     expect(sourceIcon(key)).toBe(src);
   });
 
   it("has no icon for an unknown publisher", () => {
-    expect(sourceIcon("cnmv_hechos")).toBeNull();
+    expect(sourceIcon("borsa_news")).toBeNull();
     expect(sourceIcon("")).toBeNull();
   });
 

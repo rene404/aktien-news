@@ -8,7 +8,7 @@ import { filterHref, parseFilters, sourcesFor, tileParams, type SearchParams } f
 
 export const metadata: Metadata = {
   title: "Meldungen nach Quelle",
-  description: "Die neuesten Meldungen zu ATX-, DAX- und US-Aktien, nach Quelle geordnet – mit Link zur Originalquelle.",
+  description: "Die neuesten Meldungen zu österreichischen, deutschen, europäischen und US-Aktien, nach Quelle geordnet – mit Link zur Originalquelle.",
 };
 
 export default async function BySourcePage({ searchParams }: { searchParams: Promise<SearchParams> }) {

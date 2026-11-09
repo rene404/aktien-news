@@ -319,3 +319,24 @@ func TestCommittedSeedHasEUIndices(t *testing.T) {
 		}
 	}
 }
+
+// European issuers carry their US listing (ADR) where its ticker differs
+// from the home one, outside any index: Unilever ULVR, UNA and UL.
+func TestSeedADRListings(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+	if err := catalog.Seed(ctx, pool, seed.FS); err != nil {
+		t.Fatal(err)
+	}
+	var tickers string
+	var inIndex bool
+	if err := pool.QueryRow(ctx, `
+		SELECT string_agg(l.mic || ':' || l.ticker, ' ' ORDER BY l.mic, l.ticker),
+		       bool_or(l.mic = 'XNYS' AND EXISTS (SELECT 1 FROM index_memberships m WHERE m.listing_id = l.id))
+		FROM listings l JOIN companies c ON c.id = l.company_id WHERE c.slug = 'unilever'`).Scan(&tickers, &inIndex); err != nil {
+		t.Fatal(err)
+	}
+	if tickers != "XAMS:UNA XLON:ULVR XNYS:UL" || inIndex {
+		t.Errorf("unilever = %q, ADR in an index = %v", tickers, inIndex)
+	}
+}

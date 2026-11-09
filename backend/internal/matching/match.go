@@ -88,6 +88,23 @@ type Match struct {
 	Method     string // matches the match_method enum
 }
 
+var usMICs = map[string]bool{"XNYS": true, "XNAS": true}
+
+// hasUSAndForeignListing marks a company with a home exchange outside the US
+// and a US listing (ADR): "DB" (Deutsche Bank) or "UL" (Unilever) are too
+// often other things to count as words; they count like mnemonics.
+func hasUSAndForeignListing(ls []Listing) bool {
+	us, foreign := false, false
+	for _, l := range ls {
+		if usMICs[l.MIC] {
+			us = true
+		} else {
+			foreign = true
+		}
+	}
+	return us && foreign
+}
+
 // Exchanges whose tickers are mnemonics rather than symbols used in
 // headlines: "EN" (Bouygues), "RED" (Redeia), "NN" (NN Group), "SAND"
 // (Sandvik) are ordinary words in titles. Cashtags still count.
@@ -193,13 +210,15 @@ func NewIndex(companies []CompanyEntry) *Index {
 		for _, a := range c.Aliases {
 			addName(a.Text, c.ID, a.Kind == "issuer_name" || a.Kind == "former_name", c.Uncurated)
 		}
+		adr := hasUSAndForeignListing(c.Listings)
 		for _, l := range c.Listings {
 			if ix.own[c.ID] == nil {
 				ix.own[c.ID] = map[string]bool{}
 			}
 			ix.own[c.ID][l.Ticker] = true
 			addUnique(ix.cashtags, l.Ticker, c.ID)
-			if !c.Uncurated && (!mnemonicMICs[l.MIC] || tickerIsName(c, l.Ticker)) {
+			mnemonic := mnemonicMICs[l.MIC] || (adr && usMICs[l.MIC])
+			if !c.Uncurated && (!mnemonic || tickerIsName(c, l.Ticker)) {
 				addUnique(ix.tickers, l.Ticker, c.ID)
 			}
 			addUnique(ix.isin, l.ISIN, c.ID)

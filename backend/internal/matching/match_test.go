@@ -522,3 +522,48 @@ func TestAmpersandNamesAndIssuerTickers(t *testing.T) {
 		}
 	}
 }
+
+// US listings (ADRs) of companies whose home exchange is elsewhere: the
+// ticker counts as a cashtag, but as a plain word only where it is the name.
+// "DB" is Deutsche Bahn as often as Deutsche Bank, "UL" also UL Solutions.
+func TestADRTickersCountOnlyWhereTheyAreTheName(t *testing.T) {
+	const (
+		unilever = iota + 700
+		hsbc
+		deutscheBank
+		accenture
+	)
+	ix := matching.NewIndex([]matching.CompanyEntry{
+		{ID: unilever, Name: "Unilever", LegalName: "UNILEVER PLC", Listings: []matching.Listing{
+			{Ticker: "ULVR", MIC: "XLON"}, {Ticker: "UNA", MIC: "XAMS"}, {Ticker: "UL", MIC: "XNYS"}}},
+		{ID: hsbc, Name: "HSBC", LegalName: "HSBC HOLDINGS PLC", Listings: []matching.Listing{
+			{Ticker: "HSBA", MIC: "XLON"}, {Ticker: "HSBC", MIC: "XNYS"}}},
+		{ID: deutscheBank, Name: "Deutsche Bank", LegalName: "Deutsche Bank Aktiengesellschaft", Listings: []matching.Listing{
+			{Ticker: "DBK", MIC: "XETR"}, {Ticker: "DB", MIC: "XNYS"}}},
+		// US-only listing: the ticker is a word as before.
+		{ID: accenture, Name: "Accenture", LegalName: "Accenture plc", Listings: []matching.Listing{{Ticker: "ACN", MIC: "XNYS"}}},
+	})
+	cases := []struct {
+		title string
+		want  []want
+	}{
+		{"UL Solutions raises guidance", nil},
+		{"Why $UL is up today", []want{{unilever, "cashtag", 0.95}}},
+		{"DB Cargo streicht Stellen", nil},
+		{"DBK im Plus", []want{{deutscheBank, "ticker", 0.90}}},
+		{"HSBC cuts jobs", []want{{hsbc, "ticker", 0.90}}},
+		{"ACN beats estimates", []want{{accenture, "ticker", 0.90}}},
+	}
+	for _, tc := range cases {
+		got := ix.Match(matching.Input{Title: tc.title})
+		if len(got) != len(tc.want) {
+			t.Errorf("%q: got %+v, want %+v", tc.title, got, tc.want)
+			continue
+		}
+		for i, w := range tc.want {
+			if got[i].CompanyID != w.id || got[i].Method != w.method || got[i].Confidence != w.conf {
+				t.Errorf("%q: got %+v, want %+v", tc.title, got[i], w)
+			}
+		}
+	}
+}

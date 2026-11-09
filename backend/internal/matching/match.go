@@ -84,9 +84,12 @@ type Match struct {
 }
 
 // Exchanges whose tickers are mnemonics rather than symbols used in
-// headlines: "EN" (Bouygues), "RED" (Redeia), "NN" (NN Group) are ordinary
-// words in titles. Cashtags still count.
-var mnemonicMICs = map[string]bool{"XPAR": true, "XAMS": true, "XMAD": true}
+// headlines: "EN" (Bouygues), "RED" (Redeia), "NN" (NN Group), "SAND"
+// (Sandvik) are ordinary words in titles. Cashtags still count.
+var mnemonicMICs = map[string]bool{
+	"XPAR": true, "XAMS": true, "XMAD": true,
+	"XSTO": true, "XHEL": true, "XCSE": true, // Nasdaq Nordic
+}
 
 // tickerIsName reports whether the ticker spells the company's name or an alias.
 func tickerIsName(c CompanyEntry, ticker string) bool {
@@ -112,6 +115,7 @@ var tickerStoplist = map[string]bool{
 	"EBIT": true, "EBITDA": true, "FY": true, "H1": true, "H2": true, "Q1": true, "Q2": true,
 	"Q3": true, "Q4": true, "POS": true, "EQS": true, "DD": true, "OTS": true, "APA": true,
 	"AIR": true, // Airbus (XETR, XPAR): "AIR FRANCE-KLM", "AIR LIQUIDE", "DELTA AIR LINES"
+	"ISS": true, // ISS A/S (XCSE) is also the space station
 }
 
 var (

@@ -257,6 +257,7 @@ func TestFold(t *testing.T) {
 		"Straße & Co. KGaA":       "strasse co kgaa",
 		"  Mercedes-Benz  Group ": "mercedes benz group",
 		"Société Générale":        "societe generale",
+		"A.P. Møller - Mærsk A/S": "a p moller maersk a s",
 	}
 	for in, want := range cases {
 		if got := matching.Fold(in); got != want {
@@ -326,5 +327,56 @@ func TestTickerAIRIsAWord(t *testing.T) {
 	}
 	if got := ix.Match(matching.Input{Title: "Why $AIR is up today"}); len(got) != 1 || got[0].Method != "cashtag" {
 		t.Errorf("cashtag: got %+v", got)
+	}
+}
+
+// Nasdaq Nordic names its issuers "Volvo, AB", "Tieto Oyj", "Essity
+// Aktiebolag (publ)"; Nordic tickers ("SAND", "ISS") are words in headlines.
+func TestNordicIssuersAndTickers(t *testing.T) {
+	const (
+		volvo = iota + 300
+		tieto
+		essity
+		ericsson
+		iss
+		sandvik
+		nokia
+	)
+	ix := matching.NewIndex([]matching.CompanyEntry{
+		{ID: volvo, Name: "Volvo", LegalName: "Aktiebolaget Volvo", Listings: []matching.Listing{{Ticker: "VOLV-B", MIC: "XSTO"}}},
+		{ID: tieto, Name: "Tieto", LegalName: "Tieto Oyj", Listings: []matching.Listing{{Ticker: "TIETO", MIC: "XHEL"}}},
+		{ID: essity, Name: "Essity", LegalName: "Essity Aktiebolag (publ)", Listings: []matching.Listing{{Ticker: "ESSITY-B", MIC: "XSTO"}}},
+		{ID: ericsson, Name: "Ericsson", LegalName: "Telefonaktiebolaget LM Ericsson",
+			Aliases:  []matching.Alias{{Text: "Ericsson, Telefonab. L M", Kind: "issuer_name"}},
+			Listings: []matching.Listing{{Ticker: "ERIC-B", MIC: "XSTO"}}},
+		{ID: iss, Name: "ISS", LegalName: "ISS A/S", Listings: []matching.Listing{{Ticker: "ISS", MIC: "XCSE"}}},
+		{ID: sandvik, Name: "Sandvik", LegalName: "Sandvik Aktiebolag", Listings: []matching.Listing{{Ticker: "SAND", MIC: "XSTO"}}},
+		{ID: nokia, Name: "Nokia", LegalName: "Nokia Oyj", Listings: []matching.Listing{{Ticker: "NOKIA", MIC: "XHEL"}}},
+	})
+	cases := []struct {
+		in   matching.Input
+		want []want
+	}{
+		{matching.Input{Title: "Buyback of shares", IssuerHint: "Volvo, AB"}, []want{{volvo, "issuer", 1.00}}},
+		{matching.Input{Title: "Managers' transactions", IssuerHint: "Tieto Oyj"}, []want{{tieto, "issuer", 1.00}}},
+		{matching.Input{Title: "Interim report", IssuerHint: "Essity Aktiebolag (publ)"}, []want{{essity, "issuer", 1.00}}},
+		{matching.Input{Title: "Share buybacks", IssuerHint: "Ericsson, Telefonab. L M"}, []want{{ericsson, "issuer", 1.00}}},
+		{matching.Input{Title: "Tieto Oyj: Changes in the Leadership Team"}, []want{{tieto, "full_name", 0.90}}},
+		// Only the core name, pending: not shown.
+		{matching.Input{Title: "NASA EXTENDS ISS OPERATIONS"}, []want{{iss, "core_name", 0.55}}},
+		{matching.Input{Title: "SAND PRICES SURGE IN TEXAS"}, nil},
+		{matching.Input{Title: "NOKIA WINS 5G DEAL"}, []want{{nokia, "ticker", 0.90}}},
+	}
+	for _, tc := range cases {
+		got := ix.Match(tc.in)
+		if len(got) != len(tc.want) {
+			t.Errorf("%+v: got %+v, want %+v", tc.in, got, tc.want)
+			continue
+		}
+		for i, w := range tc.want {
+			if got[i].CompanyID != w.id || got[i].Method != w.method || got[i].Confidence != w.conf {
+				t.Errorf("%+v: got %+v, want %+v", tc.in, got[i], w)
+			}
+		}
 	}
 }

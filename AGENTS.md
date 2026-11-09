@@ -58,7 +58,9 @@ docs/             # design, research, plans
    even the titles away from the LLM (FCA NSM). Stored text is purged after
    `purge_after`.
 3. Respect each source's terms: FinanzNachrichten ≥ 10 min polling, links open
-   in a new window, no frames. Wiener Börse is not scraped (ToS).
+   in a new window, no frames. Wiener Börse is not scraped (ToS). The FCA NSM
+   may be linked only at its home page and its name or logo must not be used
+   (items carry `DedupeKey`; no FCA icon).
 4. Sentiment/event type are internal (MCP only). The site shows a
    "keine Anlageberatung" disclaimer.
 

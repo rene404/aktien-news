@@ -14,9 +14,12 @@ describe("sourceIcon", () => {
     ["telekom_ir", "/sources/telekom.png"],
     ["voestalpine_ir", "/sources/voestalpine.png"],
     ["nasdaq_nordic_adhoc", "/sources/nasdaq.png"],
-    ["fca_nsm", "/sources/fca.png"],
   ])("maps %s to the icon of its publisher", (key, src) => {
     expect(sourceIcon(key)).toBe(src);
+  });
+
+  it("shows no FCA logo (NSM terms of use)", () => {
+    expect(sourceIcon("fca_nsm")).toBeNull();
   });
 
   it("has no icon for an unknown publisher", () => {

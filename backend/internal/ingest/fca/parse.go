@@ -6,6 +6,11 @@
 // data.fca.org.uk declares "Content-Signal: search=yes, ai-train=no,
 // use=reference" in its robots.txt: we only show title and link, and the
 // source has text_policy no_llm (docs/plan-eu-sources.md, decision 3).
+//
+// The NSM terms of use (data.fca.org.uk/artefacts/NSM_Terms_of_Use.pdf)
+// allow the material "for any lawful purpose", but links only to the home
+// page and no use of the FCA's name or logo: every item links HomePage, the
+// announcement's own address is only its dedupe key.
 package fca
 
 import (
@@ -19,8 +24,12 @@ import (
 	"github.com/rene404/aktien-news/backend/internal/ingest"
 )
 
-// ArtefactBase + download_link is the announcement as filed. We only link.
+// ArtefactBase + download_link is the announcement as filed: the dedupe key,
+// never shown (no deep links, NSM terms of use).
 const ArtefactBase = "https://data.fca.org.uk/artefacts/"
+
+// HomePage is the only page of the NSM we may link to.
+const HomePage = "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
 
 // noise are NSM type codes that are not about the issuer's own business:
 // fund prices, takeover dealing disclosures by third parties, debt final
@@ -98,7 +107,8 @@ func Parse(b []byte) ([]ingest.RawArticle, error) {
 		}
 		arts = append(arts, ingest.RawArticle{
 			ExternalID:  id,
-			URL:         ArtefactBase + strings.TrimPrefix(link, "/"),
+			URL:         HomePage,
+			DedupeKey:   ArtefactBase + strings.TrimPrefix(link, "/"),
 			Title:       title,
 			PublishedAt: at.UTC(),
 			IssuerHint:  company,

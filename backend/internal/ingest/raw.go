@@ -14,8 +14,12 @@ import "time"
 // headline) into <description>, after time and category. The cnmv parser
 // takes that subject alone into Title, nothing else of the description.
 type RawArticle struct {
-	ExternalID  string // stable per-source id (guid, or the link if none)
-	URL         string
+	ExternalID string // stable per-source id (guid, or the link if none)
+	URL        string
+	// DedupeKey is the item's own address when URL is a landing page shared
+	// by many items (the FCA NSM may be linked only at its home page). It is
+	// the dedupe key instead of URL and is never shown.
+	DedupeKey   string
 	Title       string
 	PublishedAt time.Time
 	IssuerHint  string // issuer name stated by the feed or title, if any

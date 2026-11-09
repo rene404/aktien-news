@@ -177,7 +177,11 @@ func (r *Runner) runSource(ctx context.Context, src db.Source, index *matching.I
 // store inserts one article with its cluster and company links atomically. It reports
 // false when the article was already known.
 func (r *Runner) store(ctx context.Context, src db.Source, a RawArticle, index *matching.Index) (bool, error) {
-	canonical, err := dedupe.CanonicalURL(a.URL)
+	key := a.URL
+	if a.DedupeKey != "" {
+		key = a.DedupeKey
+	}
+	canonical, err := dedupe.CanonicalURL(key)
 	if err != nil {
 		return false, err
 	}

@@ -679,3 +679,25 @@ func TestRunDueLinksOeKBFilingByLEI(t *testing.T) {
 		t.Errorf("links = %q, want rlb-noe-wien:lei:linked", got)
 	}
 }
+
+// The NSM may be linked only at its home page (NSM terms of use, "Rules about
+// linking to this site"). Every item shows that one link; the announcement's
+// own address stays the dedupe key, so the items do not collapse into one.
+func TestRunDueKeepsItemsThatShareALandingPage(t *testing.T) {
+	r, pool, _, _ := newRunner(t)
+	const urlFCA = "https://api.data.fca.org.uk/search?index=nsm-search"
+	r.Fetchers = map[string]ingest.Fetcher{"fca_nsm": &fakeFetcher{
+		bodies: map[string][]byte{urlFCA: readFixture(t, "fca/testdata/nsm.json")},
+		calls:  map[string]int{},
+	}}
+	if err := r.RunDue(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM articles a JOIN sources s ON s.id = a.source_id WHERE s.key = 'fca_nsm'`); n != 7 {
+		t.Errorf("%d NSM articles, want 7", n)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM articles a JOIN sources s ON s.id = a.source_id
+		WHERE s.key = 'fca_nsm' AND a.url <> 'https://data.fca.org.uk/#/nsm/nationalstoragemechanism'`); n != 0 {
+		t.Errorf("%d NSM articles link past the home page", n)
+	}
+}

@@ -14,13 +14,16 @@ describe("parseStockList", () => {
       { key: "CAC40", label: "CAC 40" },
       { key: "IBEX35", label: "IBEX 35" },
       { key: "AEX", label: "AEX" },
+      { key: "OMXS30", label: "OMXS30" },
+      { key: "OMXH25", label: "OMXH25" },
+      { key: "OMXC25", label: "OMXC25" },
       { key: "SP500", label: "S&P 500" },
     ]);
     expect(parseStockList({ index: "IBEX35" }).index).toBe("IBEX35");
   });
 
   it("names the indices as a German list", () => {
-    expect(listedIndices()).toBe("ATX, DAX, CAC 40, IBEX 35, AEX und S&P 500");
+    expect(listedIndices()).toBe("ATX, DAX, CAC 40, IBEX 35, AEX, OMXS30, OMXH25, OMXC25 und S&P 500");
   });
 
   it("keeps known values and drops unknown ones", () => {

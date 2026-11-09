@@ -49,6 +49,10 @@ func TestCheckTDM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fca, err := os.ReadFile("testdata/fca_robots.txt") // data.fca.org.uk, 2026-11-09
+	if err != nil {
+		t.Fatal(err)
+	}
 	tests := []struct {
 		name    string
 		site    tdmSite
@@ -75,6 +79,14 @@ func TestCheckTDM(t *testing.T) {
 		{name: "well-known fails, root missing", site: tdmSite{
 			status: map[string]int{"/.well-known/tdmrep.json": http.StatusInternalServerError},
 		}, wantErr: true},
+		// Content-Signal in robots.txt (contentsignals.org): "no" for ai-train
+		// or ai-input is an express reservation under Art. 4 DSM directive.
+		{name: "robots.txt content signal ai-train=no (FCA)", site: tdmSite{files: map[string]string{"/robots.txt": string(fca)}}, want: true},
+		{name: "robots.txt content signal ai-input=no", site: tdmSite{files: map[string]string{"/robots.txt": "User-agent: *\nContent-Signal: search=yes, ai-input=no\nAllow: /\n"}}, want: true},
+		{name: "robots.txt content signals all yes", site: tdmSite{files: map[string]string{"/robots.txt": "User-agent: *\nContent-Signal: search=yes,ai-input=yes,ai-train=yes\n"}}, want: false},
+		{name: "robots.txt content signal for another bot only", site: tdmSite{files: map[string]string{"/robots.txt": "User-agent: GPTBot\nContent-Signal: ai-train=no\n\nUser-agent: *\nAllow: /\n"}}, want: false},
+		{name: "robots.txt forbidden counts as missing", site: tdmSite{status: map[string]int{"/robots.txt": http.StatusForbidden}}, want: false},
+		{name: "robots.txt server error", site: tdmSite{status: map[string]int{"/robots.txt": http.StatusInternalServerError}}, wantErr: true},
 		{name: "feed HEAD not allowed still checks files", site: tdmSite{
 			status: map[string]int{"/rss/finanzen": http.StatusMethodNotAllowed},
 			files:  map[string]string{"/tdmrep.json": string(ots)},

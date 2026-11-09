@@ -1,6 +1,6 @@
 import type { NewsParams, Source } from "./api";
 
-// Source kinds of the API. Filings (SEC 8-K/6-K, OeKB, CNMV, AMF, AFM) come in
+// Source kinds of the API. Filings (SEC 8-K/6-K, OeKB, CNMV, AMF, AFM, FCA) come in
 // by the hundred and would bury everything else, so they get a section of
 // their own: "Pflichtmeldungen".
 export const NEWS_KINDS = ["adhoc", "press_release", "news_api", "ir"];
@@ -16,6 +16,7 @@ export const SECTIONS = [
   { key: "OMXS30", label: "OMXS30", index: "OMXS30", kinds: NEWS_KINDS, market: "NORDIC" },
   { key: "OMXH25", label: "OMXH25", index: "OMXH25", kinds: NEWS_KINDS, market: "NORDIC" },
   { key: "OMXC25", label: "OMXC25", index: "OMXC25", kinds: NEWS_KINDS, market: "NORDIC" },
+  { key: "FTSE100", label: "FTSE 100", index: "FTSE100", kinds: NEWS_KINDS, market: "UK" },
   { key: "SP500", label: "S&P 500", index: "SP500", kinds: NEWS_KINDS, market: "US" },
   { key: "adhoc", label: "Ad-hoc", kinds: ["adhoc"] },
   { key: "filings", label: "Pflichtmeldungen", kinds: ["filing"] },
@@ -33,6 +34,7 @@ export const EXCHANGES: Record<string, { name: string; market: string }> = {
   XSTO: { name: "Nasdaq Stockholm", market: "NORDIC" },
   XHEL: { name: "Nasdaq Helsinki", market: "NORDIC" },
   XCSE: { name: "Nasdaq Copenhagen", market: "NORDIC" },
+  XLON: { name: "London Stock Exchange", market: "UK" },
 };
 
 /**

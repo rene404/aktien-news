@@ -1,0 +1,513 @@
+{
+ "took": 1,
+ "timed_out": false,
+ "hits": {
+  "total": {
+   "relation": "eq",
+   "value": 15
+  },
+  "hits": [
+   {
+    "_index": "fca-nsm-searchdata",
+    "_id": "2e3783b8-d098-4922-abc9-6d4ab4a16c6d",
+    "_source": {
+     "submitted_date": "2026-11-09T09:51:09Z",
+     "tag_esef": "",
+     "classifications_code": "",
+     "document_date": "2026-11-09T09:51:09Z",
+     "source": "RNS",
+     "type": "Net Asset Value(s)",
+     "related_org": [],
+     "lei_remediation_flag": "N",
+     "document_format": "Plain text",
+     "category_group": "Investment Funds",
+     "classifications": "",
+     "lei": "2138006MNA9HTDYDJ975",
+     "download_link": "NSM/RNS/2e3783b8-d098-4922-abc9-6d4ab4a16c6d.html",
+     "disclosure_id": "2e3783b8-d098-4922-abc9-6d4ab4a16c6d",
+     "latest_flag": "Y",
+     "hist_seq": "1",
+     "publication_date": "2026-11-09T09:40:00Z",
+     "seq_id": "2e3783b8-d098-4922-abc9-6d4ab4a16c6d",
+     "company": "VIETNAM HOLDING LIMITED",
+     "last_updated_date": "2026-11-09T09:40:00Z",
+     "headline": "Estimated Daily Net Asset Value",
+     "type_code": "NAV"
+    },
+    "sort": [
+     1794217869000,
+     1794217869000
+    ]
+   },
+   {
+    "_index": "fca-nsm-searchdata",
+    "_id": "eb4d7395-d70a-43ed-8778-e681d884fee6",
+    "_source": {
+     "submitted_date": "2026-11-09T10:00:10Z",
+     "tag_esef": "",
+     "classifications_code": "",
+     "document_date": "2026-11-09T10:00:10Z",
+     "source": "RNS",
+     "type": "Form 8.3",
+     "related_org": [
+      {
+       "lei": "2138008K14474WPKZ244",
+       "company": "TATE & LYLE PUBLIC LIMITED COMPANY"
+      }
+     ],
+     "lei_remediation_flag": "N",
+     "document_format": "Plain text",
+     "category_group": "Mergers and acquisitions",
+     "classifications": "",
+     "lei": "213800LBQA1Y9L22JB70",
+     "download_link": "NSM/RNS/eb4d7395-d70a-43ed-8778-e681d884fee6.html",
+     "disclosure_id": "eb4d7395-d70a-43ed-8778-e681d884fee6",
+     "latest_flag": "Y",
+     "hist_seq": "1",
+     "publication_date": "2026-11-09T09:47:16Z",
+     "seq_id": "eb4d7395-d70a-43ed-8778-e681d884fee6",
+     "company": "BARCLAYS PLC",
+     "last_updated_date": "2026-11-09T09:47:16Z",
+     "headline": "Form 8.3 TATE & LYLE PLC",
+     "type_code": "RET"
+    },
+    "sort": [
+     1794218410000,
+     1794218410000
+    ]
+   },
+   {
+    "_index": "fca-nsm-searchdata",
+    "_id": "717b8049-3f8e-404a-8c53-f297c2582782",
+    "_source": {
+     "submitted_date": "2026-11-09T09:15:09Z",
+     "tag_esef": "",
+     "classifications_code": "",
+     "document_date": "2026-11-09T09:15:09Z",
+     "source": "RNS",
+     "type": "Form 8.5 (EPT/RI)",
+     "related_org": [
+      {
+       "lei": "529900DFH19P073LZ636",
+       "company": "PROLOGIS, INC."
+      }
+     ],
+     "lei_remediation_flag": "N",
+     "document_format": "Plain text",
+     "category_group": "Mergers and acquisitions",
+     "classifications": "",
+     "lei": "",
+     "download_link": "NSM/RNS/717b8049-3f8e-404a-8c53-f297c2582782.html",
+     "disclosure_id": "717b8049-3f8e-404a-8c53-f297c2582782",
+     "latest_flag": "Y",
+     "hist_seq": "1",
+     "publication_date": "2026-11-09T09:02:44Z",
+     "seq_id": "717b8049-3f8e-404a-8c53-f297c2582782",
+     "company": "Citigroup Global Markets Limited",
+     "last_updated_date": "2026-11-09T09:02:44Z",
+     "headline": "Form 8.5 (EPT/RI)",
+     "type_code": "FER"
+    },
+    "sort": [
+     1794215709000,
+     1794215709000
+    ]
+   },
+   {
+    "_index": "fca-nsm-searchdata",
+    "_id": "ef8ce658-4f71-4504-8d11-005af10c6968",
+    "_source": {
+     "submitted_date": "2026-11-09T09:39:10Z",
+     "tag_esef": "",
+     "classifications_code": "",
+     "document_date": "2026-11-09T09:39:10Z",
+     "source": "RNS",
+     "type": "Transaction in Own Shares",
+     "related_org": [],
+     "lei_remediation_flag": "N",
+     "document_format": "Plain text",
+     "category_group": "Corporate actions",
+     "classifications": "",
+     "lei": "ZLECI7ED2QMWFGYCXZ59",
+     "download_link": "NSM/RNS/ef8ce658-4f71-4504-8d11-005af10c6968.html",
+     "disclosure_id": "ef8ce658-4f71-4504-8d11-005af10c6968",
+     "latest_flag": "Y",
+     "hist_seq": "1",
+     "publication_date": "2026-11-09T09:27:42Z",
+     "seq_id": "ef8ce658-4f71-4504-8d11-005af10c6968",
+     "company": "ITV PLC",
+     "last_updated_date": "2026-11-09T09:27:42Z",
+     "headline": "Transaction in Own Shares",
+     "type_code": "POS"
+    },
+    "sort": [
+     1794217150000,
+     1794217150000
+    ]
+   },
+   {
+    "_index": "fca-nsm-searchdata",
+    "_id": "5cfa4530-42a3-422b-a0b5-4daf65f5f891",
+    "_source": {
+     "submitted_date": "2026-11-09T09:39:10Z",
+     "tag_esef": "",
+     "classifications_code": "",
+     "document_date": "2026-11-09T09:39:10Z",
+     "source": "RNS",
+     "type": "Director/PDMR Shareholding",
+     "related_org": [],
+     "lei_remediation_flag": "N",
+     "document_format": "Plain text",
+     "category_group": "Holdings",
+     "classifications": "",
+     "lei": "213800VB75KAZBFH5U07",
+     "download_link": "NSM/RNS/5cfa4530-42a3-422b-a0b5-4daf65f5f891.html",
+     "disclosure_id": "5cfa4530-42a3-422b-a0b5-4daf65f5f891",
+     "latest_flag": "Y",
+     "hist_seq": "1",
+     "publication_date": "2026-11-09T09:26:30Z",
+     "seq_id": "5cfa4530-42a3-422b-a0b5-4daf65f5f891",
+     "company": "CMC MARKETS PLC",
+     "last_updated_date": "2026-11-09T09:26:30Z",
+     "headline": "Director/PDMR Shareholding",
+     "type_code": "DSH"
+    },
+    "sort": [
+     1794217150000,
+     1794217150000
+    ]
+   },
+   {
+    "_index": "fca-nsm-searchdata",
+    "_id": "0fb9b3db-5736-4d88-9138-2adbadfae031",
+    "_source": {
+     "submitted_date": "2026-11-09T09:48:25Z",
+     "tag_esef": "",
+     "classifications_code": "",
+     "document_date": "2026-11-09T09:48:25Z",
+     "source": "RNS",
+     "type": "Holding(s) in Company",
+     "related_org": [],
+     "lei_remediation_flag": "N",
+     "document_format": "Plain text",
+     "category_group": "Holdings",
+     "classifications": "",
+     "lei": "",
+     "download_link": "NSM/RNS/0fb9b3db-5736-4d88-9138-2adbadfae031.html",
+     "disclosure_id": "0fb9b3db-5736-4d88-9138-2adbadfae031",
+     "latest_flag": "Y",
+     "hist_seq": "1",
+     "publication_date": "2026-11-09T09:36:15Z",
+     "seq_id": "0fb9b3db-5736-4d88-9138-2adbadfae031",
+     "company": "Verici Dx PLC",
+     "last_updated_date": "2026-11-09T09:36:15Z",
+     "headline": "Holding(s) in Company",
+     "type_code": "HOL"
+    },
+    "sort": [
+     1794217705000,
+     1794217705000
+    ]
+   },
+   {
+    "_index": "fca-nsm-searchdata",
+    "_id": "95b8b96b-ddb1-497a-bb4d-e74eb6b55367",
+    "_source": {
+     "submitted_date": "2026-11-09T07:12:27Z",
+     "tag_esef": "",
+     "classifications_code": "",
+     "document_date": "2026-11-09T07:12:27Z",
+     "source": "RNS",
+     "type": "Trading Statement",
+     "related_org": [],
+     "lei_remediation_flag": "N",
+     "document_format": "Plain text",
+     "category_group": "Financial Results",
+     "classifications": "",
+     "lei": "213800SRJST19GNS9U35",
+     "download_link": "NSM/RNS/95b8b96b-ddb1-497a-bb4d-e74eb6b55367.html",
+     "disclosure_id": "95b8b96b-ddb1-497a-bb4d-e74eb6b55367",
+     "latest_flag": "Y",
+     "hist_seq": "1",
+     "publication_date": "2026-11-09T07:00:07Z",
+     "seq_id": "95b8b96b-ddb1-497a-bb4d-e74eb6b55367",
+     "company": "AFC ENERGY PLC",
+     "last_updated_date": "2026-11-09T07:00:07Z",
+     "headline": "Trading Update for the year ended 31 October 2026",
+     "type_code": "TST"
+    },
+    "sort": [
+     1794208347000,
+     1794208347000
+    ]
+   },
+   {
+    "_index": "fca-nsm-searchdata",
+    "_id": "NI-000154371",
+    "_source": {
+     "submitted_date": "2026-11-09T00:56:49.964Z",
+     "tag_esef": "",
+     "document_date": "2026-09-30",
+     "source": "Direct Upload",
+     "ContentVersionId": "068Tw00000uGFCfIAO",
+     "type": "Final Results",
+     "related_org": [],
+     "lei_remediation_flag": "N",
+     "document_format": "PDF",
+     "category_group": "Financial Results",
+     "lei": "JHE42UYNWWTJB8YTTU19",
+     "ProcessType": "NSM",
+     "download_link": "NSM/DirectUpload/NI-000154371/NI-000154371.pdf",
+     "disclosure_id": "NI-000154371",
+     "latest_flag": "Y",
+     "hist_seq": "1",
+     "publication_date": "2026-11-09T00:15:00.000Z",
+     "seq_id": "NI-000154371",
+     "company": "AUSTRALIA AND NEW ZEALAND BANKING GROUP LIMITED;",
+     "html_link": "",
+     "last_updated_date": "2026-11-09T00:57:32.791533472Z",
+     "headline": "ANZ 2026 FY Results Presentation & Investor Discussion Pack",
+     "type_code": "FR"
+    },
+    "sort": [
+     1794185809964,
+     1794185809964
+    ]
+   },
+   {
+    "_index": "fca-nsm-searchdata",
+    "_id": "c76861ec-e805-461e-82a7-022e8db63643",
+    "_source": {
+     "submitted_date": "2026-11-09T07:12:42Z",
+     "tag_esef": "",
+     "classifications_code": "",
+     "document_date": "2026-11-09T07:12:42Z",
+     "source": "RNS",
+     "type": "Strategy/Company/ Operations Update",
+     "related_org": [],
+     "lei_remediation_flag": "N",
+     "document_format": "Plain text",
+     "category_group": "Operational updates",
+     "classifications": "",
+     "lei": "213800JKM5UQHFJOTZ25",
+     "download_link": "NSM/RNS/c76861ec-e805-461e-82a7-022e8db63643.html",
+     "disclosure_id": "c76861ec-e805-461e-82a7-022e8db63643",
+     "latest_flag": "Y",
+     "hist_seq": "1",
+     "publication_date": "2026-11-09T07:00:08Z",
+     "seq_id": "c76861ec-e805-461e-82a7-022e8db63643",
+     "company": "THAMES WATER UTILITIES LIMITED",
+     "last_updated_date": "2026-11-09T07:00:08Z",
+     "headline": "Recapitalisation Update ",
+     "type_code": "UPD"
+    },
+    "sort": [
+     1794208362000,
+     1794208362000
+    ]
+   },
+   {
+    "_index": "fca-nsm-searchdata",
+    "_id": "e80d06d9-a8b3-413c-9ec6-cabe50bffac7",
+    "_source": {
+     "submitted_date": "2026-11-09T08:12:10Z",
+     "tag_esef": "",
+     "classifications_code": "",
+     "document_date": "2026-11-09T08:12:10Z",
+     "source": "RNS",
+     "type": "London Stock Exchange Notice",
+     "related_org": [],
+     "lei_remediation_flag": "N",
+     "document_format": "Plain text",
+     "category_group": "Regulator announcement",
+     "classifications": "",
+     "lei": "",
+     "download_link": "NSM/RNS/e80d06d9-a8b3-413c-9ec6-cabe50bffac7.html",
+     "disclosure_id": "e80d06d9-a8b3-413c-9ec6-cabe50bffac7",
+     "latest_flag": "Y",
+     "hist_seq": "1",
+     "publication_date": "2026-11-09T08:00:01Z",
+     "seq_id": "e80d06d9-a8b3-413c-9ec6-cabe50bffac7",
+     "company": "London Stock Exchange Notice",
+     "last_updated_date": "2026-11-09T08:00:01Z",
+     "headline": "Admission to ISM - 09/11/2026",
+     "type_code": "SEN"
+    },
+    "sort": [
+     1794211930000,
+     1794211930000
+    ]
+   },
+   {
+    "_index": "fca-nsm-searchdata",
+    "_id": "5b332eef-734f-4642-b859-c2d414ed5fc0",
+    "_source": {
+     "submitted_date": "2026-11-09T07:42:09Z",
+     "tag_esef": "",
+     "classifications_code": "",
+     "document_date": "2026-11-09T07:42:09Z",
+     "source": "RNS",
+     "type": "Exchange Suspension/Restoration",
+     "related_org": [
+      {
+       "company": "Trafalgar Minerals PLC"
+      }
+     ],
+     "lei_remediation_flag": "N",
+     "document_format": "Plain text",
+     "category_group": "Regulator announcement",
+     "classifications": "",
+     "lei": "",
+     "download_link": "NSM/RNS/5b332eef-734f-4642-b859-c2d414ed5fc0.html",
+     "disclosure_id": "5b332eef-734f-4642-b859-c2d414ed5fc0",
+     "latest_flag": "Y",
+     "hist_seq": "1",
+     "publication_date": "2026-11-09T07:30:00Z",
+     "seq_id": "5b332eef-734f-4642-b859-c2d414ed5fc0",
+     "company": "AIM",
+     "last_updated_date": "2026-11-09T07:30:00Z",
+     "headline": "Suspension - Trafalgar Minerals PLC",
+     "type_code": "EXC"
+    },
+    "sort": [
+     1794210129000,
+     1794210129000
+    ]
+   },
+   {
+    "_index": "fca-nsm-searchdata",
+    "_id": "NI-000154379",
+    "_source": {
+     "submitted_date": "2026-11-09T07:00:46.984Z",
+     "tag_esef": "",
+     "document_date": "2026-11-09",
+     "source": "Direct Upload",
+     "ContentVersionId": "068Tw00000uH3qzIAC",
+     "type": "Final Terms",
+     "related_org": [],
+     "lei_remediation_flag": "N",
+     "document_format": "PDF",
+     "category_group": "Prospectuses",
+     "lei": "549300SNVSPBXF55RX28",
+     "ProcessType": "NSM",
+     "download_link": "NSM/DirectUpload/NI-000154379/NI-000154379.pdf",
+     "disclosure_id": "NI-000154379",
+     "latest_flag": "Y",
+     "hist_seq": "1",
+     "publication_date": "2026-11-09T06:58:00.000Z",
+     "seq_id": "NI-000154379",
+     "company": "DB ETC PLC;",
+     "html_link": "",
+     "last_updated_date": "2026-11-09T07:01:20.212870230Z",
+     "headline": "DBETC_FTs_2026.11.09_Series 10 Xtrackers Physical Silver ETC (EUR) (UK-FCA)",
+     "type_code": "PFT"
+    },
+    "sort": [
+     1794207646984,
+     1794207646984
+    ]
+   },
+   {
+    "_index": "fca-nsm-searchdata",
+    "_id": "3bb82d5e-4d09-4f5f-98a9-9e134cf454e4",
+    "_source": {
+     "submitted_date": "2026-11-09T09:23:45Z",
+     "tag_esef": "",
+     "classifications_code": "",
+     "document_date": "2026-11-09T09:23:45Z",
+     "source": "PRN",
+     "type": "Miscellaneous",
+     "related_org": [],
+     "lei_remediation_flag": "N",
+     "document_format": "Plain text",
+     "category_group": "Miscellaneous",
+     "classifications": "",
+     "lei": "213800NN4ZKX2LG1GQ40",
+     "download_link": "NSM/PRN/3bb82d5e-4d09-4f5f-98a9-9e134cf454e4.html",
+     "disclosure_id": "3bb82d5e-4d09-4f5f-98a9-9e134cf454e4",
+     "latest_flag": "Y",
+     "hist_seq": "1",
+     "publication_date": "2026-11-09T09:23:00Z",
+     "seq_id": "3bb82d5e-4d09-4f5f-98a9-9e134cf454e4",
+     "company": "FINSBURY GROWTH & INCOME TRUST PLC",
+     "last_updated_date": "2026-11-09T09:23:00Z",
+     "headline": "Finsbury Growth & Income Trust PLC - Monthly Fact Sheet as at 31 October 2026",
+     "type_code": "MSCL"
+    },
+    "sort": [
+     1794216225000,
+     1794216225000
+    ]
+   },
+   {
+    "_index": "fca-nsm-searchdata",
+    "_id": "7e97dfad-79d1-4beb-83c1-0d27435bd2c2",
+    "_source": {
+     "submitted_date": "2026-11-09T09:06:10Z",
+     "tag_esef": "",
+     "classifications_code": "",
+     "document_date": "2026-11-09T09:06:10Z",
+     "source": "RNS",
+     "type": "Form 8.5 (EPT/NON-RI)",
+     "related_org": [
+      {
+       "lei": "213800ORZ521W585SY02",
+       "company": "VESUVIUS PLC"
+      }
+     ],
+     "lei_remediation_flag": "N",
+     "document_format": "Plain text",
+     "category_group": "Mergers and acquisitions",
+     "classifications": "",
+     "lei": "213800LBQA1Y9L22JB70",
+     "download_link": "NSM/RNS/7e97dfad-79d1-4beb-83c1-0d27435bd2c2.html",
+     "disclosure_id": "7e97dfad-79d1-4beb-83c1-0d27435bd2c2",
+     "latest_flag": "Y",
+     "hist_seq": "1",
+     "publication_date": "2026-11-09T08:53:28Z",
+     "seq_id": "7e97dfad-79d1-4beb-83c1-0d27435bd2c2",
+     "company": "BARCLAYS PLC",
+     "last_updated_date": "2026-11-09T08:53:28Z",
+     "headline": "Form 8.5 EPT/Non RI VESUVIUS PLC",
+     "type_code": "FEO"
+    },
+    "sort": [
+     1794215170000,
+     1794215170000
+    ]
+   },
+   {
+    "_index": "fca-nsm-searchdata",
+    "_id": "00000000-0000-0000-0000-000000000001",
+    "_source": {
+     "submitted_date": "2026-11-09T09:39:10Z",
+     "tag_esef": "",
+     "classifications_code": "",
+     "document_date": "2026-11-09T09:39:10Z",
+     "source": "RNS",
+     "type": "Transaction in Own Shares",
+     "related_org": [],
+     "lei_remediation_flag": "N",
+     "document_format": "Plain text",
+     "category_group": "Corporate actions",
+     "classifications": "",
+     "lei": "ZLECI7ED2QMWFGYCXZ59",
+     "download_link": "NSM/RNS/ef8ce658-4f71-4504-8d11-005af10c6968.html",
+     "disclosure_id": "00000000-0000-0000-0000-000000000001",
+     "latest_flag": "N",
+     "hist_seq": "1",
+     "publication_date": "2026-11-09T09:27:42Z",
+     "seq_id": "ef8ce658-4f71-4504-8d11-005af10c6968",
+     "company": "ITV PLC",
+     "last_updated_date": "2026-11-09T09:27:42Z",
+     "headline": "Superseded version",
+     "type_code": "POS"
+    },
+    "sort": [
+     1794217150000,
+     1794217150000
+    ]
+   }
+  ]
+ }
+}

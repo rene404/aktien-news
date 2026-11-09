@@ -25,8 +25,10 @@ type tdmrepEntry struct {
 
 // CheckTDM reports whether the site behind sourceURL reserves text and data
 // mining rights (§ 42h UrhG / Art. 4 DSM directive), via the TDM-Reservation
-// header on sourceURL or a tdmrep.json entry whose location covers its path.
-// A missing file (404/410) means no reservation. A reservation found
+// header on sourceURL, a tdmrep.json entry whose location covers its path, or
+// a Content-Signal in robots.txt that says no to ai-train or ai-input
+// (contentsignals.org, e.g. data.fca.org.uk). A missing file (404/410; for
+// robots.txt any 4xx, as crawlers treat it) means no reservation. A reservation found
 // anywhere wins; otherwise any other failure is returned as an error so the
 // caller can keep the previous result.
 func (f *HTTPFetcher) CheckTDM(ctx context.Context, sourceURL string) (bool, error) {
@@ -64,7 +66,69 @@ func (f *HTTPFetcher) CheckTDM(ctx context.Context, sourceURL string) (bool, err
 			}
 		}
 	}
+	reserved, err := f.contentSignal(ctx, (&url.URL{Scheme: u.Scheme, Host: u.Host, Path: "/robots.txt"}).String())
+	if err != nil {
+		errs = append(errs, err)
+	} else if reserved {
+		return true, nil
+	}
 	return false, errors.Join(errs...)
+}
+
+// maxRobotsBytes caps a robots.txt response.
+const maxRobotsBytes = 512 << 10
+
+// contentSignal reads the Content-Signal lines of the groups for all user
+// agents ("User-agent: *") and reports a "no" for ai-train or ai-input.
+func (f *HTTPFetcher) contentSignal(ctx context.Context, robotsURL string) (bool, error) {
+	resp, err := f.do(ctx, http.MethodGet, robotsURL, "text/plain")
+	if err != nil {
+		return false, fmt.Errorf("robots %s: %w", robotsURL, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 && resp.StatusCode <= 499 {
+		return false, nil
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return false, fmt.Errorf("robots %s: HTTP %d", robotsURL, resp.StatusCode)
+	}
+	b, err := io.ReadAll(io.LimitReader(resp.Body, maxRobotsBytes))
+	if err != nil {
+		return false, fmt.Errorf("robots %s: %w", robotsURL, err)
+	}
+	return contentSignalReserves(string(b)), nil
+}
+
+func contentSignalReserves(robots string) bool {
+	forAll, inAgents := false, false
+	for _, line := range strings.Split(robots, "\n") {
+		line, _, _ = strings.Cut(line, "#")
+		key, value, ok := strings.Cut(line, ":")
+		if !ok {
+			continue
+		}
+		key, value = strings.ToLower(strings.TrimSpace(key)), strings.TrimSpace(value)
+		if key == "user-agent" {
+			if !inAgents { // a new group starts
+				forAll = false
+			}
+			inAgents = true
+			forAll = forAll || value == "*"
+			continue
+		}
+		inAgents = false
+		if key != "content-signal" || !forAll {
+			continue
+		}
+		for _, sig := range strings.Split(value, ",") {
+			name, v, _ := strings.Cut(sig, "=")
+			name, v = strings.ToLower(strings.TrimSpace(name)), strings.ToLower(strings.TrimSpace(v))
+			if (name == "ai-train" || name == "ai-input") && v == "no" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (f *HTTPFetcher) tdmrep(ctx context.Context, fileURL string) ([]tdmrepEntry, bool, error) {

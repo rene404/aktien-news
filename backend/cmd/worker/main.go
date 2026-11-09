@@ -16,6 +16,7 @@ import (
 	"github.com/rene404/aktien-news/backend/internal/config"
 	"github.com/rene404/aktien-news/backend/internal/ingest"
 	"github.com/rene404/aktien-news/backend/internal/ingest/dila"
+	"github.com/rene404/aktien-news/backend/internal/ingest/fca"
 	"github.com/rene404/aktien-news/backend/internal/ingest/fetch"
 	"github.com/rene404/aktien-news/backend/internal/ingest/parsers"
 	"github.com/rene404/aktien-news/backend/internal/store"
@@ -56,7 +57,10 @@ func run(ctx context.Context) error {
 	}
 	// Both DILA sources share one fetcher: it keeps the archives it read.
 	amf := &dila.Fetcher{Get: fetch.New(cfg.UserAgent, 2*time.Minute).WithMaxBytes(40 << 20), Now: time.Now}
-	runner.Fetchers = map[string]ingest.Fetcher{"dila_adhoc": amf, "dila_filings": amf}
+	runner.Fetchers = map[string]ingest.Fetcher{
+		"dila_adhoc": amf, "dila_filings": amf,
+		"fca_nsm": &fca.Fetcher{HTTP: fetch.New(cfg.UserAgent, time.Minute)},
+	}
 	if cfg.SECUserAgent == "" {
 		runner.Skip = map[string]string{"sec": "SEC_USER_AGENT not set"}
 	} else {

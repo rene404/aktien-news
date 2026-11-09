@@ -250,6 +250,7 @@ const (
 	TextPolicyNone       TextPolicy = "none"
 	TextPolicyFeedFields TextPolicy = "feed_fields"
 	TextPolicyFullText   TextPolicy = "full_text"
+	TextPolicyNoLlm      TextPolicy = "no_llm"
 )
 
 func (e *TextPolicy) Scan(src interface{}) error {

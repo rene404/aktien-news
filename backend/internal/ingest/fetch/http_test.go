@@ -2,6 +2,7 @@ package fetch_test
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -68,5 +69,35 @@ func TestFetchWithMaxBytesRaisesTheCap(t *testing.T) {
 	}
 	if _, err := fetch.New("ua", 5*time.Second).WithMaxBytes(100).Fetch(context.Background(), srv.URL); err == nil {
 		t.Fatal("body above the lower cap: want error")
+	}
+}
+
+// Search APIs such as the FCA NSM take the query as a JSON POST.
+func TestPostJSONSendsBodyAndReturnsResponse(t *testing.T) {
+	var method, ctype, ua, body string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method, ctype, ua = r.Method, r.Header.Get("Content-Type"), r.Header.Get("User-Agent")
+		b, _ := io.ReadAll(r.Body)
+		body = string(b)
+		_, _ = w.Write([]byte(`{"hits":{}}`))
+	}))
+	defer srv.Close()
+
+	got, err := fetch.New("ua", 5*time.Second).PostJSON(context.Background(), srv.URL, []byte(`{"size":5}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != `{"hits":{}}` || method != http.MethodPost || ctype != "application/json" || ua != "ua" || body != `{"size":5}` {
+		t.Errorf("got %q; request %s %q ua=%q body=%q", got, method, ctype, ua, body)
+	}
+}
+
+func TestPostJSONNon2xxIsError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer srv.Close()
+	if _, err := fetch.New("ua", 5*time.Second).PostJSON(context.Background(), srv.URL, nil); err == nil {
+		t.Fatal("want error")
 	}
 }

@@ -59,6 +59,7 @@ describe("toNewsParams", () => {
     ["OMXS30", "OMXS30"],
     ["OMXH25", "OMXH25"],
     ["OMXC25", "OMXC25"],
+    ["FTSE100", "FTSE100"],
   ])("the %s section asks for the linked news of its index", (section, index) => {
     expect(toNewsParams({ section, source: "", range: "all", cursor: "" }, now)).toEqual({ index, kind: NEWS_KINDS, limit: 25 });
   });
@@ -102,6 +103,7 @@ describe("sourcesFor", () => {
     src("cnmv", "ES", "adhoc"),
     src("afm", "NL", "filing"),
     src("nasdaq_nordic_adhoc", "NORDIC", "adhoc"),
+    src("fca_nsm", "UK", "filing"),
   ];
   const keys = (s: Source[]) => s.map((x) => x.key);
 
@@ -116,8 +118,9 @@ describe("sourcesFor", () => {
     ["OMXS30", ["fn_adhoc", "nasdaq_nordic_adhoc"]], // one Nordic feed for all three
     ["OMXH25", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
     ["OMXC25", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
+    ["FTSE100", ["fn_adhoc"]], // fca_nsm is a filing source
     ["adhoc", ["fn_adhoc", "amf", "cnmv", "nasdaq_nordic_adhoc"]],
-    ["filings", ["sec_8k", "afm"]],
+    ["filings", ["sec_8k", "afm", "fca_nsm"]],
   ])("section %j offers %j", (section, want) => {
     expect(keys(sourcesFor(all, { section }))).toEqual(want);
   });
@@ -134,6 +137,7 @@ describe("sourcesFor", () => {
     ["XSTO", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
     ["XHEL", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
     ["XCSE", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
+    ["XLON", ["fn_adhoc", "fca_nsm"]],
   ])("limits a stock page on %s to its market and MULTI", (mic, want) => {
     expect(keys(sourcesFor(all, { mic }))).toEqual(want);
   });
@@ -145,7 +149,7 @@ describe("sourcesFor", () => {
   });
 
   it("offers every source for an unknown exchange", () => {
-    expect(sourcesFor(all, { mic: "XLON" })).toHaveLength(all.length);
+    expect(sourcesFor(all, { mic: "XSWX" })).toHaveLength(all.length);
   });
 
   it("keeps a source picked by URL even if it does not fit", () => {

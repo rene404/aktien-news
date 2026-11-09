@@ -56,6 +56,9 @@ describe("toNewsParams", () => {
     ["CAC40", "CAC40"],
     ["IBEX35", "IBEX35"],
     ["AEX", "AEX"],
+    ["OMXS30", "OMXS30"],
+    ["OMXH25", "OMXH25"],
+    ["OMXC25", "OMXC25"],
   ])("the %s section asks for the linked news of its index", (section, index) => {
     expect(toNewsParams({ section, source: "", range: "all", cursor: "" }, now)).toEqual({ index, kind: NEWS_KINDS, limit: 25 });
   });
@@ -98,18 +101,22 @@ describe("sourcesFor", () => {
     src("amf", "FR", "adhoc"),
     src("cnmv", "ES", "adhoc"),
     src("afm", "NL", "filing"),
+    src("nasdaq_nordic_adhoc", "NORDIC", "adhoc"),
   ];
   const keys = (s: Source[]) => s.map((x) => x.key);
 
   it.each([
-    ["", ["fn_adhoc", "fn_atx", "fn_dax", "prn_all", "amf", "cnmv"]],
+    ["", ["fn_adhoc", "fn_atx", "fn_dax", "prn_all", "amf", "cnmv", "nasdaq_nordic_adhoc"]],
     ["ATX", ["fn_adhoc", "fn_atx"]],
     ["DAX", ["fn_adhoc", "fn_dax"]],
     ["SP500", ["fn_adhoc", "prn_all"]],
     ["CAC40", ["fn_adhoc", "amf"]],
     ["IBEX35", ["fn_adhoc", "cnmv"]],
     ["AEX", ["fn_adhoc"]], // afm is a filing source: not in the news sections
-    ["adhoc", ["fn_adhoc", "amf", "cnmv"]],
+    ["OMXS30", ["fn_adhoc", "nasdaq_nordic_adhoc"]], // one Nordic feed for all three
+    ["OMXH25", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
+    ["OMXC25", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
+    ["adhoc", ["fn_adhoc", "amf", "cnmv", "nasdaq_nordic_adhoc"]],
     ["filings", ["sec_8k", "afm"]],
   ])("section %j offers %j", (section, want) => {
     expect(keys(sourcesFor(all, { section }))).toEqual(want);
@@ -124,6 +131,9 @@ describe("sourcesFor", () => {
     ["XPAR", ["fn_adhoc", "amf"]],
     ["XMAD", ["fn_adhoc", "cnmv"]],
     ["XAMS", ["fn_adhoc", "afm"]],
+    ["XSTO", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
+    ["XHEL", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
+    ["XCSE", ["fn_adhoc", "nasdaq_nordic_adhoc"]],
   ])("limits a stock page on %s to its market and MULTI", (mic, want) => {
     expect(keys(sourcesFor(all, { mic }))).toEqual(want);
   });

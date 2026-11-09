@@ -1,0 +1,108 @@
+{
+  "results": {
+    "item": [
+      {
+        "disclosureId": 9001,
+        "categoryId": 55,
+        "headline": "Listed on First North",
+        "language": "en",
+        "languages": [
+          "en",
+          "sv"
+        ],
+        "cnsCategory": "Investor News",
+        "messageUrl": "https://view.news.eu.nasdaq.com/view?id=b65aa0480dbce35f3e34a4441b78f5b1c&lang=en&src=listed",
+        "releaseTime": "2026-11-09 09:30:00",
+        "published": "2026-11-09 09:30:00",
+        "market": "First North Sweden",
+        "company": "Net Insight AB",
+        "cnsTypeId": "3"
+      },
+      {
+        "disclosureId": 9002,
+        "categoryId": 55,
+        "headline": "  ",
+        "language": "en",
+        "languages": [
+          "en",
+          "sv"
+        ],
+        "cnsCategory": "Investor News",
+        "messageUrl": "https://view.news.eu.nasdaq.com/view?id=b65aa0480dbce35f3e34a4441b78f5b1c&lang=en&src=listed",
+        "releaseTime": "2026-11-09 09:30:00",
+        "published": "2026-11-09 09:30:00",
+        "market": "Main Market, Stockholm",
+        "company": "Net Insight AB",
+        "cnsTypeId": "3"
+      },
+      {
+        "disclosureId": 9003,
+        "categoryId": 55,
+        "headline": "Karl Thedéen proposed as new Chair of the Board of Net Insight as Anna Söderblom declines re-election",
+        "language": "en",
+        "languages": [
+          "en",
+          "sv"
+        ],
+        "cnsCategory": "Investor News",
+        "messageUrl": "https://view.news.eu.nasdaq.com/view?id=b65aa0480dbce35f3e34a4441b78f5b1c&lang=en&src=listed",
+        "releaseTime": "09.11.2026 10:30",
+        "published": "2026-11-09 09:30:00",
+        "market": "Main Market, Stockholm",
+        "company": "Net Insight AB",
+        "cnsTypeId": "3"
+      },
+      {
+        "disclosureId": 9004,
+        "categoryId": 55,
+        "headline": "Karl Thedéen proposed as new Chair of the Board of Net Insight as Anna Söderblom declines re-election",
+        "language": "en",
+        "languages": [
+          "en",
+          "sv"
+        ],
+        "cnsCategory": "Investor News",
+        "messageUrl": "https://view.news.eu.nasdaq.com/view?id=b65aa0480dbce35f3e34a4441b78f5b1c&lang=en&src=listed",
+        "releaseTime": "2026-11-09 09:30:00",
+        "published": "2026-11-09 09:30:00",
+        "market": "Main Market, Stockholm",
+        "company": "",
+        "cnsTypeId": "3"
+      },
+      {
+        "disclosureId": 9005,
+        "categoryId": 55,
+        "headline": "Karl Thedéen proposed as new Chair of the Board of Net Insight as Anna Söderblom declines re-election",
+        "language": "en",
+        "languages": [
+          "en",
+          "sv"
+        ],
+        "cnsCategory": "Investor News",
+        "messageUrl": "",
+        "releaseTime": "2026-11-09 09:30:00",
+        "published": "2026-11-09 09:30:00",
+        "market": "Main Market, Stockholm",
+        "company": "Net Insight AB",
+        "cnsTypeId": "3"
+      },
+      {
+        "disclosureId": 9006,
+        "categoryId": 55,
+        "headline": "  Net Insight: padded headline  ",
+        "language": "en",
+        "languages": [
+          "en",
+          "sv"
+        ],
+        "cnsCategory": "Investor News",
+        "messageUrl": "https://view.news.eu.nasdaq.com/view?id=b65aa0480dbce35f3e34a4441b78f5b1c&lang=en&src=listed",
+        "releaseTime": "2026-11-09 09:30:00",
+        "published": "2026-11-09 09:30:00",
+        "market": "Main Market, Stockholm",
+        "company": "Net Insight AB",
+        "cnsTypeId": "3"
+      }
+    ]
+  }
+}

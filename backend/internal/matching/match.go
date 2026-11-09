@@ -70,6 +70,11 @@ type Input struct {
 	// (ad-hoc and filing feeds). In news feeds the ISIN is only a loose tag,
 	// and a LEI does not count at all.
 	IssuerGrade bool
+	// USIssuers marks sources that cover US issuers (market US or MULTI):
+	// there an uncurated (SEC) company also matches the issuer hint by its
+	// name without legal form ("RTX" → "RTX Corp"). Elsewhere that name is
+	// too often a local namesake ("Castellum AB" ≠ "Castellum, Inc.").
+	USIssuers bool
 	// IssuerCompanyID is set when the source is the issuer's own channel
 	// (IR feed): every item is about that company.
 	IssuerCompanyID int64
@@ -84,9 +89,12 @@ type Match struct {
 }
 
 // Exchanges whose tickers are mnemonics rather than symbols used in
-// headlines: "EN" (Bouygues), "RED" (Redeia), "NN" (NN Group) are ordinary
-// words in titles. Cashtags still count.
-var mnemonicMICs = map[string]bool{"XPAR": true, "XAMS": true, "XMAD": true}
+// headlines: "EN" (Bouygues), "RED" (Redeia), "NN" (NN Group), "SAND"
+// (Sandvik) are ordinary words in titles. Cashtags still count.
+var mnemonicMICs = map[string]bool{
+	"XPAR": true, "XAMS": true, "XMAD": true,
+	"XSTO": true, "XHEL": true, "XCSE": true, // Nasdaq Nordic
+}
 
 // tickerIsName reports whether the ticker spells the company's name or an alias.
 func tickerIsName(c CompanyEntry, ticker string) bool {
@@ -112,6 +120,8 @@ var tickerStoplist = map[string]bool{
 	"EBIT": true, "EBITDA": true, "FY": true, "H1": true, "H2": true, "Q1": true, "Q2": true,
 	"Q3": true, "Q4": true, "POS": true, "EQS": true, "DD": true, "OTS": true, "APA": true,
 	"AIR": true, // Airbus (XETR, XPAR): "AIR FRANCE-KLM", "AIR LIQUIDE", "DELTA AIR LINES"
+	"ISS": true, // ISS A/S (XCSE) is also the space station
+	"EQT": true, // EQT AB (XSTO) and EQT Corp (US gas, not in the catalog)
 }
 
 var (
@@ -131,6 +141,7 @@ type nameEntry struct {
 // Index is an immutable lookup structure built from the catalog.
 type Index struct {
 	issuer   map[string]int64 // folded name, also without legal form → company (-1 = ambiguous)
+	looseUS  map[string]int64 // uncurated names without legal form; see Input.USIssuers
 	cik      map[string]int64
 	lei      map[string]int64
 	isin     map[string]int64
@@ -140,7 +151,7 @@ type Index struct {
 }
 
 func NewIndex(companies []CompanyEntry) *Index {
-	ix := &Index{issuer: map[string]int64{}, cik: map[string]int64{}, lei: map[string]int64{}, isin: map[string]int64{}, cashtags: map[string]int64{}, tickers: map[string]int64{}}
+	ix := &Index{issuer: map[string]int64{}, looseUS: map[string]int64{}, cik: map[string]int64{}, lei: map[string]int64{}, isin: map[string]int64{}, cashtags: map[string]int64{}, tickers: map[string]int64{}}
 	addUnique := func(m map[string]int64, key string, id int64) {
 		if key == "" {
 			return
@@ -157,7 +168,11 @@ func NewIndex(companies []CompanyEntry) *Index {
 			return
 		}
 		addUnique(ix.issuer, f, id)
-		addUnique(ix.issuer, stripLegalForm(f), id)
+		if uncurated {
+			addUnique(ix.looseUS, stripLegalForm(f), id)
+		} else {
+			addUnique(ix.issuer, stripLegalForm(f), id)
+		}
 		switch {
 		case hasLegalForm(f) || fullOnly:
 			ix.names = append(ix.names, nameEntry{f, id, 0.90, "full_name", uncurated})
@@ -206,9 +221,16 @@ func (ix *Index) Match(in Input) []Match {
 		consider(ix.lei[in.IssuerLEI], 0.98, "lei")
 	}
 	if h := Fold(in.IssuerHint); h != "" {
-		if id, ok := ix.issuer[h]; ok {
-			consider(id, 1.00, "issuer")
-		} else if id, ok := ix.issuer[stripLegalForm(h)]; ok {
+		id, ok := ix.issuer[h]
+		if !ok {
+			id, ok = ix.issuer[stripLegalForm(h)]
+		}
+		if !ok && in.USIssuers {
+			if id, ok = ix.looseUS[h]; !ok {
+				id, ok = ix.looseUS[stripLegalForm(h)]
+			}
+		}
+		if ok {
 			consider(id, 1.00, "issuer")
 		}
 	}

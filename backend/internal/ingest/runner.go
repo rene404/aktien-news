@@ -215,6 +215,7 @@ func (r *Runner) store(ctx context.Context, src db.Source, a RawArticle, index *
 			IssuerGrade:     src.Kind == db.SourceKindAdhoc || src.Kind == db.SourceKindFiling,
 			IssuerCompanyID: deref(src.IssuerCompanyID),
 			IssuerCIK:       a.IssuerCIK,
+			USIssuers:       src.Market == "US" || src.Market == "MULTI",
 		})
 		return matching.Persist(ctx, tx, art.ID, matches)
 	})

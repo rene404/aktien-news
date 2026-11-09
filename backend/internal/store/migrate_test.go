@@ -260,7 +260,7 @@ func TestSourceMarketCheck(t *testing.T) {
 		_, err := pool.Exec(ctx, `INSERT INTO sources (key, name, kind, market, url) VALUES ($1, $1, 'adhoc', $2, 'https://example.com/' || $1)`, key, market)
 		return err
 	}
-	for _, m := range []string{"AT", "DE", "US", "MULTI", "FR", "ES", "NL"} {
+	for _, m := range []string{"AT", "DE", "US", "MULTI", "FR", "ES", "NL", "NORDIC"} {
 		if err := insert("src_"+m, m); err != nil {
 			t.Errorf("market %s rejected: %v", m, err)
 		}

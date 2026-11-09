@@ -13,6 +13,7 @@ describe("sourceIcon", () => {
     ["sec_8k", "/sources/sec.png"],
     ["telekom_ir", "/sources/telekom.png"],
     ["voestalpine_ir", "/sources/voestalpine.png"],
+    ["nasdaq_nordic_adhoc", "/sources/nasdaq.png"],
   ])("maps %s to the icon of its publisher", (key, src) => {
     expect(sourceIcon(key)).toBe(src);
   });

@@ -12,6 +12,10 @@ export const SECTIONS = [
   { key: "CAC40", label: "CAC 40", index: "CAC40", kinds: NEWS_KINDS, market: "FR" },
   { key: "IBEX35", label: "IBEX 35", index: "IBEX35", kinds: NEWS_KINDS, market: "ES" },
   { key: "AEX", label: "AEX", index: "AEX", kinds: NEWS_KINDS, market: "NL" },
+  // Nasdaq Nordic: one feed (market NORDIC) for Stockholm, Helsinki and Copenhagen.
+  { key: "OMXS30", label: "OMXS30", index: "OMXS30", kinds: NEWS_KINDS, market: "NORDIC" },
+  { key: "OMXH25", label: "OMXH25", index: "OMXH25", kinds: NEWS_KINDS, market: "NORDIC" },
+  { key: "OMXC25", label: "OMXC25", index: "OMXC25", kinds: NEWS_KINDS, market: "NORDIC" },
   { key: "SP500", label: "S&P 500", index: "SP500", kinds: NEWS_KINDS, market: "US" },
   { key: "adhoc", label: "Ad-hoc", kinds: ["adhoc"] },
   { key: "filings", label: "Pflichtmeldungen", kinds: ["filing"] },
@@ -26,6 +30,9 @@ export const EXCHANGES: Record<string, { name: string; market: string }> = {
   XPAR: { name: "Euronext Paris", market: "FR" },
   XMAD: { name: "Bolsa de Madrid", market: "ES" },
   XAMS: { name: "Euronext Amsterdam", market: "NL" },
+  XSTO: { name: "Nasdaq Stockholm", market: "NORDIC" },
+  XHEL: { name: "Nasdaq Helsinki", market: "NORDIC" },
+  XCSE: { name: "Nasdaq Copenhagen", market: "NORDIC" },
 };
 
 /**

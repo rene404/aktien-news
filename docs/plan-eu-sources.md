@@ -208,7 +208,22 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
 
 ## C. Nordics und UK (zum Testen, Entscheidung 3)
 
-- [ ] **8. Nordics: Nasdaq Nordic Company Announcements.**
+- [x] **8. Nordics: Nasdaq Nordic Company Announcements.** Branch `feature/ingest-nasdaq-nordic`.
+  - **Umgesetzt (2026-11-09):**
+    - **Markt:** ein Wert `NORDIC` für die Quellen (Migration 00009); Börsen XSTO, XHEL, XCSE. Die Website ordnet Tabs und Börsen dem Markt `NORDIC` zu.
+    - **Quellen:** ein Feed (`globalName=NordicMainMarkets`, `timeZone=UTC`, 200 Einträge ≈ 1,5 Tage), alle 15 Minuten, drei Parser nach `cnsCategory`:
+      `nasdaq_nordic_adhoc` („Inside information“), `nasdaq_nordic_filings` (übrige Pflichtmeldungen), `nasdaq_nordic_news` („Investor News“, `press_release`).
+      Island wird verworfen. Von Sprachzwillingen (gleicher Emittent und Kategorie, ≤ 10 min) bleibt die englische Fassung.
+      Managers' Transactions heißen „<Emittent>: Eigengeschäft einer Führungskraft“ (Entscheidung 2). `robots.txt` gibt es nicht (404); Nutzungsbedingungen weiter unbekannt.
+    - **Katalog:** OMXS30 (30), OMXH25 (25, Stand 01.08.2026), OMXC25 (25, mit Nordea seit 22.06.2026). ISIN und LEI aus ESMA FIRDS, Rechtsnamen von GLEIF.
+      Ticker mit Bindestrich statt Leerzeichen („VOLV-B“), weil API und Website keine Leerzeichen erlauben. Nordea hat drei Notierungen (NDA-SE, NDA-FI, NDA-DK).
+    - **Matcher:** Rechtsformen Oyj, Abp, Aktiebolag(et), publ; „æ“ → „ae“. Nordische Ticker zählen als Wort nur, wenn sie der Name sind. „ISS“ und „EQT“ (EQT Corp, US) stehen auf der Stoppliste.
+    - **Fix:** Unkuratierte SEC-Firmen treffen den Emittentennamen ohne Rechtsform nur noch bei US-/MULTI-Quellen. Vorher: „Castellum AB“ → „Castellum, Inc.“, „RTX“ (RTX A/S) → „RTX Corp“.
+    - **Live-Lauf:** 147 Meldungen; verknüpft u. a. Ericsson, Essity, Evolution, Saab, Skanska, Huhtamäki, Konecranes, Danske Bank, FLSmidth, Coloplast.
+  - **Offen:**
+    - Die Anfrage bei Nasdaq steht weiter aus.
+    - Die beiden falschen Verknüpfungen (Castellum, RTX) aus dem ersten Lauf bleiben in der Datenbank (append-only).
+    - Altfehler entdeckt: „AT&S“ wird als „at s“ gefaltet und trifft Titel mit „… at S-Thetics …“ als vollen Namen.
   - **Parallel:** schriftliche Anfrage bei Nasdaq zur Nutzung von `api.news.eu.nasdaq.com`; Pflicht vor einem öffentlichen Betrieb.
   - **Umfang:**
     - Markt `NORDIC` (bzw. SE, FI, DK).

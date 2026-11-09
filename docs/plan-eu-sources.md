@@ -223,7 +223,9 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
   - **Offen:**
     - Die Anfrage bei Nasdaq steht weiter aus.
     - Die beiden falschen Verknüpfungen (Castellum, RTX) aus dem ersten Lauf bleiben in der Datenbank (append-only).
-    - Altfehler entdeckt: „AT&S“ wird als „at s“ gefaltet und trifft Titel mit „… at S-Thetics …“ als vollen Namen.
+    - ~~Altfehler: „AT&S“ wird als „at s“ gefaltet und trifft Titel mit „… at S-Thetics …“ als vollen Namen.~~
+      Behoben am 2026-11-09 (`fix/matching-ats`): Ein „&“ zwischen zwei Buchstaben bleibt beim Falten erhalten („at&s“), „AT&S“ allein ist ein Kernname (pending).
+      Außerdem zählt der Ticker des eigenen Emittenten im Titel nicht für eine andere Firma („6-K: ATS Corp /ATS“ verknüpfte AT&S).
   - **Parallel:** schriftliche Anfrage bei Nasdaq zur Nutzung von `api.news.eu.nasdaq.com`; Pflicht vor einem öffentlichen Betrieb.
   - **Umfang:**
     - Markt `NORDIC` (bzw. SE, FI, DK).

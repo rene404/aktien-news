@@ -258,6 +258,8 @@ func TestFold(t *testing.T) {
 		"  Mercedes-Benz  Group ": "mercedes benz group",
 		"Société Générale":        "societe generale",
 		"A.P. Møller - Mærsk A/S": "a p moller maersk a s",
+		"AT&S":                    "at&s",
+		"AT & S Austria":          "at s austria",
 	}
 	for in, want := range cases {
 		if got := matching.Fold(in); got != want {
@@ -454,6 +456,58 @@ func TestIssuerNameInTitleIsNoMention(t *testing.T) {
 		{matching.Input{Title: "BP CAPITAL MARKETS P.L.C.: Publication of a Supplementary Prospectus", IssuerHint: "BP CAPITAL MARKETS P.L.C.", IssuerGrade: true}, nil},
 		{matching.Input{Title: "ACME SA: Agreement with Iberdrola, S.A.", IssuerHint: "ACME SA", IssuerGrade: true}, []want{{iberdrola, "full_name", 0.90}}},
 		{matching.Input{Title: "BP raises dividend"}, []want{{bp, "ticker", 0.90}}},
+	}
+	for _, tc := range cases {
+		got := ix.Match(tc.in)
+		if len(got) != len(tc.want) {
+			t.Errorf("%+v: got %+v, want %+v", tc.in, got, tc.want)
+			continue
+		}
+		for i, w := range tc.want {
+			if got[i].CompanyID != w.id || got[i].Method != w.method || got[i].Confidence != w.conf {
+				t.Errorf("%+v: got %+v, want %+v", tc.in, got[i], w)
+			}
+		}
+	}
+}
+
+// "AT&S" folded to "at s", and the "s" counted as a legal form (S.A.): the
+// brand was a full name and matched "at S-Thetics". A glued "&" now stays in
+// the folded name. The uppercase ticker of the feed's own issuer is no mention
+// of another company either: "6-K: ATS Corp /ATS" is not about AT&S.
+func TestAmpersandNamesAndIssuerTickers(t *testing.T) {
+	const (
+		ats = iota + 600
+		atsCorp
+		maplebear
+	)
+	ix := matching.NewIndex([]matching.CompanyEntry{
+		{ID: ats, Name: "AT&S", LegalName: "AT & S Austria Technologie & Systemtechnik Aktiengesellschaft",
+			Aliases: []matching.Alias{{Text: "AT&S", Kind: "brand"},
+				{Text: "AT&S Austria Technologie & Systemtechnik AG", Kind: "issuer_name"}},
+			Listings: []matching.Listing{{Ticker: "ATS", MIC: "XWBO", ISIN: "AT0000969985"}}},
+		{ID: atsCorp, Name: "ATS Corp", Uncurated: true, CIK: "1898109",
+			Listings: []matching.Listing{{Ticker: "ATS", MIC: "XNYS"}}},
+		{ID: maplebear, Name: "Maplebear Inc.", Uncurated: true, Listings: []matching.Listing{{Ticker: "CART", MIC: "XNAS"}}},
+	})
+	cases := []struct {
+		in   matching.Input
+		want []want
+	}{
+		{matching.Input{Title: "Meet us at S-Thetics in Vienna"}, nil},
+		{matching.Input{Title: "Carrier to Present at Baird's 2026 Global Industrial Conference"}, nil},
+		// The brand alone is a core name; FN's ISIN tag confirms it.
+		{matching.Input{Title: "Uniper putzt sich raus, Daimler Truck liefert nicht genug und AT&S wird trotz Rekordzahlen abgestraft"},
+			[]want{{ats, "core_name", 0.55}}},
+		{matching.Input{Title: "Uniper putzt sich raus, Daimler Truck liefert nicht genug und AT&S wird trotz Rekordzahlen abgestraft", IssuerISIN: "AT0000969985"},
+			[]want{{ats, "isin", 0.90}}},
+		// "M&A" is one word: "Maplebear Inc." follows "of", not "Investigation".
+		{matching.Input{Title: "SHAREHOLDER ALERT: The M&A Class Action Firm Announces An Investigation of Maplebear Inc. (NASDAQ: CART)"},
+			[]want{{maplebear, "full_name", 0.90}}},
+		{matching.Input{Title: "x", IssuerHint: "AT&S Austria Technologie & Systemtechnik AG"}, []want{{ats, "issuer", 1.00}}},
+		{matching.Input{Title: "x", IssuerHint: "AT & S Austria Technologie & Systemtechnik Aktiengesellschaft"}, []want{{ats, "issuer", 1.00}}},
+		{matching.Input{Title: "ATS hebt Prognose an"}, []want{{ats, "ticker", 0.90}}},
+		{matching.Input{Title: "6-K: ATS Corp /ATS", IssuerCIK: "1898109", IssuerGrade: true}, []want{{atsCorp, "issuer", 1.00}}},
 	}
 	for _, tc := range cases {
 		got := ix.Match(tc.in)

@@ -299,6 +299,11 @@ func TestCommittedSeedHasEUIndices(t *testing.T) {
 		{"CAC40", 40, "XAMS,XPAR"}, // ArcelorMittal counts with its Amsterdam line
 		{"IBEX35", 35, "XMAD"},
 		{"AEX", 30, "XAMS"},
+		// Wikipedia and Nasdaq's review notices as of 2026-11-09. Nordea is in
+		// all three, with one line per exchange.
+		{"OMXS30", 30, "XSTO"},
+		{"OMXH25", 25, "XHEL"},
+		{"OMXC25", 25, "XCSE"},
 	} {
 		var n, withoutLEI int
 		var mics string

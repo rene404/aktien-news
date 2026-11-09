@@ -96,6 +96,14 @@ describe("NewsList", () => {
     expect(second.querySelector(".also")).toBeNull();
   });
 
+  it("says how many more items of the same source the row stands for", () => {
+    render(<NewsList items={[{ ...items[0], same_source: 8 }, { ...items[1], same_source: 1 }, { ...items[2], same_source: 0 }]} now={now} />);
+    const [first, second, third] = screen.getAllByRole("listitem");
+    expect(first.querySelector(".same-source")).toHaveTextContent("+8 weitere Meldungen");
+    expect(second.querySelector(".same-source")).toHaveTextContent("+1 weitere Meldung");
+    expect(third.querySelector(".same-source")).toBeNull();
+  });
+
   it("badges ad-hoc releases and filings, not plain news", () => {
     render(<NewsList items={items} now={now} />);
     const [adhoc, news, filing] = screen.getAllByRole("listitem");

@@ -228,6 +228,23 @@ func TestNewsAlsoAtEmptyIsArray(t *testing.T) {
 	}
 }
 
+// same_source: further items of the shown source in the same cluster.
+func TestNewsSameSource(t *testing.T) {
+	h, pool := newServerWithPool(t)
+	if v := decode(t, get(t, h, "/api/v1/news"))["items"].([]any)[0].(map[string]any)["same_source"]; v != float64(0) {
+		t.Errorf("alone: same_source = %v, want 0", v)
+	}
+	if _, err := pool.Exec(context.Background(), `
+		INSERT INTO articles (source_id, external_id, url, canonical_url, title, published_at, content_hash, cluster_id)
+		SELECT a.source_id, '1b', 'https://example.com/1b', 'https://example.com/1b', a.title, a.published_at + interval '1 minute', '\x03', a.cluster_id
+		FROM articles a WHERE a.external_id = '1';`); err != nil {
+		t.Fatal(err)
+	}
+	if v := decode(t, get(t, h, "/api/v1/news"))["items"].([]any)[0].(map[string]any)["same_source"]; v != float64(1) {
+		t.Errorf("same_source = %v, want 1", v)
+	}
+}
+
 func TestSourcesEndpointLastOK(t *testing.T) {
 	h, pool := newServerWithPool(t)
 	if _, err := pool.Exec(context.Background(), `INSERT INTO ingest_runs (source_id, started_at, finished_at, status)

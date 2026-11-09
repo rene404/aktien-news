@@ -62,7 +62,7 @@ Die FCA-Quelle geht nicht ans LLM (`text_policy = no_llm`).
 
 | Endpoint | Beschreibung |
 |---|---|
-| `GET /api/v1/news?ticker=&index=&source=&from=&to=&cursor=&limit=` | Meldungen mit sicher verknüpfter Firma, neueste zuerst, ein Eintrag pro Cluster gleicher Meldungen (Titel/Link/Quelle der wichtigsten Quelle, Ticker aller Mitglieder; `also`: dieselbe Meldung bei bis zu 5 anderen Quellen, je Titel/Link/Quelle/Zeit). `source`/`from`/`to` beziehen sich auf diesen Eintrag. `from`/`to` RFC 3339, `limit` 1–100 (Default 25), `cursor` aus `next_cursor` |
+| `GET /api/v1/news?ticker=&index=&source=&from=&to=&cursor=&limit=` | Meldungen mit sicher verknüpfter Firma, neueste zuerst, ein Eintrag pro Cluster gleicher Meldungen (Titel/Link/Quelle der wichtigsten Quelle, Ticker aller Mitglieder; `also`: dieselbe Meldung bei bis zu 5 anderen Quellen, je Titel/Link/Quelle/Zeit; `same_source`: Zahl weiterer Meldungen derselben Quelle im Cluster, etwa mehrere Eigengeschäfte eines Emittenten). `source`/`from`/`to` beziehen sich auf diesen Eintrag. `from`/`to` RFC 3339, `limit` 1–100 (Default 25), `cursor` aus `next_cursor` |
 | `GET /api/v1/instruments?q=` | Suche nach Ticker, Name oder ISIN (max. 10; exakter Ticker, dann Namensanfang, dann Index-Werte zuerst) |
 | `GET /api/v1/instruments/{ticker}` | Name, ISIN, Börse, Indizes einer Aktie (404 wenn unbekannt) |
 | `GET /api/v1/sources` | aktive Quellen mit letztem erfolgreichem Abruf (`last_ok_at`) |

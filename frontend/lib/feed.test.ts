@@ -15,7 +15,7 @@ describe("feedParams", () => {
     const sp = new URLSearchParams(feedQuery({ section: "ATX", source: "", range: "24h", cursor: "" }) + "&cursor=c2");
     expect(feedParams(sp, now)).toEqual({
       index: "ATX",
-      kind: "adhoc,press_release,news_api,ir",
+      kind: "adhoc,press_release,news_api,ir,filing",
       from: "2026-10-27T12:00:00.000Z",
       cursor: "c2",
       limit: 25,
@@ -37,7 +37,7 @@ describe("trendingParams", () => {
   it("counts the last 24 hours of the section, to the minute", () => {
     expect(trendingParams("ATX", now)).toEqual({
       index: "ATX",
-      kind: "adhoc,press_release,news_api,ir",
+      kind: "adhoc,press_release,news_api,ir,filing",
       from: "2026-11-03T12:34:00.000Z",
       limit: 10,
     });

@@ -5,7 +5,7 @@ import TabNav from "@/components/TabNav";
 import TickerChips from "@/components/TickerChips";
 import { getIndexInstruments } from "@/lib/api";
 import { since } from "@/lib/feed";
-import { NEWS_KINDS, type SearchParams } from "@/lib/filters";
+import { INDEX_KINDS, type SearchParams } from "@/lib/filters";
 import { LIST_INDICES, LIST_RANGES, listedIndices, LIST_SORTS, parseStockList, sortTickers, stockListHref, type StockList } from "@/lib/stocklist";
 
 type Props = { searchParams: Promise<SearchParams> };
@@ -14,14 +14,14 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const label = indexLabel(parseStockList(await searchParams).index);
   return {
     title: `${label}-Aktien – News je Wert`,
-    description: `Alle ${label}-Werte mit der Zahl ihrer aktuellen Meldungen und Ad-hoc-Mitteilungen.`,
+    description: `Alle ${label}-Werte mit der Zahl ihrer aktuellen Meldungen, Ad-hoc- und Pflichtmeldungen.`,
   };
 }
 
 export default async function StocksPage({ searchParams }: Props) {
   const list = parseStockList(await searchParams);
   const hours = LIST_RANGES.find((r) => r.key === list.range)!.hours;
-  const items = await getIndexInstruments(list.index, { from: since(new Date(), hours), kind: NEWS_KINDS.join(",") });
+  const items = await getIndexInstruments(list.index, { from: since(new Date(), hours), kind: INDEX_KINDS.join(",") });
   if (!items) notFound();
   const label = indexLabel(list.index);
 

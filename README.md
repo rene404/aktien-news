@@ -51,8 +51,8 @@ docker compose --profile test run --rm web-test       # Frontend: lint, test, bu
 | US | S&P 500 | NYSE, Nasdaq (XNYS, XNAS) | SEC EDGAR 8-K, 6-K | PR Newswire, FinanzNachrichten |
 
 Dazu die Tabs „Alle“, „Ad-hoc“ und „Pflichtmeldungen“ (Quellenart `filing`).
-Index-Tabs zeigen Nachrichten, Pressemitteilungen und Ad-hoc-Meldungen ihrer Werte, aber keine Filings;
-die stehen unter „Pflichtmeldungen“ und auf den Aktienseiten. Die Aktienliste kennt dieselben Indizes.
+Index-Tabs zeigen alle verknüpften Meldungen ihrer Werte, Pflichtmeldungen eingeschlossen; „Alle“ zeigt keine
+Pflichtmeldungen, weil sie dort alles andere verdrängen würden. Die Aktienliste kennt dieselben Indizes und zählt wie die Tabs.
 
 Nasdaq Nordic und die FCA laufen nur zum privaten Testen: Vor einem öffentlichen Betrieb müssen die
 Anfrage bei Nasdaq und die Rechtsprüfung der FCA-Nutzung erledigt sein (`docs/plan-eu-sources.md`, Entscheidung 3).

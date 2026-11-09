@@ -12,6 +12,8 @@ export type NewsItem = {
   tickers: string[];
   /** The same news at other sources, oldest first (API: at most 5). */
   also?: AlsoAt[];
+  /** Further items of the same source that this row stands for (e.g. several directors' dealings). */
+  same_source?: number;
 };
 
 export type AlsoAt = { title: string; url: string; source: { key: string; name: string; kind: SourceKind }; published_at: string };

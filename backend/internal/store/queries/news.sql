@@ -96,3 +96,12 @@ JOIN articles m ON m.cluster_id = r.cluster_id AND m.source_id <> r.source_id
 JOIN sources s  ON s.id = m.source_id
 WHERE r.id = ANY(@representative_ids::bigint[])
 ORDER BY r.id, m.source_id, m.published_at, m.id;
+
+-- name: CountSameSource :many
+-- For each given representative, how many other members of its own source
+-- its cluster has (e.g. several directors' dealings of one issuer).
+SELECT r.id AS representative_id, count(m.id)::int AS n
+FROM articles r
+JOIN articles m ON m.cluster_id = r.cluster_id AND m.source_id = r.source_id AND m.id <> r.id
+WHERE r.id = ANY(@representative_ids::bigint[])
+GROUP BY r.id;

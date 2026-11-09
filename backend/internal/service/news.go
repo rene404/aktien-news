@@ -69,6 +69,9 @@ type NewsItem struct {
 	Tickers     []string
 	// The same news at other sources (same cluster), oldest first; at most MaxAlso.
 	Also []AlsoAt
+	// SameSource counts the further items of the item's own source in its
+	// cluster, e.g. several directors' dealings of one issuer.
+	SameSource int
 }
 
 // AlsoAt is one other source's copy of a news item.
@@ -154,7 +157,7 @@ func (s *Service) ListNews(ctx context.Context, nq NewsQuery) (NewsPage, error) 
 	return page, nil
 }
 
-// attachAlso fills Also for the items of one page with a single query.
+// attachAlso fills Also and SameSource for the items of one page, one query each.
 func (s *Service) attachAlso(ctx context.Context, items []NewsItem) error {
 	if len(items) == 0 {
 		return nil
@@ -174,7 +177,16 @@ func (s *Service) attachAlso(ctx context.Context, items []NewsItem) error {
 			SourceKind: string(r.SourceKind), PublishedAt: r.PublishedAt.UTC(),
 		})
 	}
+	counts, err := s.q.CountSameSource(ctx, ids)
+	if err != nil {
+		return err
+	}
+	same := make(map[int64]int, len(counts))
+	for _, c := range counts {
+		same[c.RepresentativeID] = int(c.N)
+	}
 	for i := range items {
+		items[i].SameSource = same[items[i].ID]
 		also := byRep[items[i].ID]
 		slices.SortFunc(also, func(a, b AlsoAt) int {
 			if c := a.PublishedAt.Compare(b.PublishedAt); c != 0 {

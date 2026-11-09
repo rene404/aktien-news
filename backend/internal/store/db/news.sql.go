@@ -10,6 +10,41 @@ import (
 	"time"
 )
 
+const countSameSource = `-- name: CountSameSource :many
+SELECT r.id AS representative_id, count(m.id)::int AS n
+FROM articles r
+JOIN articles m ON m.cluster_id = r.cluster_id AND m.source_id = r.source_id AND m.id <> r.id
+WHERE r.id = ANY($1::bigint[])
+GROUP BY r.id
+`
+
+type CountSameSourceRow struct {
+	RepresentativeID int64
+	N                int32
+}
+
+// For each given representative, how many other members of its own source
+// its cluster has (e.g. several directors' dealings of one issuer).
+func (q *Queries) CountSameSource(ctx context.Context, representativeIds []int64) ([]CountSameSourceRow, error) {
+	rows, err := q.db.Query(ctx, countSameSource, representativeIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CountSameSourceRow
+	for rows.Next() {
+		var i CountSameSourceRow
+		if err := rows.Scan(&i.RepresentativeID, &i.N); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const instrumentByTicker = `-- name: InstrumentByTicker :one
 SELECT l.id, l.ticker, l.mic, l.isin, c.name, c.country
 FROM listings l JOIN companies c ON c.id = l.company_id

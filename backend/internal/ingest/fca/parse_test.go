@@ -11,7 +11,10 @@ import (
 	"github.com/rene404/aktien-news/backend/internal/ingest/fca"
 )
 
-const artefacts = "https://data.fca.org.uk/artefacts/"
+const (
+	artefacts = "https://data.fca.org.uk/artefacts/"
+	home      = "https://data.fca.org.uk/#/nsm/nationalstoragemechanism"
+)
 
 func read(t *testing.T, name string) []byte {
 	t.Helper()
@@ -30,7 +33,8 @@ func utc(s string) time.Time {
 	return ts.UTC()
 }
 
-// Real NSM entries of 2026-11-09. Fund prices (NAV), takeover dealing
+// Real NSM entries of 2026-11-09. The NSM may be linked only at its home
+// page (terms of use); the announcement's own address is the dedupe key. Fund prices (NAV), takeover dealing
 // disclosures (Form 8.3/8.5), final terms and exchange notices are noise;
 // superseded versions (latest_flag N) are skipped.
 func TestParse(t *testing.T) {
@@ -41,7 +45,8 @@ func TestParse(t *testing.T) {
 	want := []ingest.RawArticle{
 		{
 			ExternalID:  "ef8ce658-4f71-4504-8d11-005af10c6968",
-			URL:         artefacts + "NSM/RNS/ef8ce658-4f71-4504-8d11-005af10c6968.html",
+			URL:         home,
+			DedupeKey:   artefacts + "NSM/RNS/ef8ce658-4f71-4504-8d11-005af10c6968.html",
 			Title:       "ITV PLC: Transaction in Own Shares",
 			PublishedAt: utc("2026-11-09T09:27:42Z"),
 			IssuerHint:  "ITV PLC",
@@ -50,7 +55,8 @@ func TestParse(t *testing.T) {
 		{
 			// Director/PDMR shareholding: the issuer only (plan decision 2).
 			ExternalID:  "5cfa4530-42a3-422b-a0b5-4daf65f5f891",
-			URL:         artefacts + "NSM/RNS/5cfa4530-42a3-422b-a0b5-4daf65f5f891.html",
+			URL:         home,
+			DedupeKey:   artefacts + "NSM/RNS/5cfa4530-42a3-422b-a0b5-4daf65f5f891.html",
 			Title:       "CMC MARKETS PLC: Eigengeschäft einer Führungskraft",
 			PublishedAt: utc("2026-11-09T09:26:30Z"),
 			IssuerHint:  "CMC MARKETS PLC",
@@ -58,14 +64,16 @@ func TestParse(t *testing.T) {
 		},
 		{
 			ExternalID:  "0fb9b3db-5736-4d88-9138-2adbadfae031",
-			URL:         artefacts + "NSM/RNS/0fb9b3db-5736-4d88-9138-2adbadfae031.html",
+			URL:         home,
+			DedupeKey:   artefacts + "NSM/RNS/0fb9b3db-5736-4d88-9138-2adbadfae031.html",
 			Title:       "Verici Dx PLC: Holding(s) in Company",
 			PublishedAt: utc("2026-11-09T09:36:15Z"),
 			IssuerHint:  "Verici Dx PLC",
 		},
 		{
 			ExternalID:  "95b8b96b-ddb1-497a-bb4d-e74eb6b55367",
-			URL:         artefacts + "NSM/RNS/95b8b96b-ddb1-497a-bb4d-e74eb6b55367.html",
+			URL:         home,
+			DedupeKey:   artefacts + "NSM/RNS/95b8b96b-ddb1-497a-bb4d-e74eb6b55367.html",
 			Title:       "AFC ENERGY PLC: Trading Update for the year ended 31 October 2026",
 			PublishedAt: utc("2026-11-09T07:00:07Z"),
 			IssuerHint:  "AFC ENERGY PLC",
@@ -74,7 +82,8 @@ func TestParse(t *testing.T) {
 		{
 			// Direct upload: the company ends in ";", the time has milliseconds.
 			ExternalID:  "NI-000154371",
-			URL:         artefacts + "NSM/DirectUpload/NI-000154371/NI-000154371.pdf",
+			URL:         home,
+			DedupeKey:   artefacts + "NSM/DirectUpload/NI-000154371/NI-000154371.pdf",
 			Title:       "AUSTRALIA AND NEW ZEALAND BANKING GROUP LIMITED: ANZ 2026 FY Results Presentation & Investor Discussion Pack",
 			PublishedAt: utc("2026-11-09T00:15:00Z"),
 			IssuerHint:  "AUSTRALIA AND NEW ZEALAND BANKING GROUP LIMITED",
@@ -82,7 +91,8 @@ func TestParse(t *testing.T) {
 		},
 		{
 			ExternalID:  "c76861ec-e805-461e-82a7-022e8db63643",
-			URL:         artefacts + "NSM/RNS/c76861ec-e805-461e-82a7-022e8db63643.html",
+			URL:         home,
+			DedupeKey:   artefacts + "NSM/RNS/c76861ec-e805-461e-82a7-022e8db63643.html",
 			Title:       "THAMES WATER UTILITIES LIMITED: Recapitalisation Update",
 			PublishedAt: utc("2026-11-09T07:00:08Z"),
 			IssuerHint:  "THAMES WATER UTILITIES LIMITED",
@@ -90,7 +100,8 @@ func TestParse(t *testing.T) {
 		},
 		{
 			ExternalID:  "3bb82d5e-4d09-4f5f-98a9-9e134cf454e4",
-			URL:         artefacts + "NSM/PRN/3bb82d5e-4d09-4f5f-98a9-9e134cf454e4.html",
+			URL:         home,
+			DedupeKey:   artefacts + "NSM/PRN/3bb82d5e-4d09-4f5f-98a9-9e134cf454e4.html",
 			Title:       "Finsbury Growth & Income Trust PLC - Monthly Fact Sheet as at 31 October 2026",
 			PublishedAt: utc("2026-11-09T09:23:00Z"),
 			IssuerHint:  "FINSBURY GROWTH & INCOME TRUST PLC",

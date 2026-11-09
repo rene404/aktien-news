@@ -245,8 +245,12 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
       LSE-Ticker zählen als Wort nur, wenn sie der Name sind.
     - **Matcher:** Der Emittentenname der Quelle im Titel zählt nicht mehr als Erwähnung einer anderen Firma (vorher: „ICG ENTERPRISE TRUST PLC“ → ICG, „BP CAPITAL MARKETS“ → BP).
     - **Probe:** 3.000 NSM-Einträge (387 nach dem Filter) verknüpfen 34 FTSE-Firmen, ohne Fehltreffer.
+  - **Nutzungsbedingungen (gelesen am 2026-11-09):** Die [NSM Terms of Use](https://data.fca.org.uk/artefacts/NSM_Terms_of_Use.pdf) (Stand 19.03.2020) erlauben das Material „for any lawful purpose“;
+    Einreicher gewähren anderen Nutzern eine Lizenz, es zu verbreiten, „including for any lawful commercial purpose“. Verboten: Links auf andere Seiten als die Startseite, jede Verwendung von Name und Logo der FCA.
+    Umgesetzt (`fix/fca-nsm-links`): Jede Meldung verlinkt die NSM-Startseite, der Dateipfad bleibt nur interner Dedupe-Schlüssel (`RawArticle.DedupeKey`, Migration 00012 für Bestandsdaten);
+    Quellenname „National Storage Mechanism (UK)“, kein FCA-Icon. Die allgemeinen Bedingungen von fca.org.uk (4.8: keine Bots ohne Zustimmung) nennen `data.fca.org.uk` nicht.
   - **Offen:**
-    - Rechtsprüfung der FCA-Nutzung (Content-Signal `use=reference`) vor einem öffentlichen Betrieb.
+    - Rechtsprüfung der FCA-Nutzung (Content-Signal `use=reference`, Geltung von fca.org.uk/legal 4.8 für die Such-API, Nennung als Quelle) vor einem öffentlichen Betrieb.
     - Der FTSE-100-Tab bleibt leer, solange Index-Tabs keine Filings zeigen (Produktfrage aus Aufgabe 7).
     - Firmennamen der NSM sind oft in Großbuchstaben („ITV PLC: Transaction in Own Shares“).
   - **Rechtsprüfung parallel, vor einem öffentlichen Betrieb:** `robots.txt` erklärt einen TDM-Vorbehalt nach Art. 4 DSM-RL (`Content-Signal: ai-train=no, use=reference`).

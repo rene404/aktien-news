@@ -94,6 +94,7 @@ type Match struct {
 var mnemonicMICs = map[string]bool{
 	"XPAR": true, "XAMS": true, "XMAD": true,
 	"XSTO": true, "XHEL": true, "XCSE": true, // Nasdaq Nordic
+	"XLON": true, // TIDMs: "BA", "NG", "SN", "NXT"
 }
 
 // tickerIsName reports whether the ticker spells the company's name or an alias.

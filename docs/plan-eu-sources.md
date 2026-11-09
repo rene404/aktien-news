@@ -256,7 +256,9 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
 
 ## D. Doku
 
-- [ ] **10. Doku nachziehen.** Branch `chore/docs-eu-sources`.
+- [x] **10. Doku nachziehen.** Branch `chore/docs-eu-sources`.
+  - **Umgesetzt (2026-11-09):** README mit Tabelle „Märkte, Quellen und Tabs“; design.md mit Märkten, `no_llm`, LEI-Signal, Matcher-Zusatzregeln und den Fetchern je Parser (DILA in zwei Schritten, FCA-POST);
+    research-sources.md mit einer Statustabelle der Pflichtmeldungs-Quellen und den offenen Anfragen (Nasdaq, FCA); AGENTS.md: Der Datenhinweis gilt für ISIN und LEI, dazu die Regel zum Emittentennamen im Titel.
   - `README.md`: Märkte und Tabs.
   - `docs/design.md`: LEI als Matching-Signal, Fetcher in zwei Schritten (DILA).
   - `docs/research-sources.md`: Status je Quelle.

@@ -101,7 +101,7 @@ Layering wie bisher: Handler und MCP-Tools sind dünn, Logik liegt in `service/`
 |---|---|---|
 | Adapter | ein Parser pro Quelle → gemeinsames `ingest.RawArticle` | neue Quellen ohne Änderung der Pipeline |
 | Pipes & Filters | fetch → parse → dedupe → match → classify | Stufen einzeln testbar, Fehler pro Quelle isoliert |
-| Strategy | `Fetcher`, `Classifier` (Fake im Test, OpenRouter produktiv) | Implementierung austauschbar |
+| Strategy | `Fetcher` (GET, DILA in zwei Schritten, FCA-POST), `Classifier` (Fake im Test, OpenRouter produktiv) | Implementierung austauschbar |
 | Table Data Gateway | sqlc-generierte `db.Queries` | typsicheres SQL ohne ORM |
 | Unit of Work | `pgx.BeginFunc` (Seed, Persist) | alles oder nichts |
 | Append-only / Temporal Data | `article_entities`, `classifications`, `as_of`-Abfragen | Backtests ohne Look-ahead-Bias; leichter als Event Sourcing |
@@ -129,23 +129,26 @@ die ihre Transaktion selbst öffnet; sie nimmt einen `TxBeginner`.
 Alle Zeitstempel sind `timestamptz` (UTC).
 
 **sources**
-`id, key (unique), name, kind (adhoc|press_release|news_api|ir), market (AT|DE|US),
+`id, key (unique), name, kind (adhoc|filing|press_release|news_api|ir),
+market (AT|DE|US|FR|ES|NL|NORDIC|UK|MULTI),
 weight numeric (Ad-hoc 1.0 > Agentur 0.8 > Presse 0.6 > Blog 0.3), enabled,
 fetch_interval (Minimum je Quelle, z. B. FinanzNachrichten ≥ 10 min),
-text_policy (none|feed_fields|full_text), tdm_reserved bool, tdm_checked_at, terms_url, notes`
+text_policy (none|feed_fields|full_text|no_llm), tdm_reserved bool, tdm_checked_at, terms_url, notes`
 — `text_policy` legt fest, was ins LLM darf. Default ist `none` (nur Titel).
 `full_text` nur für gemeinfreie oder lizenzierte Quellen (SEC, Emittenten-IR ohne Vorbehalt).
 Ein erkannter TDM-Vorbehalt erzwingt `none`, unabhängig von der Konfiguration.
+`no_llm` hält auch die Titel vom LLM fern (FCA NSM) und wird durch nichts gelockert
+(`ingest.EffectivePolicy`, `ingest.TitlesToLLM`).
 
 **companies**
 `id, name, legal_name, lei null, country, created_at`
 
 **listings**
-`id, company_id → companies, isin, ticker, mic (XWBO|XETR|XNYS|XNAS …), currency,
+`id, company_id → companies, isin, ticker, mic (XWBO|XETR|XPAR|XMAD|XAMS|XSTO|XHEL|XCSE|XLON|XNYS|XNAS), currency,
 active` — unique `(mic, ticker)`, index `isin`
 
 **index_memberships**
-`listing_id, index_key (ATX|ATX_PRIME|DAX|MDAX|SP500 …), valid_from, valid_to null`
+`listing_id, index_key (ATX|ATX_PRIME|DAX|MDAX|CAC40|IBEX35|AEX|OMXS30|OMXH25|OMXC25|FTSE100|SP500 …), valid_from, valid_to null`
 (point-in-time, damit Filter auf historische Zusammensetzung später möglich sind)
 
 **company_aliases**
@@ -167,7 +170,7 @@ cluster_id → clusters, issuer_hint null (vom Feed geliefertes Emittentenfeld)`
 `purge_after` (Default 30 Tage). Nie über eine API ausgeliefert.
 
 **article_entities** (append-only für Statuswechsel)
-`id, article_id, company_id, confidence, method (issuer|isin|cashtag|ticker|full_name|core_name),
+`id, article_id, company_id, confidence, method (issuer|lei|isin|cashtag|ticker|full_name|core_name),
 status (linked|pending|rejected), decided_at, decided_by (engine|admin)`
 — „aktueller Status“ = jüngste Zeile pro `(article_id, company_id)` mit `decided_at <= as_of`.
 
@@ -196,8 +199,17 @@ Migrationen: goose, jede mit `up` und `down`. Die CI testet up → down → up g
 
 1. **Fetch** pro Quelle im eigenen Intervall, isoliert. Ein Fehler wird als WARNING
    und als `ingest_runs.status=failed` festgehalten, der Rest des Batches läuft weiter.
-   Vor dem Text-Fetch werden robots.txt und der TDM-Vorbehalt (TDMRep-Header/`tdmrep.json`)
+   Vor dem Text-Fetch werden robots.txt und der TDM-Vorbehalt (TDMRep-Header, `tdmrep.json`
+   oder ein `Content-Signal` mit `ai-train=no`/`ai-input=no` in der Gruppe `User-agent: *` der robots.txt)
    geprüft und in `sources.tdm_reserved` gecacht.
+   Normal holt der Runner eine URL per GET. Quellen, die mehr brauchen, bekommen je Parser einen eigenen
+   Fetcher (`Runner.Fetchers`); er liefert dem Parser wieder ein einziges Payload:
+   - **DILA (AMF):** zwei Schritte. Erst das Verzeichnis lesen, dann die `tar.gz`-Archive der letzten
+     26 Stunden laden und nur die XML-Dateien entpacken. Archive und Verzeichnis werden im Speicher
+     gehalten; `amf_adhoc` und `amf_filings` teilen sich eine Instanz.
+   - **FCA NSM:** ein JSON-POST auf die Suche (`fetch.HTTPFetcher.PostJSON`). Der Fetcher prüft den
+     TDM-Vorbehalt selbst (`CheckTDM`), weil die API-Domain auf `robots.txt` mit 403 antwortet.
+   - **SEC:** User-Agent mit Kontaktadresse.
 2. **Parse** über den reinen Parser zu `RawArticle`.
 3. **Dedupe exakt** über normalisierte URL (ohne utm/Tracking) und `content_hash` des
    normalisierten Titels.
@@ -208,6 +220,7 @@ Migrationen: goose, jede mit `up` und `down`. Die CI testet up → down → up g
    | Signal | Confidence |
    |---|---|
    | Emittentenfeld (`issuer_hint`: OTS `author`, Emittenten-IR-Feed, SEC-CIK) → Firma | 1.00 |
+   | LEI des Emittenten (Feed-LEI einer Ad-hoc-/Filing-Quelle: OeKB, DILA, AFM, FCA) | 0.98 |
    | ISIN des Emittenten (Feed-ISIN einer Ad-hoc-/Filing-Quelle) oder ISIN im Titel | 0.98 |
    | ISIN-Tag eines Nachrichten-Feeds, Firma zusätzlich im Titel genannt | 0.90 |
    | ISIN-Tag eines Nachrichten-Feeds ohne Bestätigung im Titel (z. B. Marktberichte) | 0.60 → pending |
@@ -218,6 +231,15 @@ Migrationen: goose, jede mit `up` und `down`. Die CI testet up → down → up g
 
    ≥ 0.85 wird `linked`, ≥ 0.40 wird `pending`, darunter wird der Treffer verworfen.
    Pending-Links erscheinen weder öffentlich noch über MCP.
+
+   Zusatzregeln:
+   - **LEI** zählt nur aus Ad-hoc-/Filing-Quellen; in Nachrichten-Feeds hat sie keine Wirkung.
+     Sie ist für AFM und FCA die einzige harte Kennung. LEI und Rechtsname kommen aus ESMA FIRDS und GLEIF.
+   - Der **Emittentenname** der Quelle wird im Titel ausgeblendet, bevor ISIN, Cashtag, Ticker und Namen
+     gesucht werden („BP CAPITAL MARKETS PLC: …“ ist keine Erwähnung von BP).
+   - **Mnemonic-Ticker** (Euronext Paris/Amsterdam, Madrid, Nasdaq Nordic, LSE) zählen als Wort nur,
+     wenn sie zugleich der Name sind (ASML, IAG); Cashtags gelten weiter.
+   - Nicht kuratierte SEC-Firmen treffen das Emittentenfeld ohne Rechtsform nur bei US-/MULTI-Quellen.
 6. **Classify** nur für den Cluster-Repräsentanten und je verlinkter Firma. Andere
    Artikel des Clusters erben das Ergebnis mit `novelty` = 1 / Rang im Cluster.
    Der Input richtet sich nach `sources.text_policy`; im MVP ist das für die meisten Quellen **nur der Titel**.
@@ -283,7 +305,10 @@ Rate-Limit pro IP am Reverse Proxy, Antwort 429.
 
 - **§ 76f UrhG (Leistungsschutzrecht):** Öffentliche DTOs haben keinen Text und kein Snippet. Ein Test sichert das ab.
 - **§ 42h UrhG (Text and Data Mining):** Text wird nur bei `tdm_reserved = false` geholt und
-  nach `purge_after` gelöscht. Sonst wird nur der Titel klassifiziert.
+  nach `purge_after` gelöscht. Sonst wird nur der Titel klassifiziert. Bei `text_policy = no_llm`
+  (FCA: `Content-Signal: ai-train=no, use=reference`) geht nicht einmal der Titel ans LLM.
+- **Directors' Dealings** (AFM, Nasdaq Nordic, FCA) heißen „<Emittent>: Eigengeschäft einer Führungskraft“;
+  Personennamen werden nicht übernommen.
 - **MAR:** Sentiment und Event-Typ gibt es nur über MCP. Die Seite trägt einen Disclaimer
   („keine Anlageberatung“).
 - Die MVP-Quellen sind überwiegend **Emittenten-Mitteilungen** (Ad-hoc, OTS). Das ist

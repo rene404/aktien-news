@@ -1,6 +1,8 @@
 # aktien-news.at
 
-News-Hub für Aktien aus Österreich (ATX), Deutschland (DAX) und den USA.
+News-Hub für Aktien aus Österreich (ATX), Deutschland (DAX), Frankreich (CAC 40),
+Spanien (IBEX 35), den Niederlanden (AEX), Schweden, Finnland, Dänemark
+(OMXS30, OMXH25, OMXC25), Großbritannien (FTSE 100) und den USA (S&P 500).
 Meldungen werden automatisch eingesammelt, dedupliziert und Unternehmen
 zugeordnet. Öffentlich gibt es eine filterbare Liste (Titel, Quelle, Link);
 intern liefert ein MCP-Server Nachrichten und Sentiment an boerseonline.
@@ -34,6 +36,27 @@ Tests:
 docker compose --profile test run --rm backend-test   # Go
 docker compose --profile test run --rm web-test       # Frontend: lint, test, build
 ```
+
+## Märkte, Quellen und Tabs
+
+| Markt | Index-Tab | Börse | Pflichtmeldungen | Weitere Quellen |
+|---|---|---|---|---|
+| AT | ATX | Wiener Börse (XWBO) | OeKB OAM | APA-OTS, FinanzNachrichten, voestalpine IR |
+| DE | DAX | Xetra (XETR) | – (Ad-hoc über FinanzNachrichten) | FinanzNachrichten, Telekom IR |
+| FR | CAC 40 | Euronext Paris (XPAR) | AMF über DILA Open Data | – |
+| ES | IBEX 35 | Bolsa de Madrid (XMAD) | CNMV | – |
+| NL | AEX | Euronext Amsterdam (XAMS) | AFM Directors' Dealings | – |
+| NORDIC | OMXS30, OMXH25, OMXC25 | Nasdaq Stockholm, Helsinki, Copenhagen (XSTO, XHEL, XCSE) | Nasdaq Nordic Company Announcements | Investor News (Nasdaq Nordic) |
+| UK | FTSE 100 | London Stock Exchange (XLON) | FCA National Storage Mechanism | – |
+| US | S&P 500 | NYSE, Nasdaq (XNYS, XNAS) | SEC EDGAR 8-K, 6-K | PR Newswire, FinanzNachrichten |
+
+Dazu die Tabs „Alle“, „Ad-hoc“ und „Pflichtmeldungen“ (Quellenart `filing`).
+Index-Tabs zeigen Nachrichten, Pressemitteilungen und Ad-hoc-Meldungen ihrer Werte, aber keine Filings;
+die stehen unter „Pflichtmeldungen“ und auf den Aktienseiten. Die Aktienliste kennt dieselben Indizes.
+
+Nasdaq Nordic und die FCA laufen nur zum privaten Testen: Vor einem öffentlichen Betrieb müssen die
+Anfrage bei Nasdaq und die Rechtsprüfung der FCA-Nutzung erledigt sein (`docs/plan-eu-sources.md`, Entscheidung 3).
+Die FCA-Quelle geht nicht ans LLM (`text_policy = no_llm`).
 
 ## API (öffentlich, ohne Auth)
 
@@ -72,5 +95,6 @@ klassifiziert ist, sind Event-Typ, Sentiment und Scores `null`.
 - [AGENTS.md](AGENTS.md) – Regeln, Befehle, Architektur
 - [docs/design.md](docs/design.md) – Design des MVP
 - [docs/research-sources.md](docs/research-sources.md) – Datenquellen und Lizenzen
+- [docs/plan-eu-sources.md](docs/plan-eu-sources.md) – Pflichtmeldungen aus FR, ES, NL, Nordics und UK (abgeschlossen)
 - [docs/plan-phase2.md](docs/plan-phase2.md) – Phase 2 (abgeschlossen): mehr Quellen, US-Stammdaten, Clustering
 - [docs/plan-phase1.md](docs/plan-phase1.md) – Phase 1

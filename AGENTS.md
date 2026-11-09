@@ -51,7 +51,9 @@ docs/             # design, research, plans
 1. Public responses never contain body text, snippets, feed `description`,
    sentiment or event type. A test enforces this on the DTOs.
 2. Only titles go to the LLM unless `sources.text_policy = full_text`; a
-   detected TDM reservation forces `none`. Stored text is purged after
+   detected TDM reservation (tdmrep.json, header, or a `Content-Signal` with
+   `ai-train=no`/`ai-input=no` in robots.txt) forces `none`. `no_llm` keeps
+   even the titles away from the LLM (FCA NSM). Stored text is purged after
    `purge_after`.
 3. Respect each source's terms: FinanzNachrichten ≥ 10 min polling, links open
    in a new window, no frames. Wiener Börse is not scraped (ToS).

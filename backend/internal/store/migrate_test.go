@@ -253,6 +253,14 @@ func TestArticleLinksTracksNewestDecision(t *testing.T) {
 }
 
 // docs/plan-eu-sources.md, task 1: the database accepts FR, ES and NL sources, nothing else new.
+func TestTextPolicyNoLLM(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+	if _, err := pool.Exec(ctx, `INSERT INTO sources (key, name, kind, market, url, text_policy) VALUES ('fca', 'FCA', 'filing', 'UK', 'https://example.com/fca', 'no_llm')`); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestSourceMarketCheck(t *testing.T) {
 	ctx := context.Background()
 	pool := testdb.New(t)

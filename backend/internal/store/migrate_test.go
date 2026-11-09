@@ -253,6 +253,14 @@ func TestArticleLinksTracksNewestDecision(t *testing.T) {
 }
 
 // docs/plan-eu-sources.md, task 1: the database accepts FR, ES and NL sources, nothing else new.
+func TestTextPolicyNoLLM(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+	if _, err := pool.Exec(ctx, `INSERT INTO sources (key, name, kind, market, url, text_policy) VALUES ('fca', 'FCA', 'filing', 'UK', 'https://example.com/fca', 'no_llm')`); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestSourceMarketCheck(t *testing.T) {
 	ctx := context.Background()
 	pool := testdb.New(t)
@@ -260,10 +268,10 @@ func TestSourceMarketCheck(t *testing.T) {
 		_, err := pool.Exec(ctx, `INSERT INTO sources (key, name, kind, market, url) VALUES ($1, $1, 'adhoc', $2, 'https://example.com/' || $1)`, key, market)
 		return err
 	}
-	for _, m := range []string{"AT", "DE", "US", "MULTI", "FR", "ES", "NL", "NORDIC"} {
+	for _, m := range []string{"AT", "DE", "US", "MULTI", "FR", "ES", "NL", "NORDIC", "UK"} {
 		if err := insert("src_"+m, m); err != nil {
 			t.Errorf("market %s rejected: %v", m, err)
 		}
 	}
-	assertPgError(t, insert("src_uk", "UK"), "23514")
+	assertPgError(t, insert("src_ch", "CH"), "23514")
 }

@@ -94,6 +94,7 @@ type Match struct {
 var mnemonicMICs = map[string]bool{
 	"XPAR": true, "XAMS": true, "XMAD": true,
 	"XSTO": true, "XHEL": true, "XCSE": true, // Nasdaq Nordic
+	"XLON": true, // TIDMs: "BA", "NG", "SN", "NXT"
 }
 
 // tickerIsName reports whether the ticker spells the company's name or an alias.
@@ -235,21 +236,24 @@ func (ix *Index) Match(in Input) []Match {
 		}
 	}
 
-	for _, isin := range isinRe.FindAllString(in.Title, -1) {
+	// The issuer named by the feed is matched above; its name in the title
+	// ("ICG ENTERPRISE TRUST PLC: …") is no mention of another company.
+	title := withoutIssuer(in.Title, in.IssuerHint)
+	for _, isin := range isinRe.FindAllString(title, -1) {
 		consider(ix.isin[isin], 0.98, "isin")
 	}
 
-	for _, m := range cashtagRe.FindAllStringSubmatch(in.Title, -1) {
+	for _, m := range cashtagRe.FindAllStringSubmatch(title, -1) {
 		consider(ix.cashtags[m[1]], 0.95, "cashtag")
 	}
-	for _, tok := range tickerRe.FindAllString(in.Title, -1) {
+	for _, tok := range tickerRe.FindAllString(title, -1) {
 		if !tickerStoplist[tok] {
 			consider(ix.tickers[tok], 0.90, "ticker")
 		}
 	}
 
-	words := titleWords(in.Title)
-	for _, m := range ix.nameMatches(Fold(in.Title)) {
+	words := titleWords(title)
+	for _, m := range ix.nameMatches(Fold(title)) {
 		// An uncurated name glued to a capitalized word is the tail of a
 		// longer company name: "Bancorp, Inc." in "Monroe Federal Bancorp, Inc.".
 		if m.entry.uncurated && words.continuesName(m.word) {
@@ -396,4 +400,19 @@ func StatusFor(conf float64) string {
 	default:
 		return ""
 	}
+}
+
+// withoutIssuer blanks the first occurrence of the issuer hint in the title,
+// ignoring case.
+func withoutIssuer(title, hint string) string {
+	hint = strings.TrimSpace(hint)
+	lower := strings.ToLower(title)
+	if hint == "" || len(lower) != len(title) || len(strings.ToLower(hint)) != len(hint) {
+		return title
+	}
+	i := strings.Index(lower, strings.ToLower(hint))
+	if i < 0 {
+		return title
+	}
+	return title[:i] + " " + title[i+len(hint):]
 }

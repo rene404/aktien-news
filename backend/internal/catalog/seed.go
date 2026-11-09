@@ -22,10 +22,10 @@ import (
 )
 
 var (
-	knownMICs     = []string{"XWBO", "XETR", "XNAS", "XNYS", "XPAR", "XMAD", "XAMS", "XSTO", "XHEL", "XCSE"}
-	knownMarkets  = []string{"AT", "DE", "US", "FR", "ES", "NL", "NORDIC", "MULTI"}
+	knownMICs     = []string{"XWBO", "XETR", "XNAS", "XNYS", "XPAR", "XMAD", "XAMS", "XSTO", "XHEL", "XCSE", "XLON"}
+	knownMarkets  = []string{"AT", "DE", "US", "FR", "ES", "NL", "NORDIC", "UK", "MULTI"}
 	knownKinds    = []string{"adhoc", "press_release", "news_api", "ir", "filing"}
-	knownPolicies = []string{"none", "feed_fields", "full_text"}
+	knownPolicies = []string{"none", "feed_fields", "full_text", "no_llm"}
 	aliasKinds    = []string{"core_name", "former_name", "brand", "issuer_name"}
 )
 

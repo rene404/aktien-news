@@ -342,6 +342,8 @@ func TestNordicIssuersAndTickers(t *testing.T) {
 		sandvik
 		nokia
 		eqt
+		nextPLC
+		babcock
 	)
 	ix := matching.NewIndex([]matching.CompanyEntry{
 		{ID: volvo, Name: "Volvo", LegalName: "Aktiebolaget Volvo", Listings: []matching.Listing{{Ticker: "VOLV-B", MIC: "XSTO"}}},
@@ -354,6 +356,8 @@ func TestNordicIssuersAndTickers(t *testing.T) {
 		{ID: sandvik, Name: "Sandvik", LegalName: "Sandvik Aktiebolag", Listings: []matching.Listing{{Ticker: "SAND", MIC: "XSTO"}}},
 		{ID: nokia, Name: "Nokia", LegalName: "Nokia Oyj", Listings: []matching.Listing{{Ticker: "NOKIA", MIC: "XHEL"}}},
 		{ID: eqt, Name: "EQT", LegalName: "EQT AB", Listings: []matching.Listing{{Ticker: "EQT", MIC: "XSTO"}}},
+		{ID: nextPLC, Name: "Next plc", LegalName: "NEXT PLC", Listings: []matching.Listing{{Ticker: "NXT", MIC: "XLON"}}},
+		{ID: babcock, Name: "Babcock International", LegalName: "BABCOCK INTERNATIONAL GROUP PLC", Listings: []matching.Listing{{Ticker: "BAB", MIC: "XLON"}}},
 	})
 	cases := []struct {
 		in   matching.Input
@@ -368,6 +372,9 @@ func TestNordicIssuersAndTickers(t *testing.T) {
 		{matching.Input{Title: "NASA EXTENDS ISS OPERATIONS"}, []want{{iss, "core_name", 0.55}}},
 		{matching.Input{Title: "SAND PRICES SURGE IN TEXAS"}, nil},
 		{matching.Input{Title: "NOKIA WINS 5G DEAL"}, []want{{nokia, "ticker", 0.90}}},
+		// LSE tickers (TIDMs) are mnemonics too.
+		{matching.Input{Title: "NXT GEN BATTERIES RAISE $40M"}, nil},
+		{matching.Input{Title: "BAB FUND RAISES STAKE"}, nil},
 		// EQT Corp (US gas) and EQT AB (Swedish investor) share the name.
 		{matching.Input{Title: "8-K: EQT Exeter Real Estate Income Trust, Inc. – Item 7.01"}, []want{{eqt, "core_name", 0.55}}},
 	}
@@ -409,6 +416,44 @@ func TestUncuratedIssuerNeedsFullNameOutsideUS(t *testing.T) {
 		{matching.Input{Title: "argenx SE: Eigengeschäft einer Führungskraft", IssuerHint: "argenx SE", IssuerGrade: true},
 			[]want{{argenx, "issuer", 1.00}}},
 		{matching.Input{Title: "RTX wins Army contract", IssuerHint: "RTX", USIssuers: true}, []want{{rtx, "issuer", 1.00}}},
+	}
+	for _, tc := range cases {
+		got := ix.Match(tc.in)
+		if len(got) != len(tc.want) {
+			t.Errorf("%+v: got %+v, want %+v", tc.in, got, tc.want)
+			continue
+		}
+		for i, w := range tc.want {
+			if got[i].CompanyID != w.id || got[i].Method != w.method || got[i].Confidence != w.conf {
+				t.Errorf("%+v: got %+v, want %+v", tc.in, got[i], w)
+			}
+		}
+	}
+}
+
+// Regression (FCA NSM, 2026-11-09): the issuer named by the feed is put in
+// front of the title; that name must not count again as a mention of
+// another company. "ICG ENTERPRISE TRUST PLC" is not ICG, "BP CAPITAL
+// MARKETS" not BP. Other companies in the rest of the title still count.
+func TestIssuerNameInTitleIsNoMention(t *testing.T) {
+	const (
+		icg = iota + 500
+		bp
+		iberdrola
+	)
+	ix := matching.NewIndex([]matching.CompanyEntry{
+		{ID: icg, Name: "ICG", LegalName: "ICG PLC", Listings: []matching.Listing{{Ticker: "ICG", MIC: "XLON"}}},
+		{ID: bp, Name: "BP", LegalName: "BP P.L.C.", Listings: []matching.Listing{{Ticker: "BP", MIC: "XLON"}}},
+		{ID: iberdrola, Name: "Iberdrola", LegalName: "IBERDROLA, S.A.", Listings: []matching.Listing{{Ticker: "IBE", MIC: "XMAD"}}},
+	})
+	cases := []struct {
+		in   matching.Input
+		want []want
+	}{
+		{matching.Input{Title: "ICG ENTERPRISE TRUST PLC: Transaction in Own Shares", IssuerHint: "ICG ENTERPRISE TRUST PLC", IssuerGrade: true}, nil},
+		{matching.Input{Title: "BP CAPITAL MARKETS P.L.C.: Publication of a Supplementary Prospectus", IssuerHint: "BP CAPITAL MARKETS P.L.C.", IssuerGrade: true}, nil},
+		{matching.Input{Title: "ACME SA: Agreement with Iberdrola, S.A.", IssuerHint: "ACME SA", IssuerGrade: true}, []want{{iberdrola, "full_name", 0.90}}},
+		{matching.Input{Title: "BP raises dividend"}, []want{{bp, "ticker", 0.90}}},
 	}
 	for _, tc := range cases {
 		got := ix.Match(tc.in)

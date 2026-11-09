@@ -3,11 +3,13 @@
 Authoritative working agreement for agents and contributors. The README is the
 user-facing overview; this file is the rulebook. Design rationale lives in
 `docs/design.md`, source/licensing research in `docs/research-sources.md`, the
-task plans in `docs/plan-phase*.md` (Phase 2 done, Phase 3 in progress).
+task plans in `docs/plan-phase*.md` (Phase 2 done, Phase 3 in progress) and
+`docs/plan-eu-sources.md` (EU, Nordic and UK filings, done).
 
 ## What this is
 
-aktien-news.at: a news hub for ATX/Wiener Börse, DAX/Germany and US stocks.
+aktien-news.at: a news hub for ATX/Wiener Börse, DAX/Germany, CAC 40, IBEX 35,
+AEX, OMXS30/OMXH25/OMXC25, FTSE 100 and US stocks.
 It ingests news, deduplicates and clusters it, links it to companies, and (Phase 3)
 classifies event type + sentiment. It serves:
 - a **public** site + REST API: title, source, link, time, tickers — nothing else;
@@ -51,7 +53,9 @@ docs/             # design, research, plans
 1. Public responses never contain body text, snippets, feed `description`,
    sentiment or event type. A test enforces this on the DTOs.
 2. Only titles go to the LLM unless `sources.text_policy = full_text`; a
-   detected TDM reservation forces `none`. Stored text is purged after
+   detected TDM reservation (tdmrep.json, header, or a `Content-Signal` with
+   `ai-train=no`/`ai-input=no` in robots.txt) forces `none`. `no_llm` keeps
+   even the titles away from the LLM (FCA NSM). Stored text is purged after
    `purge_after`.
 3. Respect each source's terms: FinanzNachrichten ≥ 10 min polling, links open
    in a new window, no frames. Wiener Börse is not scraped (ToS).
@@ -64,9 +68,12 @@ docs/             # design, research, plans
   `article_links` is their trigger-maintained "current state" projection — never write it directly.
 - `articles.ingested_at` is set by the DB on insert and never changes.
 - The matcher never resurrects a `rejected` link; it only upgrades `pending → linked`.
-- A feed-supplied ISIN is only issuer-grade for `adhoc`/`filing` sources. In news
-  feeds (e.g. FN index feeds) it is a loose tag: linked only when the title
-  also names the company, otherwise pending (design §5).
+- A feed-supplied ISIN or LEI is only issuer-grade for `adhoc`/`filing` sources.
+  In news feeds (e.g. FN index feeds) an ISIN is a loose tag: linked only when
+  the title also names the company, otherwise pending; a LEI there counts for
+  nothing (design §5).
+- The feed's issuer name (`issuer_hint`) is blanked from the title before the
+  title signals run, so "BP CAPITAL MARKETS" never counts as a mention of BP.
 - One failing source never aborts another; failures log at WARNING and land in `ingest_runs`.
 - The stack boots without API keys; key-dependent sources are `skipped`.
 

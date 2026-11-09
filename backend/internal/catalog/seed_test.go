@@ -234,11 +234,11 @@ func TestSeedStillRejectsUnknownMarketsAndExchanges(t *testing.T) {
 		name, file, data, want string
 	}{
 		{"market", "sources.csv", `key,name,kind,market,url,parser,weight,fetch_interval_minutes,text_policy,terms_url,issuer_slug
-lse,LSE,adhoc,UK,https://example.com/lse,lse,1.00,60,none,,
-`, `unknown market "UK"`},
+six,SIX,adhoc,CH,https://example.com/six,six,1.00,60,none,,
+`, `unknown market "CH"`},
 		{"exchange", "listings.csv", `company_slug,isin,ticker,mic,currency
-apple,US0378331005,AAPL,XLON,USD
-`, `unknown mic "XLON"`},
+apple,US0378331005,AAPL,XSWX,USD
+`, `unknown mic "XSWX"`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			pool := testdb.New(t)
@@ -304,6 +304,7 @@ func TestCommittedSeedHasEUIndices(t *testing.T) {
 		{"OMXS30", 30, "XSTO"},
 		{"OMXH25", 25, "XHEL"},
 		{"OMXC25", 25, "XCSE"},
+		{"FTSE100", 100, "XLON"}, // Wikipedia, October 2026
 	} {
 		var n, withoutLEI int
 		var mics string

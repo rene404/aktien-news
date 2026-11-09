@@ -34,7 +34,7 @@ Hinweis: Nur im AustriaCard-Firmennetz ist `sec.gov` gesperrt, aus anderen Netze
 | Business Wire / PR Newswire RSS | US (DE) | RSS | Ticker im Text „(NYSE: X)“ | nur Titel, bis die Bedingungen geklärt sind | ✅ MVP (Ergänzung) |
 | IR-RSS der Emittenten (voestalpine …) | AT | RSS | Feed = Emittent | ja, sofern kein TDM-Vorbehalt | ✅ MVP, wo vorhanden |
 | Alpha Vantage NEWS_SENTIMENT | US | API, free 25 req/Tag | Ticker | – (nur Baseline intern) | ⚠️ kommerzielle Nutzung anfragen |
-| OeKB OAM | AT | keine API | ISIN, LEI | – | ⏳ Anfrage |
+| OeKB OAM | AT | öffentlicher JSON-Endpunkt (Nachtrag 2026-11-04) | ISIN, LEI | – | ✅ seit 2026-11-05 (`oekb_adhoc`, `oekb_filings`); Anfrage zur Nutzung läuft |
 | APA-Comm Lizenz/API | AT | Vertrag | – | – | ⏳ Anfrage |
 | EQS direkt | DE, AT | Vertrag | – | – | ⏳ Anfrage, falls nötig |
 | Marketaux / Massive / Finnhub paid | US | API, 29–199 $/Monat | `tickers[]` | – | 🔜 später, falls die Breite nicht reicht |
@@ -258,6 +258,22 @@ Gesucht wurde das Gegenstück zu OeKB OAM, also der OAM oder das Melderegister j
   4. AFM Directors' Dealings.
   5. Nasdaq Nordic (nach Anfrage).
 
+### Status der Pflichtmeldungs-Quellen (2026-11-09)
+
+Umgesetzt nach `docs/plan-eu-sources.md`. Alle Quellen lassen sich über `sources.enabled` abschalten.
+
+| Land | Quelle(n) | Status | Verknüpfung | Offen |
+|---|---|---|---|---|
+| FR | `amf_adhoc`, `amf_filings` (DILA Open Data, stündlich) | ✅ in Betrieb | Emittent, ISIN, LEI | – (Licence Ouverte) |
+| ES | `cnmv_ip`, `cnmv_oir` (CNMV RSS, alle 15 min) | ✅ in Betrieb | Emittentenname (CNMV-Schreibweise als Alias) | – („fielmente, sin manipular“: Titel unverändert) |
+| NL | `afm_dd` (AFM-Export, stündlich) | ✅ in Betrieb | Emittent, LEI | – (Quellenangabe „AFM“) |
+| Nordics | `nasdaq_nordic_adhoc`, `_filings`, `_news` (alle 15 min) | 🧪 nur privates Testen | Emittentenname | ⏳ schriftliche Anfrage bei Nasdaq vor öffentlichem Betrieb |
+| UK | `fca_nsm` (POST auf die NSM-Suche, alle 15 min) | 🧪 nur privates Testen, `text_policy = no_llm` | Emittent, LEI | ⏳ Rechtsprüfung (`Content-Signal: use=reference`) vor öffentlichem Betrieb |
+| EU | ESMA FIRDS, GLEIF | ✅ einmalig für den Katalog (ISIN ↔ LEI, Rechtsname) | – | – |
+| FR | info-financiere.gouv.fr API, AMF BDIF | ❌ nicht genutzt (robots.txt bzw. DILA reicht) | – | – |
+| NO, SE-Insyn, IT, CH, BE/LU/PT/IE/PL, Euronext Company News | – | ❌ nicht genutzt | – | siehe Tabelle oben |
+| DE | – | ❌ keine offene Quelle | – | ESAP ab 10.07.2027 |
+
 ## Stammdaten
 
 | Quelle | Inhalt | Lizenz | Status |
@@ -281,7 +297,8 @@ Gesucht wurde das Gegenstück zu OeKB OAM, also der OAM oder das Melderegister j
 - Marketaux: kommerzielle Anzeige von Schlagzeile + Link und interne LLM-Verarbeitung.
 - EQS: Lizenzangebot für den News-Feed (DE-Ad-hoc).
 - Infineon: ob der Feed auf presseagentur.com offiziell ist.
-- Nasdaq Nordic: Nutzungsbedingungen der Company-Announcements-API (bei einer Erweiterung auf die Nordics).
+- Nasdaq Nordic: Nutzungsbedingungen der Company-Announcements-API (`api.news.eu.nasdaq.com`); die Quellen laufen bis dahin nur zum privaten Testen.
+- FCA: Rechtsprüfung der NSM-Nutzung (`Content-Signal: search=yes, ai-train=no, use=reference`); bis dahin nur privates Testen, kein LLM.
 - FinanzNachrichten: ob die Übernahme ausdrücklich auch ein kommerzielles Portal abdeckt (kein tdmrep, geprüft 2026-10-29).
 - Alpha Vantage: interne kommerzielle Nutzung als Baseline.
 - Business Wire / PR Newswire: Nutzungsbedingungen für die Anzeige auf einem kommerziellen Portal.

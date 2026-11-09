@@ -230,7 +230,22 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
     - Katalog für OMXS30, OMXH25 und OMXC25.
     - JSON-Parser: `disclosureId`, `headline`, `company`, `releaseTime`, `messageUrl`, `cnsCategory` → adhoc/filing.
 
-- [ ] **9. UK: FCA National Storage Mechanism.**
+- [x] **9. UK: FCA National Storage Mechanism.** Branch `feature/ingest-fca-nsm`.
+  - **Umgesetzt (2026-11-09):**
+    - **TDM-Check:** liest jetzt auch `robots.txt`. Ein `Content-Signal` mit `ai-train=no` oder `ai-input=no` in der Gruppe `User-agent: *` gilt als Vorbehalt; 4xx auf `robots.txt` heißt „keine Datei“.
+    - **LLM:** neuer `text_policy`-Wert `no_llm` (Migration 00011): nicht einmal Titel gehen ans LLM; ein TDM-Vorbehalt lockert das nie (`ingest.EffectivePolicy`, `ingest.TitlesToLLM`). AGENTS.md, Rechtsregel 2, nennt ihn. Einen Klassifizierer gibt es noch nicht; er muss `TitlesToLLM` beachten.
+    - **Quelle `fca_nsm`:** filing, Markt `UK` (Migration 00010), alle 15 Minuten ein POST (`fetch.PostJSON`) auf die NSM-Suche, die neuesten 500 Einträge.
+      Der TDM-Check fragt `data.fca.org.uk` (die API antwortet auf `robots.txt` mit 403) und findet dort den Vorbehalt.
+      Rauschen fällt weg: Fondspreise (NAV), Formulare 8.3/8.5, Final Terms, Börsen- und Panel-Mitteilungen; nur `latest_flag = Y`.
+      Director/PDMR Shareholding heißt „<Emittent>: Eigengeschäft einer Führungskraft“. Der Link führt auf `data.fca.org.uk/artefacts/…`.
+    - **Katalog:** FTSE 100 (Wikipedia, Stand Oktober 2026), LEIs von GLEIF über die ISIN; Börse XLON, Ticker = TIDM ohne Punkt (außer `BT.A`). AstraZeneca, IAG, RELX, Shell und Unilever bekamen nur die Londoner Notierung.
+      LSE-Ticker zählen als Wort nur, wenn sie der Name sind.
+    - **Matcher:** Der Emittentenname der Quelle im Titel zählt nicht mehr als Erwähnung einer anderen Firma (vorher: „ICG ENTERPRISE TRUST PLC“ → ICG, „BP CAPITAL MARKETS“ → BP).
+    - **Probe:** 3.000 NSM-Einträge (387 nach dem Filter) verknüpfen 34 FTSE-Firmen, ohne Fehltreffer.
+  - **Offen:**
+    - Rechtsprüfung der FCA-Nutzung (Content-Signal `use=reference`) vor einem öffentlichen Betrieb.
+    - Der FTSE-100-Tab bleibt leer, solange Index-Tabs keine Filings zeigen (Produktfrage aus Aufgabe 7).
+    - Firmennamen der NSM sind oft in Großbuchstaben („ITV PLC: Transaction in Own Shares“).
   - **Rechtsprüfung parallel, vor einem öffentlichen Betrieb:** `robots.txt` erklärt einen TDM-Vorbehalt nach Art. 4 DSM-RL (`Content-Signal: ai-train=no, use=reference`).
     - Unser TDM-Check liest bisher nur `tdmrep.json`. Er muss auch `Content-Signal` in `robots.txt` erkennen.
     - Zu klären ist, ob Titel aus so einer Quelle überhaupt ans LLM dürfen. Falls nicht, braucht `sources` ein Merkmal, das die Klassifizierung abschaltet.
@@ -241,7 +256,9 @@ Vorbild ist die OeKB-OAM-Anbindung (`ingest/oekb`, umgesetzt am 2026-11-05).
 
 ## D. Doku
 
-- [ ] **10. Doku nachziehen.** Branch `chore/docs-eu-sources`.
+- [x] **10. Doku nachziehen.** Branch `chore/docs-eu-sources`.
+  - **Umgesetzt (2026-11-09):** README mit Tabelle „Märkte, Quellen und Tabs“; design.md mit Märkten, `no_llm`, LEI-Signal, Matcher-Zusatzregeln und den Fetchern je Parser (DILA in zwei Schritten, FCA-POST);
+    research-sources.md mit einer Statustabelle der Pflichtmeldungs-Quellen und den offenen Anfragen (Nasdaq, FCA); AGENTS.md: Der Datenhinweis gilt für ISIN und LEI, dazu die Regel zum Emittentennamen im Titel.
   - `README.md`: Märkte und Tabs.
   - `docs/design.md`: LEI als Matching-Signal, Fetcher in zwei Schritten (DILA).
   - `docs/research-sources.md`: Status je Quelle.

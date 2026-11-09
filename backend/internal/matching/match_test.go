@@ -430,3 +430,41 @@ func TestUncuratedIssuerNeedsFullNameOutsideUS(t *testing.T) {
 		}
 	}
 }
+
+// Regression (FCA NSM, 2026-11-09): the issuer named by the feed is put in
+// front of the title; that name must not count again as a mention of
+// another company. "ICG ENTERPRISE TRUST PLC" is not ICG, "BP CAPITAL
+// MARKETS" not BP. Other companies in the rest of the title still count.
+func TestIssuerNameInTitleIsNoMention(t *testing.T) {
+	const (
+		icg = iota + 500
+		bp
+		iberdrola
+	)
+	ix := matching.NewIndex([]matching.CompanyEntry{
+		{ID: icg, Name: "ICG", LegalName: "ICG PLC", Listings: []matching.Listing{{Ticker: "ICG", MIC: "XLON"}}},
+		{ID: bp, Name: "BP", LegalName: "BP P.L.C.", Listings: []matching.Listing{{Ticker: "BP", MIC: "XLON"}}},
+		{ID: iberdrola, Name: "Iberdrola", LegalName: "IBERDROLA, S.A.", Listings: []matching.Listing{{Ticker: "IBE", MIC: "XMAD"}}},
+	})
+	cases := []struct {
+		in   matching.Input
+		want []want
+	}{
+		{matching.Input{Title: "ICG ENTERPRISE TRUST PLC: Transaction in Own Shares", IssuerHint: "ICG ENTERPRISE TRUST PLC", IssuerGrade: true}, nil},
+		{matching.Input{Title: "BP CAPITAL MARKETS P.L.C.: Publication of a Supplementary Prospectus", IssuerHint: "BP CAPITAL MARKETS P.L.C.", IssuerGrade: true}, nil},
+		{matching.Input{Title: "ACME SA: Agreement with Iberdrola, S.A.", IssuerHint: "ACME SA", IssuerGrade: true}, []want{{iberdrola, "full_name", 0.90}}},
+		{matching.Input{Title: "BP raises dividend"}, []want{{bp, "ticker", 0.90}}},
+	}
+	for _, tc := range cases {
+		got := ix.Match(tc.in)
+		if len(got) != len(tc.want) {
+			t.Errorf("%+v: got %+v, want %+v", tc.in, got, tc.want)
+			continue
+		}
+		for i, w := range tc.want {
+			if got[i].CompanyID != w.id || got[i].Method != w.method || got[i].Confidence != w.conf {
+				t.Errorf("%+v: got %+v, want %+v", tc.in, got[i], w)
+			}
+		}
+	}
+}
